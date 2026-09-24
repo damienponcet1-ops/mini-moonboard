@@ -27,19 +27,21 @@
 
     h1 { font-size: 1.2rem; margin: 5px 0 10px 0; }
 
-    /* Barre de contrôle supérieure */
-    .controls {
+    /* Organisation des boutons sur 2 lignes pour mobile */
+    .controls-row {
       display: flex;
       align-items: center;
-      gap: 15px;
+      justify-content: center;
+      gap: 10px;
       margin-bottom: 10px;
+      width: 100%;
+      max-width: 420px;
     }
 
-    /* Sélecteur de blocs (Menu déroulant) */
     .route-selector {
       width: 100%;
       max-width: 420px;
-      margin-bottom: 15px;
+      margin-bottom: 10px;
     }
     select {
       width: 100%;
@@ -58,19 +60,24 @@
       background: #333;
       color: #fff;
       border: 1px solid #555;
-      padding: 10px 18px;
+      padding: 10px 14px;
       border-radius: 6px;
       font-weight: bold;
       font-size: 14px;
       cursor: pointer;
+      flex: 1; /* Les boutons prennent toute la largeur dispo */
     }
     button:active { background: #555; }
+    
+    .btn-save { background: #005bb5; border-color: #0073e6; }
+    .btn-save:active { background: #003f7a; }
 
     .status-dot {
       width: 14px;
       height: 14px;
       border-radius: 50%;
       transition: background-color 0.3s, box-shadow 0.3s;
+      flex-shrink: 0;
     }
     .status-dot.disconnected { background-color: #ff3b30; box-shadow: 0 0 8px rgba(255, 59, 48, 0.6); }
     .status-dot.connected { background-color: #34c759; box-shadow: 0 0 8px rgba(52, 199, 89, 0.8); }
@@ -101,9 +108,6 @@
       border-radius: 50%;
       transition: all 0.15s ease-out;
       cursor: pointer;
-      display: flex;
-      justify-content: center;
-      align-items: center;
     }
 
     .hold.state-0 { background-color: transparent; }
@@ -117,15 +121,19 @@
 
   <h1>Mini MoonBoard</h1>
 
-  <div class="controls">
+  <div class="controls-row">
     <button id="btnConnect" onclick="connectBLE()">Se connecter</button>
     <div id="statusIndicator" class="status-dot disconnected"></div>
     <button onclick="clearBoard()">Effacer</button>
   </div>
 
+  <div class="controls-row">
+    <button class="btn-save" onclick="saveCurrentRoute()">💾 Enregistrer ce bloc</button>
+  </div>
+
   <div class="route-selector">
     <select id="routeSelect" onchange="loadSelectedRoute()">
-      <!-- Les options seront ajoutées ici par le code JS -->
+      <!-- Les options seront ajoutées ici -->
     </select>
   </div>
 
@@ -143,36 +151,22 @@
     let bleDevice = null;
     let rxCharacteristic = null;
 
-    // ==========================================
-    // 📚 TA BIBLIOTHÈQUE DE BLOCS PERSONNELLE
-    // ==========================================
-    const myRoutes = {
-      "Échauffement 1 (V3)": {
-        depart: ["F5", "E5"],
-        progression: ["E6", "D8", "E10"],
-        arrivee: ["F12"],
-        pied: [] // Optionnel, laisse vide si pas de prises de pied spécifiques
-      },
-      "Le Grand Jeté (V5)": {
-        depart: ["G5"],
-        progression: ["H7", "F9"],
-        arrivee: ["G12"],
-        pied: ["H3", "E4"]
-      },
-      "Projet du mois (V6)": {
-        depart: ["A5"],
-        progression: ["B6", "C8", "B10", "D11"],
-        arrivee: ["D12"],
-        pied: []
-      }
+    // Blocs "en dur" (depuis GitHub)
+    const hardcodedRoutes = {
+      "Échauffement 1 (V3)": { depart: ["F5", "E5"], progression: ["E6", "D8", "E10"], arrivee: ["F12"], pied: [] }
     };
 
-    // Initialisation du menu déroulant
+    // Chargement des blocs depuis la mémoire du téléphone
+    let localRoutes = JSON.parse(localStorage.getItem('moonboard_custom_routes')) || {};
+    let allRoutes = { ...hardcodedRoutes, ...localRoutes };
+
     function initRouteSelector() {
       const selector = document.getElementById('routeSelect');
       selector.innerHTML = '<option value="">-- Choisir un bloc --</option>';
       
-      Object.keys(myRoutes).forEach(routeName => {
+      allRoutes = { ...hardcodedRoutes, ...localRoutes }; // On fusionne les deux listes
+      
+      Object.keys(allRoutes).forEach(routeName => {
         const opt = document.createElement('option');
         opt.value = routeName;
         opt.innerText = routeName;
@@ -180,54 +174,71 @@
       });
     }
 
-    // Chargement d'un bloc sélectionné
+    function saveCurrentRoute() {
+      let route = { depart: [], progression: [], arrivee: [], pied: [] };
+      let hasHolds = false;
+
+      // On scanne la grille pour récupérer les prises allumées
+      Object.keys(holdStates).forEach(id => {
+        if (holdStates[id] === 1) { route.depart.push(id); hasHolds = true; }
+        if (holdStates[id] === 2) { route.progression.push(id); hasHolds = true; }
+        if (holdStates[id] === 3) { route.arrivee.push(id); hasHolds = true; }
+        if (holdStates[id] === 4) { route.pied.push(id); hasHolds = true; }
+      });
+
+      if (!hasHolds) {
+        alert("Le panneau est vide ! Ajoute des prises avant d'enregistrer.");
+        return;
+      }
+
+      // On demande le nom à l'utilisateur
+      let routeName = prompt("Nom et cotation du bloc (ex: Projet V5) :");
+      if (!routeName || routeName.trim() === "") return;
+
+      // On sauvegarde dans la mémoire locale
+      localRoutes[routeName] = route;
+      localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
+      
+      // On met à jour l'interface
+      initRouteSelector();
+      document.getElementById('routeSelect').value = routeName;
+      alert("Bloc '" + routeName + "' enregistré !");
+    }
+
     function loadSelectedRoute() {
       const selector = document.getElementById('routeSelect');
       const routeName = selector.value;
       
-      // 1. On éteint toutes les prises virtuellement d'abord
-      Object.keys(holdStates).forEach(id => {
-        holdStates[id] = 0;
-        updateUI(id);
-      });
+      Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
 
-      // 2. Si un bloc est sélectionné, on applique les nouvelles couleurs
-      if (routeName && myRoutes[routeName]) {
-        const route = myRoutes[routeName];
+      if (routeName && allRoutes[routeName]) {
+        const route = allRoutes[routeName];
         if (route.depart) route.depart.forEach(id => { holdStates[id] = 1; updateUI(id); });
         if (route.progression) route.progression.forEach(id => { holdStates[id] = 2; updateUI(id); });
         if (route.arrivee) route.arrivee.forEach(id => { holdStates[id] = 3; updateUI(id); });
         if (route.pied) route.pied.forEach(id => { holdStates[id] = 4; updateUI(id); });
       }
-      
-      // 3. On envoie la trame au Bluetooth (une seule fois pour tout le bloc)
       sendBLEFrame();
     }
 
-    // Construction de la grille tactile
     const gridEl = document.getElementById('boardGrid');
     for (let r = rows; r >= 1; r--) {
       cols.forEach(c => {
         const holdId = `${c}${r}`;
         holdStates[holdId] = 0;
-
         const div = document.createElement('div');
         div.className = 'hold state-0';
         div.id = `hold-${holdId}`;
-        
         div.onclick = () => toggleHold(holdId);
         gridEl.appendChild(div);
       });
     }
 
-    // Initialise le menu au démarrage
     initRouteSelector();
 
     function toggleHold(holdId) {
       holdStates[holdId] = (holdStates[holdId] + 1) % 5;
       updateUI(holdId);
-      
-      // Si on modifie manuellement une prise, on réinitialise le menu déroulant
       document.getElementById('routeSelect').value = ""; 
       sendBLEFrame();
     }
@@ -238,12 +249,9 @@
     }
 
     function clearBoard() {
-      document.getElementById('routeSelect').value = ""; // Réinitialise le menu
+      document.getElementById('routeSelect').value = ""; 
       Object.keys(holdStates).forEach(id => {
-        if(holdStates[id] !== 0) {
-          holdStates[id] = 0;
-          updateUI(id);
-        }
+        if(holdStates[id] !== 0) { holdStates[id] = 0; updateUI(id); }
       });
       sendBLEFrame();
     }
@@ -258,7 +266,6 @@
         const server = await bleDevice.gatt.connect();
         const service = await server.getPrimaryService(SERVICE_UUID);
         rxCharacteristic = await service.getCharacteristic(RX_UUID);
-        
         document.getElementById('btnConnect').innerText = "Connecté";
         document.getElementById('statusIndicator').className = "status-dot connected";
       } catch (err) {
