@@ -75,32 +75,41 @@
       grid-template-rows: repeat(12, 1fr);
       width: 100%;
       height: 100%;
+      /* Marges intérieures pour compresser la grille et l'aligner sur ta photo */
+      /* Ajuste ces % si besoin : Haut, Droite, Bas, Gauche */
+      padding: 5% 4% 8% 4%; 
     }
 
-    /* Style des cercles de sélection */
+    /* Style des cercles de sélection avec texte A1, B2... */
     .hold {
-      width: 80%;
-      height: 80%;
-      margin: 10%;
+      width: 85%;
+      height: 85%;
+      margin: 7.5%;
       border-radius: 50%;
       transition: all 0.15s ease-out;
       cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 10px;
+      font-weight: bold;
+      color: rgba(255, 255, 255, 0.7); /* Texte blanc semi-transparent */
     }
 
-    /* État 0 : Éteint (Cercle en pointillé très discret pour aider à viser) */
-    .hold.state-0 { border: 1px dashed rgba(255, 255, 255, 0.15); background-color: transparent; }
+    /* État 0 : Éteint */
+    .hold.state-0 { border: 1px dashed rgba(255, 255, 255, 0.2); background-color: transparent; }
 
     /* État 1 : Départ (Vert) */
-    .hold.state-1 { border: 4px solid #00ff00; background-color: rgba(0, 255, 0, 0.25); box-shadow: 0 0 10px #00ff00; }
+    .hold.state-1 { border: 3px solid #00ff00; background-color: rgba(0, 255, 0, 0.3); box-shadow: 0 0 10px #00ff00; color: #fff; }
     
     /* État 2 : Progression (Bleu) */
-    .hold.state-2 { border: 4px solid #0088ff; background-color: rgba(0, 136, 255, 0.25); box-shadow: 0 0 10px #0088ff; }
+    .hold.state-2 { border: 3px solid #0088ff; background-color: rgba(0, 136, 255, 0.3); box-shadow: 0 0 10px #0088ff; color: #fff; }
     
     /* État 3 : Arrivée (Rouge) */
-    .hold.state-3 { border: 4px solid #ff0000; background-color: rgba(255, 0, 0, 0.25); box-shadow: 0 0 10px #ff0000; }
+    .hold.state-3 { border: 3px solid #ff0000; background-color: rgba(255, 0, 0, 0.3); box-shadow: 0 0 10px #ff0000; color: #fff; }
     
     /* État 4 : Pied (Jaune) */
-    .hold.state-4 { border: 4px solid #ffff00; background-color: rgba(255, 255, 0, 0.25); box-shadow: 0 0 10px #ffff00; }
+    .hold.state-4 { border: 3px solid #ffff00; background-color: rgba(255, 255, 0, 0.3); box-shadow: 0 0 10px #ffff00; color: #fff; }
 
   </style>
 </head>
@@ -138,6 +147,10 @@
         const div = document.createElement('div');
         div.className = 'hold state-0';
         div.id = `hold-${holdId}`;
+        
+        // Affiche le nom de la prise (ex: A1) dans le cercle
+        div.innerText = holdId; 
+        
         div.onclick = () => toggleHold(holdId);
         gridEl.appendChild(div);
       });
