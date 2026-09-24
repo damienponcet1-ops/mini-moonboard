@@ -32,18 +32,32 @@
 
     .controls-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; width: 100%; max-width: 420px; }
     
-    .opacity-control {
+    /* Bloc de contrôle du calque */
+    .overlay-controls {
       display: none;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
+      flex-direction: column;
+      gap: 5px;
       margin-bottom: 10px;
       width: 100%;
       max-width: 420px;
+      background: #1e1e1e;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #444;
+    }
+
+    .opacity-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
       font-size: 0.85rem;
       color: #aaa;
     }
-    .opacity-control input { width: 100%; }
+    
+    .opacity-row input { flex: 1; }
+    .btn-toggle { background: #555; color: white; border: 1px solid #777; font-size: 0.8rem; padding: 6px 10px; border-radius: 4px; cursor: pointer; white-space: nowrap; }
+    .btn-toggle:active { background: #777; }
 
     .route-selector { width: 100%; max-width: 420px; margin-bottom: 10px; }
     select { width: 100%; padding: 10px; background-color: #222; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 16px; font-weight: bold; appearance: none; text-align: center; }
@@ -53,10 +67,8 @@
     
     .btn-scan { background: #e67e22; border-color: #d35400; }
     .btn-scan:active { background: #bf4a00; }
-    
     .btn-save { background: #005bb5; border-color: #0073e6; }
     .btn-save:active { background: #003f7a; }
-    
     .btn-delete { background: #d9534f; border-color: #d43f3a; }
     .btn-delete:active { background: #c9302c; }
 
@@ -75,13 +87,13 @@
       overflow: hidden;
     }
 
+    /* Le calque est désormais découpé pour épouser parfaitement le conteneur */
     #overlayImage {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
-      object-fit: cover; 
-      pointer-events: none; 
-      opacity: 0;
-      transition: opacity 0.2s ease;
+      object-fit: fill; 
+      pointer-events: none; /* Laisse passer les clics vers la grille */
+      opacity: 0.5;
       z-index: 1;
     }
 
@@ -110,10 +122,12 @@
     .hold.state-2 { border: 3px solid #0088ff; background-color: rgba(0, 136, 255, 0.4); box-shadow: 0 0 10px #0088ff; }
     .hold.state-3 { border: 3px solid #ff0000; background-color: rgba(255, 0, 0, 0.4); box-shadow: 0 0 10px #ff0000; }
   </style>
+  
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
 
-  <div class="version-badge">V30</div>
+  <div class="version-badge">V33</div>
   <h1 id="pageTitle">Mini MoonBoard</h1>
 
   <div class="controls-row">
@@ -127,9 +141,13 @@
     <input type="file" id="fileInput" accept="image/*" style="display:none">
   </div>
 
-  <div class="opacity-control" id="opacityRow">
-    <label>Transparence capture :</label>
-    <input type="range" id="opacityRange" min="0.1" max="0.9" step="0.05" value="0.5" oninput="changeOpacity(this.value)">
+  <!-- Barre de réglage de l'opacité ET bouton Afficher/Masquer -->
+  <div class="overlay-controls" id="overlayControls">
+    <div class="opacity-row">
+      <label>Opacité :</label>
+      <input type="range" id="opacityRange" min="0" max="1" step="0.05" value="0.5" oninput="changeOpacity(this.value)">
+      <button class="btn-toggle" id="btnToggleOverlay" onclick="toggleOverlay()">Masquer</button>
+    </div>
   </div>
 
   <div class="controls-row">
@@ -143,14 +161,17 @@
   </div>
 
   <div class="board-container">
-    <img id="overlayImage" alt="Capture superposée">
+    <img id="overlayImage" alt="Capture superposée" style="display:none;">
     <div class="grid" id="boardGrid"></div>
   </div>
 
   <script>
+    // === INITIALISATIONS ===
     const cols = ['A','B','C','D','E','F','G','H','I','J','K'];
     const rows = 12;
     let holdStates = {};
+    window.scannedRouteName = ""; 
+    let isOverlayVisible = true;
 
     const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
     const RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
@@ -159,6 +180,7 @@
 
     let localRoutes = JSON.parse(localStorage.getItem('moonboard_custom_routes')) || {};
     
+    // Remplissage de la liste
     function initRouteSelector() {
       const selector = document.getElementById('routeSelect');
       selector.innerHTML = '<option value="">-- Choisir un bloc --</option>';
@@ -170,6 +192,7 @@
       });
     }
 
+    // === GESTION DES BOUTONS DE SAUVEGARDE ET LISTE ===
     function saveCurrentRoute() {
       let route = { depart: [], progression: [], arrivee: [] };
       let hasHolds = false;
@@ -181,7 +204,8 @@
       
       if (!hasHolds) { alert("Le panneau est vide !"); return; }
 
-      let routeName = prompt("Nom et cotation du bloc (ex: EASY DOES IT (6A+)) :", "Mon Bloc");
+      let defaultName = window.scannedRouteName ? window.scannedRouteName : "Mon Bloc";
+      let routeName = prompt("Nom et cotation du bloc :", defaultName);
       if (!routeName || routeName.trim() === "") return;
 
       localRoutes[routeName] = route;
@@ -189,7 +213,7 @@
       initRouteSelector();
       document.getElementById('routeSelect').value = routeName;
       document.getElementById('pageTitle').innerText = routeName;
-      alert("Bloc '" + routeName + "' enregistré !");
+      window.scannedRouteName = routeName; 
     }
 
     function clearSavedRoutes() {
@@ -199,11 +223,15 @@
         localRoutes = {};
         initRouteSelector();
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+        window.scannedRouteName = "";
       }
     }
 
     function loadSelectedRoute() {
-      const routeName = document.getElementById('routeSelect').value;
+      const selector = document.getElementById('routeSelect');
+      if (!selector) return;
+      const routeName = selector.value;
+      
       Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
       if (routeName && localRoutes[routeName]) {
         const route = localRoutes[routeName];
@@ -211,12 +239,15 @@
         if (route.progression) route.progression.forEach(id => { holdStates[id] = 2; updateUI(id); });
         if (route.arrivee) route.arrivee.forEach(id => { holdStates[id] = 3; updateUI(id); });
         document.getElementById('pageTitle').innerText = routeName;
+        window.scannedRouteName = routeName;
       } else {
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+        window.scannedRouteName = "";
       }
       sendBLEFrame();
     }
 
+    // === CRÉATION DE LA GRILLE INTERACTIVE ===
     const gridEl = document.getElementById('boardGrid');
     for (let r = rows; r >= 1; r--) {
       cols.forEach(c => {
@@ -232,6 +263,7 @@
 
     initRouteSelector();
 
+    // === GESTION DES CLICS SUR LES PRISES ===
     function toggleHold(holdId) {
       holdStates[holdId] = (holdStates[holdId] + 1) % 4;
       updateUI(holdId);
@@ -247,28 +279,132 @@
     function clearBoard() {
       document.getElementById('routeSelect').value = ""; 
       document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+      window.scannedRouteName = "";
       Object.keys(holdStates).forEach(id => { if(holdStates[id] !== 0) { holdStates[id] = 0; updateUI(id); }});
       sendBLEFrame();
     }
 
+    // === GESTION DU CALQUE (OPACITÉ ET BOUTON MASQUER) ===
     function changeOpacity(val) {
-      document.getElementById('overlayImage').style.opacity = val;
+      const overlay = document.getElementById('overlayImage');
+      overlay.style.opacity = val;
     }
 
-    // --- AFFICHAGE INSTANTANÉ DE LA CAPTURE EN TRANSPARENCE ---
+    function toggleOverlay() {
+      const overlay = document.getElementById('overlayImage');
+      const btn = document.getElementById('btnToggleOverlay');
+      isOverlayVisible = !isOverlayVisible;
+      if (isOverlayVisible) {
+        overlay.style.display = "block";
+        btn.innerText = "Masquer";
+      } else {
+        overlay.style.display = "none";
+        btn.innerText = "Afficher";
+      }
+    }
+
+    // === CHARGEMENT, DÉCOUPAGE AUTOMATIQUE ET LECTURE DE LA CAPTURE ===
     document.getElementById('fileInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if(!file) return;
 
+      document.getElementById('pageTitle').innerText = "⏳ Traitement de l'image...";
       const imageUrl = URL.createObjectURL(file);
-      const overlay = document.getElementById('overlayImage');
-      overlay.src = imageUrl;
-      overlay.style.opacity = "0.5"; 
-      document.getElementById('opacityRow').style.display = "flex";
       
+      const img = new Image();
+      img.onload = async function() {
+        try {
+          // 1. Découpage pour superposer parfaitement le panneau jaune
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+          let topY = canvas.height, botY = 0;
+          
+          // Recherche du haut et du bas du rectangle jaune (on scanne le milieu)
+          let centerX = Math.floor(canvas.width / 2);
+          for (let y = 0; y < canvas.height; y++) {
+             let i = (y * canvas.width + centerX) * 4;
+             if (imgData[i] > 180 && imgData[i+1] > 180 && imgData[i+2] < 120) {
+                 if (y < topY) topY = y;
+                 if (y > botY) botY = y;
+             }
+          }
+          
+          // Si la détection foire, on prend des valeurs génériques
+          if (topY >= botY) { topY = canvas.height * 0.25; botY = canvas.height * 0.85; }
+          
+          // On dessine l'image recadrée (crop) sur un nouveau canvas
+          const cropCanvas = document.createElement('canvas');
+          cropCanvas.width = canvas.width;
+          cropCanvas.height = botY - topY;
+          const cropCtx = cropCanvas.getContext('2d');
+          cropCtx.drawImage(img, 0, topY, canvas.width, botY - topY, 0, 0, cropCanvas.width, cropCanvas.height);
+
+          // Affichage de l'image recadrée en fond
+          const overlay = document.getElementById('overlayImage');
+          overlay.src = cropCanvas.toDataURL();
+          overlay.style.display = "block";
+          overlay.style.opacity = "0.5";
+          
+          isOverlayVisible = true;
+          document.getElementById('btnToggleOverlay').innerText = "Masquer";
+          document.getElementById('opacityRange').value = "0.5";
+          document.getElementById('overlayControls').style.display = "flex";
+
+          // 2. Lecture du texte via Tesseract protégé (sans risque de crash)
+          if (typeof Tesseract !== 'undefined') {
+              const headerCanvas = document.createElement('canvas');
+              headerCanvas.width = img.width;
+              headerCanvas.height = img.height * 0.25; // On ne lit que le haut de l'image originale
+              const hCtx = headerCanvas.getContext('2d');
+              hCtx.drawImage(img, 0, 0);
+              
+              const { data } = await Tesseract.recognize(headerCanvas.toDataURL(), 'eng');
+              let detectedName = "Mon Bloc";
+              let detectedGrade = "";
+              
+              const lines = data.lines.map(l => l.text.trim());
+              let setByIndex = lines.findIndex(l => l.toLowerCase().includes('set by'));
+              if (setByIndex > 0) {
+                detectedName = lines[setByIndex - 1];
+              } else {
+                 let validLine = lines.find(l => /[A-Za-z]/.test(l) && l.length > 3 && !l.includes(':'));
+                 if(validLine) detectedName = validLine;
+              }
+
+              let gradeLine = lines.find(l => l.toLowerCase().includes('user') || l.toLowerCase().includes('setter'));
+              if (gradeLine) {
+                  let gradeMatch = gradeLine.match(/([4-9][A-C]\+?|V\d+)/i);
+                  if (gradeMatch) detectedGrade = gradeMatch[1].toUpperCase();
+              }
+
+              detectedName = detectedName.replace(/[^a-zA-Z0-9 \-\+\(\)\.]/g, '').replace(/\s+/g, ' ').trim();
+              if(detectedName.length < 2) detectedName = "Mon Bloc";
+              
+              if(detectedGrade && !detectedName.includes(detectedGrade)) {
+                  detectedName = `${detectedName} (${detectedGrade})`;
+              }
+
+              window.scannedRouteName = detectedName;
+              document.getElementById('pageTitle').innerText = detectedName;
+          } else {
+              document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+          }
+        } catch (err) {
+          console.error("Erreur d'analyse: ", err);
+          document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+        }
+      };
+      
+      img.src = imageUrl;
       e.target.value = '';
     });
 
+    // === GESTION DU BLUETOOTH (Vérifiée pour éviter tout crash) ===
     async function toggleBLE() {
       if (bleDevice && bleDevice.gatt.connected) {
         bleDevice.gatt.disconnect();
@@ -287,7 +423,7 @@
 
     function onDisconnected() {
       rxCharacteristic = null;
-      document.getElementById('btnConnect').innerText = "Se déconnecter";
+      document.getElementById('btnConnect').innerText = "Se connecter";
       document.getElementById('statusIndicator').className = "status-dot disconnected";
     }
 
