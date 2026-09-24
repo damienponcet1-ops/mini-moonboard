@@ -25,13 +25,33 @@
       align-items: center;
     }
 
-    h1 { font-size: 1.2rem; margin: 5px 0 15px 0; }
+    h1 { font-size: 1.2rem; margin: 5px 0 10px 0; }
 
+    /* Barre de contrôle supérieure */
     .controls {
       display: flex;
       align-items: center;
       gap: 15px;
+      margin-bottom: 10px;
+    }
+
+    /* Sélecteur de blocs (Menu déroulant) */
+    .route-selector {
+      width: 100%;
+      max-width: 420px;
       margin-bottom: 15px;
+    }
+    select {
+      width: 100%;
+      padding: 10px;
+      background-color: #222;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: bold;
+      appearance: none;
+      text-align: center;
     }
 
     button {
@@ -71,9 +91,6 @@
       grid-template-rows: repeat(12, 1fr);
       width: 100%;
       height: 100%;
-      
-      /* REGLAGE DU DECALAGE : Haut, Droite, Bas, Gauche */
-      /* J'ai augmenté la gauche (7%) et diminué la droite (1%) pour décaler vers la droite */
       padding: 7% 1% 6% 7%; 
     }
 
@@ -87,13 +104,9 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      
-      /* LIGNE DE CALIBRAGE A SUPPRIMER QUAND C'EST PARFAITEMENT ALIGNÉ */
-      border: 1px solid red;
     }
 
     .hold.state-0 { background-color: transparent; }
-    
     .hold.state-1 { border: 3px solid #00ff00; background-color: rgba(0, 255, 0, 0.3); box-shadow: 0 0 10px #00ff00; }
     .hold.state-2 { border: 3px solid #0088ff; background-color: rgba(0, 136, 255, 0.3); box-shadow: 0 0 10px #0088ff; }
     .hold.state-3 { border: 3px solid #ff0000; background-color: rgba(255, 0, 0, 0.3); box-shadow: 0 0 10px #ff0000; }
@@ -110,6 +123,12 @@
     <button onclick="clearBoard()">Effacer</button>
   </div>
 
+  <div class="route-selector">
+    <select id="routeSelect" onchange="loadSelectedRoute()">
+      <!-- Les options seront ajoutées ici par le code JS -->
+    </select>
+  </div>
+
   <div class="board-container">
     <div class="grid" id="boardGrid"></div>
   </div>
@@ -124,6 +143,68 @@
     let bleDevice = null;
     let rxCharacteristic = null;
 
+    // ==========================================
+    // 📚 TA BIBLIOTHÈQUE DE BLOCS PERSONNELLE
+    // ==========================================
+    const myRoutes = {
+      "Échauffement 1 (V3)": {
+        depart: ["F5", "E5"],
+        progression: ["E6", "D8", "E10"],
+        arrivee: ["F12"],
+        pied: [] // Optionnel, laisse vide si pas de prises de pied spécifiques
+      },
+      "Le Grand Jeté (V5)": {
+        depart: ["G5"],
+        progression: ["H7", "F9"],
+        arrivee: ["G12"],
+        pied: ["H3", "E4"]
+      },
+      "Projet du mois (V6)": {
+        depart: ["A5"],
+        progression: ["B6", "C8", "B10", "D11"],
+        arrivee: ["D12"],
+        pied: []
+      }
+    };
+
+    // Initialisation du menu déroulant
+    function initRouteSelector() {
+      const selector = document.getElementById('routeSelect');
+      selector.innerHTML = '<option value="">-- Choisir un bloc --</option>';
+      
+      Object.keys(myRoutes).forEach(routeName => {
+        const opt = document.createElement('option');
+        opt.value = routeName;
+        opt.innerText = routeName;
+        selector.appendChild(opt);
+      });
+    }
+
+    // Chargement d'un bloc sélectionné
+    function loadSelectedRoute() {
+      const selector = document.getElementById('routeSelect');
+      const routeName = selector.value;
+      
+      // 1. On éteint toutes les prises virtuellement d'abord
+      Object.keys(holdStates).forEach(id => {
+        holdStates[id] = 0;
+        updateUI(id);
+      });
+
+      // 2. Si un bloc est sélectionné, on applique les nouvelles couleurs
+      if (routeName && myRoutes[routeName]) {
+        const route = myRoutes[routeName];
+        if (route.depart) route.depart.forEach(id => { holdStates[id] = 1; updateUI(id); });
+        if (route.progression) route.progression.forEach(id => { holdStates[id] = 2; updateUI(id); });
+        if (route.arrivee) route.arrivee.forEach(id => { holdStates[id] = 3; updateUI(id); });
+        if (route.pied) route.pied.forEach(id => { holdStates[id] = 4; updateUI(id); });
+      }
+      
+      // 3. On envoie la trame au Bluetooth (une seule fois pour tout le bloc)
+      sendBLEFrame();
+    }
+
+    // Construction de la grille tactile
     const gridEl = document.getElementById('boardGrid');
     for (let r = rows; r >= 1; r--) {
       cols.forEach(c => {
@@ -134,16 +215,20 @@
         div.className = 'hold state-0';
         div.id = `hold-${holdId}`;
         
-        // Le texte a été supprimé ici pour rendre l'interface plus propre
-        
         div.onclick = () => toggleHold(holdId);
         gridEl.appendChild(div);
       });
     }
 
+    // Initialise le menu au démarrage
+    initRouteSelector();
+
     function toggleHold(holdId) {
       holdStates[holdId] = (holdStates[holdId] + 1) % 5;
       updateUI(holdId);
+      
+      // Si on modifie manuellement une prise, on réinitialise le menu déroulant
+      document.getElementById('routeSelect').value = ""; 
       sendBLEFrame();
     }
 
@@ -153,6 +238,7 @@
     }
 
     function clearBoard() {
+      document.getElementById('routeSelect').value = ""; // Réinitialise le menu
       Object.keys(holdStates).forEach(id => {
         if(holdStates[id] !== 0) {
           holdStates[id] = 0;
@@ -168,16 +254,13 @@
           filters: [{ name: 'MoonBoard' }],
           optionalServices: [SERVICE_UUID]
         });
-
         bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
-
         const server = await bleDevice.gatt.connect();
         const service = await server.getPrimaryService(SERVICE_UUID);
         rxCharacteristic = await service.getCharacteristic(RX_UUID);
         
         document.getElementById('btnConnect').innerText = "Connecté";
         document.getElementById('statusIndicator').className = "status-dot connected";
-
       } catch (err) {
         alert("Erreur BLE : " + err);
         onDisconnected();
@@ -192,7 +275,6 @@
 
     function sendBLEFrame() {
       if (!rxCharacteristic) return;
-
       let parts = [];
       Object.keys(holdStates).forEach(id => {
         const state = holdStates[id];
@@ -201,7 +283,6 @@
         else if (state === 3) parts.push(`F${id}`);
         else if (state === 4) parts.push(`E${id}`);
       });
-
       const frame = `l#${parts.join(',')}#`;
       const encoder = new TextEncoder();
       rxCharacteristic.writeValue(encoder.encode(frame));
