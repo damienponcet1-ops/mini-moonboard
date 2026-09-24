@@ -1,4 +1,4 @@
-const CACHE_NAME = 'moonboard-v27';
+const CACHE_NAME = 'moonboard-v28';
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
