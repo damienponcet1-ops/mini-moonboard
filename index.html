@@ -16,7 +16,6 @@
     * { box-sizing: border-box; touch-action: manipulation; }
     body { margin: 0; padding: 10px; background-color: #121212; color: #ffffff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; position: relative; }
     
-    /* Badge de version en haut à droite */
     .version-badge {
       position: absolute;
       top: 10px;
@@ -30,34 +29,94 @@
     }
 
     h1 { font-size: 1.1rem; margin: 5px 0 10px 0; text-align: center; color: #f39c12; min-height: 25px;}
+
     .controls-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; width: 100%; max-width: 420px; }
+    
+    .opacity-control {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      width: 100%;
+      max-width: 420px;
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+    .opacity-control input { width: 100%; }
+
     .route-selector { width: 100%; max-width: 420px; margin-bottom: 10px; }
     select { width: 100%; padding: 10px; background-color: #222; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 16px; font-weight: bold; appearance: none; text-align: center; }
+    
     button { background: #333; color: #fff; border: 1px solid #555; padding: 10px 12px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; flex: 1; }
     button:active { background: #555; }
+    
     .btn-scan { background: #e67e22; border-color: #d35400; }
     .btn-scan:active { background: #bf4a00; }
+    
     .btn-save { background: #005bb5; border-color: #0073e6; }
     .btn-save:active { background: #003f7a; }
+    
     .btn-delete { background: #d9534f; border-color: #d43f3a; }
     .btn-delete:active { background: #c9302c; }
+
     .status-dot { width: 14px; height: 14px; border-radius: 50%; transition: background-color 0.3s, box-shadow 0.3s; flex-shrink: 0; }
     .status-dot.disconnected { background-color: #ff3b30; box-shadow: 0 0 8px rgba(255, 59, 48, 0.6); }
     .status-dot.connected { background-color: #34c759; box-shadow: 0 0 8px rgba(52, 199, 89, 0.8); }
-    .board-container { position: relative; width: 100%; max-width: 420px; aspect-ratio: 11 / 12; background: url('mini_moonboard_bg.jpg') no-repeat center/cover; border: 2px solid #444; border-radius: 8px; }
-    .grid { display: grid; grid-template-columns: repeat(11, 1fr); grid-template-rows: repeat(12, 1fr); width: 100%; height: 100%; padding: 7% 1% 6% 7%; }
-    .hold { width: 85%; height: 85%; margin: 7.5%; border-radius: 50%; transition: all 0.15s ease-out; cursor: pointer; }
+
+    .board-container {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 11 / 12;
+      background: url('mini_moonboard_bg.jpg') no-repeat center/cover;
+      border: 2px solid #444;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    /* Calque pour la capture d'écran superposée en transparence */
+    #overlayImage {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      object-fit: cover;
+      pointer-events: none; /* Laisse passer les clics pour pouvoir tapoter sur la grille par-dessus */
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      z-index: 1;
+    }
+
+    .grid {
+      position: relative;
+      z-index: 2; /* Au-dessus de l'image de fond */
+      display: grid;
+      grid-template-columns: repeat(11, 1fr);
+      grid-template-rows: repeat(12, 1fr);
+      width: 100%;
+      height: 100%;
+      padding: 7% 1% 6% 7%; 
+    }
+
+    .hold {
+      width: 85%;
+      height: 85%;
+      margin: 7.5%;
+      border-radius: 50%;
+      transition: all 0.15s ease-out;
+      cursor: pointer;
+    }
+
     .hold.state-0 { background-color: transparent; }
-    .hold.state-1 { border: 3px solid #00ff00; background-color: rgba(0, 255, 0, 0.3); box-shadow: 0 0 10px #00ff00; }
-    .hold.state-2 { border: 3px solid #0088ff; background-color: rgba(0, 136, 255, 0.3); box-shadow: 0 0 10px #0088ff; }
-    .hold.state-3 { border: 3px solid #ff0000; background-color: rgba(255, 0, 0, 0.3); box-shadow: 0 0 10px #ff0000; }
+    .hold.state-1 { border: 3px solid #00ff00; background-color: rgba(0, 255, 0, 0.4); box-shadow: 0 0 10px #00ff00; }
+    .hold.state-2 { border: 3px solid #0088ff; background-color: rgba(0, 136, 255, 0.4); box-shadow: 0 0 10px #0088ff; }
+    .hold.state-3 { border: 3px solid #ff0000; background-color: rgba(255, 0, 0, 0.4); box-shadow: 0 0 10px #ff0000; }
   </style>
   
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
 
-  <div class="version-badge">V25</div>
+  <div class="version-badge">V26</div>
   <h1 id="pageTitle">Mini MoonBoard</h1>
 
   <div class="controls-row">
@@ -67,8 +126,14 @@
   </div>
 
   <div class="controls-row">
-    <button class="btn-scan" onclick="document.getElementById('fileInput').click()">📷 Scanner Capture</button>
+    <button class="btn-scan" onclick="document.getElementById('fileInput').click()">📷 Charger la capture</button>
     <input type="file" id="fileInput" accept="image/*" style="display:none">
+  </div>
+
+  <!-- Curseur d'opacité qui apparaît dès qu'une image est chargée -->
+  <div class="opacity-control" id="opacityRow">
+    <label>Transparence capture :</label>
+    <input type="range" id="opacityRange" min="0.1" max="0.9" step="0.05" value="0.5" oninput="changeOpacity(this.value)">
   </div>
 
   <div class="controls-row">
@@ -82,6 +147,9 @@
   </div>
 
   <div class="board-container">
+    <!-- Image de surimpression -->
+    <img id="overlayImage" alt="Capture superposée">
+    <!-- Grille interactive des prises -->
     <div class="grid" id="boardGrid"></div>
   </div>
 
@@ -144,7 +212,7 @@
     }
 
     function loadSelectedRoute() {
-      const routeName = document.getElementById('routeSelect').value;
+      const routeName = document.getElementById('routeSelect'].value;
       Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
       if (routeName && localRoutes[routeName]) {
         const route = localRoutes[routeName];
@@ -194,19 +262,29 @@
       sendBLEFrame();
     }
 
-    // --- LE SCANNER V25 (DÉTECTION PAR CERCLES ÉPURÉS) ---
+    function changeOpacity(val) {
+      document.getElementById('overlayImage').style.opacity = val;
+    }
+
+    // --- MODE SUPERPOSITION VISUELLE + LECTURE DU TITRE ---
     document.getElementById('fileInput').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if(!file) return;
 
-      document.getElementById('pageTitle').innerText = "⏳ Analyse en cours...";
+      document.getElementById('pageTitle').innerText = "⏳ Lecture du titre...";
+
+      const imageUrl = URL.createObjectURL(file);
+      const overlay = document.getElementById('overlayImage');
+      overlay.src = imageUrl;
+      overlay.style.opacity = "0.5"; // Transparence par défaut à 50%
+      document.getElementById('opacityRow').style.display = "flex";
 
       try {
         const img = new Image();
-        img.src = URL.createObjectURL(file);
+        img.src = imageUrl;
         await new Promise(resolve => { img.onload = resolve; });
 
-        // 1. LECTURE DU TITRE ET DE LA COTATION
+        // Lecture du titre via Tesseract pour le pré-remplissage à l'enregistrement
         const headerCanvas = document.createElement('canvas');
         headerCanvas.width = img.width;
         headerCanvas.height = img.height * 0.25; 
@@ -243,87 +321,10 @@
         window.scannedRouteName = detectedName;
         document.getElementById('pageTitle').innerText = detectedName;
 
-        // 2. DÉTECTION GÉOMÉTRIQUE CIBLÉE SUR LES CERCLES
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width; canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-
-        // Recherche du panneau jaune par les bords
-        let boardTop = -1, boardBot = -1;
-        let scanX = Math.floor(canvas.width * 0.1);
-        for(let y = 0; y < canvas.height; y++) {
-            let i = (y * canvas.width + scanX) * 4;
-            if(imgData[i] > 180 && imgData[i+1] > 180 && imgData[i+2] < 120) {
-                if(boardTop === -1) boardTop = y;
-                boardBot = y;
-            }
-        }
-        if(boardTop === -1) { boardTop = canvas.height * 0.28; boardBot = canvas.height * 0.84; }
-
-        let bw = canvas.width;
-        let bh = boardBot - boardTop;
-        let cellW = bw / 11;
-        let cellH = bh / 12;
-
-        Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
-        let foundCount = 0;
-
-        // On inspecte précisément le contour de chaque case (là où sont tracés les cercles de l'app)
-        for(let r = 0; r < 12; r++) {
-            for(let c = 0; c < 11; c++) {
-                let holdId = cols[c] + (12 - r);
-                
-                let startX = Math.floor(c * cellW + cellW * 0.1);
-                let endX = Math.floor((c + 1) * cellW - cellW * 0.1);
-                let startY = Math.floor(boardTop + r * cellH + cellH * 0.1);
-                let endY = Math.floor(boardTop + (r + 1) * cellH - cellH * 0.1);
-
-                let green = 0, blue = 0, red = 0;
-
-                // On cherche des pixels de couleur vive (les cercles) sur le pourtour de la case
-                for(let y = startY; y < endY; y += 2) {
-                    for(let x = startX; x < endX; x += 2) {
-                        // On évite le centre pour ne pas prendre la prise physique en bois/résine
-                        let distFromCenterX = Math.abs(x - (startX + (endX-startX)/2));
-                        let distFromCenterY = Math.abs(y - (startY + (endY-startY)/2));
-                        
-                        if (distFromCenterX > cellW*0.15 || distFromCenterY > cellH*0.15) {
-                            let i = (y * canvas.width + x) * 4;
-                            let pr = imgData[i], pg = imgData[i+1], pb = imgData[i+2];
-
-                            if (pg > 180 && pr < 100 && pb < 100) green++; // Vert
-                            else if (pb > 180 && pr < 100 && pg > 100) blue++; // Bleu Cyan
-                            else if (pr > 180 && pg < 80 && pb < 80) red++; // Rouge
-                        }
-                    }
-                }
-
-                let state = 0;
-                if (green > 8) state = 1;
-                else if (blue > 8) state = 2;
-                else if (red > 8) state = 3;
-
-                if (state > 0) {
-                    holdStates[holdId] = state;
-                    updateUI(holdId);
-                    foundCount++;
-                }
-            }
-        }
-
-        if (foundCount > 0) {
-            sendBLEFrame();
-            alert(`V25 - Titre : ${window.scannedRouteName}\n${foundCount} prises trouvées !\n\nClique sur "Enregistrer".`);
-        } else {
-            alert("V25 - Aucune prise détectée. Vérifie l'image.");
-        }
-
       } catch (err) {
-        alert("Erreur : " + err);
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
       }
+
       e.target.value = '';
     });
     // -----------------------------------------------------------
