@@ -123,7 +123,8 @@
   <h1>Mini MoonBoard</h1>
 
   <div class="controls-row">
-    <button id="btnConnect" onclick="connectBLE()">Se connecter</button>
+    <!-- Le bouton appelle maintenant la fonction toggleBLE() -->
+    <button id="btnConnect" onclick="toggleBLE()">Se connecter</button>
     <div id="statusIndicator" class="status-dot disconnected"></div>
     <button onclick="clearBoard()">Effacer</button>
   </div>
@@ -135,7 +136,6 @@
 
   <div class="route-selector">
     <select id="routeSelect" onchange="loadSelectedRoute()">
-      <!-- Les options seront ajoutées ici -->
     </select>
   </div>
 
@@ -153,19 +153,15 @@
     let bleDevice = null;
     let rxCharacteristic = null;
 
-    // Blocs "en dur" optionnels (tu peux les effacer si tu n'en veux plus)
     const hardcodedRoutes = {};
 
-    // Chargement des blocs depuis la mémoire du téléphone
     let localRoutes = JSON.parse(localStorage.getItem('moonboard_custom_routes')) || {};
     let allRoutes = { ...hardcodedRoutes, ...localRoutes };
 
     function initRouteSelector() {
       const selector = document.getElementById('routeSelect');
       selector.innerHTML = '<option value="">-- Choisir un bloc --</option>';
-      
       allRoutes = { ...hardcodedRoutes, ...localRoutes }; 
-      
       Object.keys(allRoutes).forEach(routeName => {
         const opt = document.createElement('option');
         opt.value = routeName;
@@ -177,37 +173,29 @@
     function saveCurrentRoute() {
       let route = { depart: [], progression: [], arrivee: [] };
       let hasHolds = false;
-
       Object.keys(holdStates).forEach(id => {
         if (holdStates[id] === 1) { route.depart.push(id); hasHolds = true; }
         if (holdStates[id] === 2) { route.progression.push(id); hasHolds = true; }
         if (holdStates[id] === 3) { route.arrivee.push(id); hasHolds = true; }
       });
-
       if (!hasHolds) {
         alert("Le panneau est vide ! Ajoute des prises avant d'enregistrer.");
         return;
       }
-
       let routeName = prompt("Nom et cotation du bloc (ex: Projet V5) :");
       if (!routeName || routeName.trim() === "") return;
-
       localRoutes[routeName] = route;
       localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
-      
       initRouteSelector();
       document.getElementById('routeSelect').value = routeName;
     }
 
-    // Nouvelle fonction pour effacer la liste enregistrée
     function clearSavedRoutes() {
       if (Object.keys(localRoutes).length === 0) {
         alert("Ta liste est déjà vide !");
         return;
       }
-      
       const confirmDelete = confirm("Voulez-vous vraiment effacer tous vos blocs enregistrés ? Cette action est irréversible.");
-      
       if (confirmDelete) {
         localStorage.removeItem('moonboard_custom_routes');
         localRoutes = {};
@@ -220,9 +208,7 @@
     function loadSelectedRoute() {
       const selector = document.getElementById('routeSelect');
       const routeName = selector.value;
-      
       Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
-
       if (routeName && allRoutes[routeName]) {
         const route = allRoutes[routeName];
         if (route.depart) route.depart.forEach(id => { holdStates[id] = 1; updateUI(id); });
@@ -267,7 +253,15 @@
       sendBLEFrame();
     }
 
-    async function connectBLE() {
+    // NOUVELLE FONCTION : Gère la connexion ET la déconnexion
+    async function toggleBLE() {
+      // Si on est déjà connecté, on se déconnecte proprement
+      if (bleDevice && bleDevice.gatt.connected) {
+        bleDevice.gatt.disconnect();
+        return; // L'événement 'gattserverdisconnected' va gérer l'interface visuelle
+      }
+
+      // Sinon on lance la procédure de connexion
       try {
         bleDevice = await navigator.bluetooth.requestDevice({
           filters: [{ name: 'MoonBoard' }],
@@ -277,7 +271,8 @@
         const server = await bleDevice.gatt.connect();
         const service = await server.getPrimaryService(SERVICE_UUID);
         rxCharacteristic = await service.getCharacteristic(RX_UUID);
-        document.getElementById('btnConnect').innerText = "Connecté";
+        
+        document.getElementById('btnConnect').innerText = "Se déconnecter";
         document.getElementById('statusIndicator').className = "status-dot connected";
       } catch (err) {
         alert("Erreur BLE : " + err);
