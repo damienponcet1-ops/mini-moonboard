@@ -94,7 +94,7 @@
       });
     }
 
-    // --- ENREGISTREMENT SANS BUG D'AFFICHAGE ---
+    // --- ENREGISTREMENT SÉCURISÉ ---
     function saveCurrentRoute() {
       let route = { depart: [], progression: [], arrivee: [] };
       let hasHolds = false;
@@ -108,6 +108,7 @@
 
       let defaultName = window.scannedRouteName ? window.scannedRouteName : "Mon Bloc";
       
+      // La popup demande le nom avec le titre trouvé par l'IA
       let routeName = prompt("Nom et cotation du bloc :", defaultName);
       if (!routeName || routeName.trim() === "") return;
 
@@ -181,7 +182,7 @@
       sendBLEFrame();
     }
 
-    // --- LE SCANNER GÉOMÉTRIQUE EXACT (V20) ---
+    // --- LE SCANNER V23 (GRILLE MATHÉMATIQUE PARFAITE) ---
     document.getElementById('fileInput').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if(!file) return;
@@ -193,95 +194,104 @@
         img.src = URL.createObjectURL(file);
         await new Promise(resolve => { img.onload = resolve; });
 
-        // 1. LECTURE DU TITRE (OCR) AVEC NETTOYAGE EXTRÊME
+        // 1. LECTURE DU TITRE ET DE LA COTATION AVEC NETTOYAGE EXTRÊME
         const headerCanvas = document.createElement('canvas');
         headerCanvas.width = img.width;
-        headerCanvas.height = img.height * 0.22; 
+        headerCanvas.height = img.height * 0.25; 
         const hCtx = headerCanvas.getContext('2d');
         hCtx.drawImage(img, 0, 0);
         
         const { data } = await Tesseract.recognize(headerCanvas.toDataURL(), 'eng');
-        let detectedName = "Bloc Scanné";
-        const lines = data.lines.map(l => l.text.trim());
+        let detectedName = "Mon Bloc";
         
+        const lines = data.lines.map(l => l.text.trim());
         let setByIndex = lines.findIndex(l => l.toLowerCase().includes('set by'));
+        
         if (setByIndex > 0) {
           detectedName = lines[setByIndex - 1];
         } else {
-           let validLine = lines.find(l => /[A-Za-z]/.test(l) && l.length > 3 && !l.includes('11:') && !l.includes('12:') && !l.includes('13:'));
+           let validLine = lines.find(l => /[A-Za-z]/.test(l) && l.length > 3 && !l.includes(':'));
            if(validLine) detectedName = validLine;
         }
 
-        // LE SECRET : On force le retrait de tout ce qui peut casser la boîte de dialogue iOS !
-        detectedName = detectedName.replace(/[^a-zA-Z0-9 \-\+\(\)\.]/g, '').trim();
-        if(!detectedName) detectedName = "Mon Bloc";
+        // On cherche spécifiquement la cotation (ex: 6A+ ou V3)
+        let gradeMatch = data.text.match(/\([4-9][A-C]\+?\)|\(V\d+\)/i);
+        let grade = gradeMatch ? gradeMatch[0] : "";
+
+        // Nettoyage radical : garde uniquement lettres, chiffres, espaces et parenthèses
+        detectedName = detectedName.replace(/[^a-zA-Z0-9 \-\+\(\)\.]/g, '').replace(/\s+/g, ' ').trim();
+        if(detectedName.length < 2) detectedName = "Mon Bloc";
         
+        // Ajoute la cote proprement
+        if(grade && !detectedName.includes(grade.replace('(','').replace(')',''))) {
+            detectedName = detectedName + " " + grade;
+        }
+
         window.scannedRouteName = detectedName;
         document.getElementById('pageTitle').innerText = detectedName;
 
-        // 2. DÉTECTION DES PRISES : GRILLE PROPORTIONNELLE
+        // 2. DÉTECTION DES PRISES PAR GRILLE MATHÉMATIQUE
         const canvas = document.createElement('canvas');
         canvas.width = img.width; canvas.height = img.height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
         const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-        // Détection du bord haut et bas du panneau jaune (en évitant le logo central)
-        let yTop = canvas.height, yBot = 0;
-        const scanCols = [0.10, 0.25, 0.75, 0.90]; // On scanne sur les côtés
-        
-        for (let scanX of scanCols) {
-            let px = Math.floor(canvas.width * scanX);
-            for(let y = 0; y < canvas.height; y++) {
+        // Étape A : Trouver le haut exact du panneau jaune (sans se faire piéger par les étoiles)
+        let boardTop = -1;
+        for(let y = 0; y < canvas.height; y++) {
+            let yellowHits = 0;
+            // On vérifie 5 points répartis sur la largeur
+            for(let scanX = 0.1; scanX < 0.9; scanX += 0.2) {
+                let px = Math.floor(canvas.width * scanX);
                 let i = (y * canvas.width + px) * 4;
-                if(imgData[i] > 180 && imgData[i+1] > 180 && imgData[i+2] < 120) {
-                    if(y < yTop) yTop = y;
-                    if(y > yBot) yBot = y;
-                }
+                if(imgData[i] > 180 && imgData[i+1] > 180 && imgData[i+2] < 120) yellowHits++;
             }
+            // Si 3 des 5 points sont jaunes, c'est le vrai début du panneau
+            if(yellowHits >= 3) { boardTop = y; break; }
         }
-        
-        if (yTop === canvas.height) { yTop = canvas.height * 0.3; yBot = canvas.height * 0.8; }
-        
-        let boardH = yBot - yTop;
-        let boardW = canvas.width;
-        
-        // Le ratio officiel Moonboard : 12 colonnes (en comptant les marges) et 15 lignes (avec marges)
-        let cellW = boardW / 12;
-        let cellH = boardH / 15;
+
+        if(boardTop === -1) boardTop = canvas.height * 0.25;
+
+        // Étape B : Calcul des proportions géométriques parfaites
+        let w = canvas.width;
+        let cellSpacing = w * 0.0815;  // Écart entre deux colonnes (fixe)
+        let colMargin = w * 0.095;     // Marge gauche avant la colonne A
+        let rowMargin = boardTop + w * 0.13; // Distance du haut jaune jusqu'à la ligne 12
 
         Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
         let foundCount = 0;
 
-        // On parcourt chaque prise possible (A1 à K12)
-        for(let r = 0; r < 12; r++) { // r=0 correspond à la ligne 12
-            for(let c = 0; c < 11; c++) { // c=0 correspond à A
-                let holdId = cols[c] + (12 - r);
+        // Étape C : Vérifier chaque case
+        for(let r = 12; r >= 1; r--) {
+            for(let c = 0; c < 11; c++) {
+                let holdId = cols[c] + r;
                 
-                // Le centre théorique parfait de la prise sur l'image
-                let centerX = Math.floor((c + 1) * cellW);
-                let centerY = Math.floor(yTop + (r + 2) * cellH);
+                // Coordonnées du centre parfait de la prise
+                let cX = Math.floor(colMargin + c * cellSpacing);
+                let cY = Math.floor(rowMargin + (12 - r) * cellSpacing);
 
                 let green = 0, blue = 0, red = 0;
-                let boxSize = Math.floor(cellW * 0.4); // On vérifie une large zone autour du centre
+                let boxSize = Math.floor(cellSpacing * 0.4); // On vérifie un carré autour du centre
 
-                for(let y = centerY - boxSize; y < centerY + boxSize; y += 2) {
-                    for(let x = centerX - boxSize; x < centerX + boxSize; x += 2) {
-                        if (x < 0 || x >= boardW || y < 0 || y >= canvas.height) continue;
-                        let i = (y * boardW + x) * 4;
+                for(let y = cY - boxSize; y < cY + boxSize; y += 2) {
+                    for(let x = cX - boxSize; x < cX + boxSize; x += 2) {
+                        if (x < 0 || x >= w || y < 0 || y >= canvas.height) continue;
+                        let i = (y * w + x) * 4;
                         let pr = imgData[i], pg = imgData[i+1], pb = imgData[i+2];
 
-                        // Filtres ultra stricts pour les ronds de couleur
-                        if (pg > 160 && pr < 100 && pb < 100) green++;
-                        else if (pb > 160 && pr < 120 && pg < 150) blue++;
-                        else if (pr > 180 && pg < 90 && pb < 90) red++;
+                        // Filtres anti-plastique. Le bleu Cyan de l'app a beaucoup de Vert(G). Le bleu plastique non.
+                        if (pg > 180 && pr < 120 && pb < 120) green++; // Vert pur
+                        else if (pb > 180 && pg > 120 && pr < 100) blue++; // Bleu Cyan fluo
+                        else if (pr > 180 && pg < 100 && pb < 100) red++; // Rouge pur
                     }
                 }
 
                 let state = 0;
-                if (green > 10) state = 1; // Au moins 10 pixels verts purs détectés
-                else if (blue > 10) state = 2;
-                else if (red > 10) state = 3;
+                // Il faut 15 pixels de la couleur de l'appli pour valider, ce qui élimine les reflets
+                if (green > 15) state = 1;
+                else if (blue > 15) state = 2;
+                else if (red > 15) state = 3;
 
                 if (state > 0) {
                     holdStates[holdId] = state;
@@ -293,9 +303,9 @@
 
         if (foundCount > 0) {
             sendBLEFrame();
-            alert(`Titre lu : ${window.scannedRouteName}\n${foundCount} prises trouvées !\n\nClique sur "Enregistrer" pour valider.`);
+            alert(`Titre lu : ${window.scannedRouteName}\n${foundCount} prises trouvées !\n\nClique sur "Enregistrer".`);
         } else {
-            alert("Aucune prise détectée. Vérifie l'image.");
+            alert("Erreur de détection. Essaie avec une autre capture.");
         }
 
       } catch (err) {
