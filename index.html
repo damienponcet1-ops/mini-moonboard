@@ -74,6 +74,7 @@
     const cols = ['A','B','C','D','E','F','G','H','I','J','K'];
     const rows = 12;
     let holdStates = {};
+    window.scannedRouteName = ""; 
 
     const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
     const RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
@@ -93,7 +94,7 @@
       });
     }
 
-    // --- SAUVEGARDE AVEC TITRE NETTOYÉ ---
+    // --- ENREGISTREMENT SANS BUG D'AFFICHAGE ---
     function saveCurrentRoute() {
       let route = { depart: [], progression: [], arrivee: [] };
       let hasHolds = false;
@@ -105,15 +106,9 @@
       
       if (!hasHolds) { alert("Le panneau est vide !"); return; }
 
-      let rawTitle = document.getElementById('pageTitle').innerText;
-      // NETTOYAGE CRITIQUE : on enlève tous les retours à la ligne qui font bugger la popup !
-      let cleanTitle = rawTitle.replace(/[\n\r]/g, ' ').replace(/\s+/g, ' ').trim();
+      let defaultName = window.scannedRouteName ? window.scannedRouteName : "Mon Bloc";
       
-      if (!cleanTitle || cleanTitle === "Mini MoonBoard" || cleanTitle.includes("Analyse")) {
-          cleanTitle = "Mon Bloc";
-      }
-      
-      let routeName = prompt("Nom et cotation du bloc :", cleanTitle);
+      let routeName = prompt("Nom et cotation du bloc :", defaultName);
       if (!routeName || routeName.trim() === "") return;
 
       localRoutes[routeName] = route;
@@ -121,6 +116,7 @@
       initRouteSelector();
       document.getElementById('routeSelect').value = routeName;
       document.getElementById('pageTitle').innerText = routeName;
+      window.scannedRouteName = routeName; 
     }
 
     function clearSavedRoutes() {
@@ -130,6 +126,7 @@
         localRoutes = {};
         initRouteSelector();
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+        window.scannedRouteName = "";
       }
     }
 
@@ -142,8 +139,10 @@
         if (route.progression) route.progression.forEach(id => { holdStates[id] = 2; updateUI(id); });
         if (route.arrivee) route.arrivee.forEach(id => { holdStates[id] = 3; updateUI(id); });
         document.getElementById('pageTitle').innerText = routeName;
+        window.scannedRouteName = routeName;
       } else {
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+        window.scannedRouteName = "";
       }
       sendBLEFrame();
     }
@@ -177,11 +176,12 @@
     function clearBoard() {
       document.getElementById('routeSelect').value = ""; 
       document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+      window.scannedRouteName = "";
       Object.keys(holdStates).forEach(id => { if(holdStates[id] !== 0) { holdStates[id] = 0; updateUI(id); }});
       sendBLEFrame();
     }
 
-    // --- LE SCANNER ABSOLU (CARTOGRAPHIE PAR PIXELS) ---
+    // --- LE SCANNER GÉOMÉTRIQUE EXACT (V20) ---
     document.getElementById('fileInput').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if(!file) return;
@@ -193,7 +193,7 @@
         img.src = URL.createObjectURL(file);
         await new Promise(resolve => { img.onload = resolve; });
 
-        // 1. LECTURE DU TITRE (OCR)
+        // 1. LECTURE DU TITRE (OCR) AVEC NETTOYAGE EXTRÊME
         const headerCanvas = document.createElement('canvas');
         headerCanvas.width = img.width;
         headerCanvas.height = img.height * 0.22; 
@@ -202,121 +202,98 @@
         
         const { data } = await Tesseract.recognize(headerCanvas.toDataURL(), 'eng');
         let detectedName = "Bloc Scanné";
-        const lines = data.lines.map(l => l.text.trim().replace(/\n/g, ' '));
+        const lines = data.lines.map(l => l.text.trim());
         
         let setByIndex = lines.findIndex(l => l.toLowerCase().includes('set by'));
         if (setByIndex > 0) {
-          let rawTitle = lines[setByIndex - 1].replace(/[^A-Za-z0-9 \-+!]/g, '').trim();
-          let grade = "";
-          if (setByIndex + 1 < lines.length) {
-            let gradeMatch = lines[setByIndex + 1].match(/(V\d+|[4-9][A-C]\+?)/i);
-            if (gradeMatch) grade = gradeMatch[1];
-          }
-          detectedName = grade ? `${rawTitle} (${grade})` : rawTitle;
-        } else if (lines.length > 0) {
-           let possibleTitle = lines.find(l => l.length > 4 && !l.includes(':'));
-           if (possibleTitle) detectedName = possibleTitle.replace(/[^A-Za-z0-9 \-+!]/g, '').trim();
+          detectedName = lines[setByIndex - 1];
+        } else {
+           let validLine = lines.find(l => /[A-Za-z]/.test(l) && l.length > 3 && !l.includes('11:') && !l.includes('12:') && !l.includes('13:'));
+           if(validLine) detectedName = validLine;
         }
 
-        // Affiche proprement le titre trouvé
+        // LE SECRET : On force le retrait de tout ce qui peut casser la boîte de dialogue iOS !
+        detectedName = detectedName.replace(/[^a-zA-Z0-9 \-\+\(\)\.]/g, '').trim();
+        if(!detectedName) detectedName = "Mon Bloc";
+        
+        window.scannedRouteName = detectedName;
         document.getElementById('pageTitle').innerText = detectedName;
 
-        // 2. DÉTECTION DES PRISES (Le système de Votes)
+        // 2. DÉTECTION DES PRISES : GRILLE PROPORTIONNELLE
         const canvas = document.createElement('canvas');
         canvas.width = img.width; canvas.height = img.height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
         const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-        // Préparation du tableau des votes
-        let votes = {};
-        for(let c=0; c<11; c++) {
-            for(let r=1; r<=12; r++) {
-                votes[`${cols[c]}${r}`] = { g: 0, b: 0, r: 0 };
-            }
-        }
-
-        // Recherche du panneau jaune pour se repérer
-        let centerX = Math.floor(canvas.width / 2);
-        let yellowTop = -1, yellowBottom = -1;
+        // Détection du bord haut et bas du panneau jaune (en évitant le logo central)
+        let yTop = canvas.height, yBot = 0;
+        const scanCols = [0.10, 0.25, 0.75, 0.90]; // On scanne sur les côtés
         
-        for (let y = 0; y < canvas.height; y++) {
-            let i = (y * canvas.width + centerX) * 4;
-            // Est-ce du jaune ?
-            if (imgData[i] > 180 && imgData[i+1] > 180 && imgData[i+2] < 120) {
-                if (yellowTop === -1) yellowTop = y;
-                yellowBottom = y;
+        for (let scanX of scanCols) {
+            let px = Math.floor(canvas.width * scanX);
+            for(let y = 0; y < canvas.height; y++) {
+                let i = (y * canvas.width + px) * 4;
+                if(imgData[i] > 180 && imgData[i+1] > 180 && imgData[i+2] < 120) {
+                    if(y < yTop) yTop = y;
+                    if(y > yBot) yBot = y;
+                }
             }
         }
+        
+        if (yTop === canvas.height) { yTop = canvas.height * 0.3; yBot = canvas.height * 0.8; }
+        
+        let boardH = yBot - yTop;
+        let boardW = canvas.width;
+        
+        // Le ratio officiel Moonboard : 12 colonnes (en comptant les marges) et 15 lignes (avec marges)
+        let cellW = boardW / 12;
+        let cellH = boardH / 15;
 
-        if (yellowTop === -1) { 
-            yellowTop = canvas.height * 0.30; 
-            yellowBottom = canvas.height * 0.85; 
-        }
+        Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
+        let foundCount = 0;
 
-        let yellowHeight = yellowBottom - yellowTop;
+        // On parcourt chaque prise possible (A1 à K12)
+        for(let r = 0; r < 12; r++) { // r=0 correspond à la ligne 12
+            for(let c = 0; c < 11; c++) { // c=0 correspond à A
+                let holdId = cols[c] + (12 - r);
+                
+                // Le centre théorique parfait de la prise sur l'image
+                let centerX = Math.floor((c + 1) * cellW);
+                let centerY = Math.floor(yTop + (r + 2) * cellH);
 
-        // La vraie géométrie de l'application MoonBoard officielle
-        let colSpacing = canvas.width * 0.0815;  // Espacement entre chaque colonne
-        let colMarginLeft = canvas.width * 0.095; // Marge gauche de la lettre A
+                let green = 0, blue = 0, red = 0;
+                let boxSize = Math.floor(cellW * 0.4); // On vérifie une large zone autour du centre
 
-        let rowSpacing = yellowHeight * 0.0686;   // Espacement entre chaque ligne
-        let rowMarginTop = yellowHeight * 0.125;  // Marge haute de la ligne 12
+                for(let y = centerY - boxSize; y < centerY + boxSize; y += 2) {
+                    for(let x = centerX - boxSize; x < centerX + boxSize; x += 2) {
+                        if (x < 0 || x >= boardW || y < 0 || y >= canvas.height) continue;
+                        let i = (y * boardW + x) * 4;
+                        let pr = imgData[i], pg = imgData[i+1], pb = imgData[i+2];
 
-        // On scanne toute l'image de 2 pixels en 2 pixels pour aller très vite
-        for (let y = yellowTop; y < yellowBottom; y += 2) {
-            for (let x = 0; x < canvas.width; x += 2) {
-                let i = (y * canvas.width + x) * 4;
-                let pr = imgData[i], pg = imgData[i+1], pb = imgData[i+2];
-
-                // Filtres relatifs ultra-puissants : on s'assure que la couleur domine vraiment
-                // Vert: beaucoup de G, et G est largement supérieur à R et B
-                let isG = (pg > 140 && pg > pr * 1.3 && pg > pb * 1.3);
-                // Bleu: beaucoup de B, et B est largement supérieur à R et G
-                let isB = (pb > 150 && pb > pr * 1.5 && pb > pg * 1.1);
-                // Rouge: beaucoup de R, et R est largement supérieur à G et B
-                let isR = (pr > 150 && pr > pg * 1.5 && pr > pb * 1.5);
-
-                if (isG || isB || isR) {
-                    // Si on a trouvé une couleur, on calcule sur quelle case elle se trouve !
-                    let colIdx = Math.round((x - colMarginLeft) / colSpacing);
-                    let yRel = (y - yellowTop) / yellowHeight;
-                    let rowNumber = 12 - Math.round((yRel - rowMarginTop) / rowSpacing);
-
-                    // Si le pixel tombe bien dans la grille, on ajoute un vote
-                    if (colIdx >= 0 && colIdx <= 10 && rowNumber >= 1 && rowNumber <= 12) {
-                        let holdId = `${cols[colIdx]}${rowNumber}`;
-                        if (isG) votes[holdId].g++;
-                        if (isB) votes[holdId].b++;
-                        if (isR) votes[holdId].r++;
+                        // Filtres ultra stricts pour les ronds de couleur
+                        if (pg > 160 && pr < 100 && pb < 100) green++;
+                        else if (pb > 160 && pr < 120 && pg < 150) blue++;
+                        else if (pr > 180 && pg < 90 && pb < 90) red++;
                     }
+                }
+
+                let state = 0;
+                if (green > 10) state = 1; // Au moins 10 pixels verts purs détectés
+                else if (blue > 10) state = 2;
+                else if (red > 10) state = 3;
+
+                if (state > 0) {
+                    holdStates[holdId] = state;
+                    updateUI(holdId);
+                    foundCount++;
                 }
             }
         }
 
-        // On efface le panneau avant d'afficher le résultat
-        Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
-        let foundCount = 0;
-
-        // Dépouillement des votes !
-        Object.keys(votes).forEach(id => {
-            let v = votes[id];
-            let state = 0;
-            // Il faut au moins 15 pixels de la même couleur pour valider une prise
-            if (v.g > 15) state = 1;
-            else if (v.b > 15) state = 2;
-            else if (v.r > 15) state = 3;
-
-            if (state > 0) {
-                holdStates[id] = state;
-                updateUI(id);
-                foundCount++;
-            }
-        });
-
         if (foundCount > 0) {
             sendBLEFrame();
-            alert(`Titre lu : ${detectedName}\n${foundCount} prises trouvées !\n\nLe nom est prêt, tu n'as plus qu'à cliquer sur Enregistrer.`);
+            alert(`Titre lu : ${window.scannedRouteName}\n${foundCount} prises trouvées !\n\nClique sur "Enregistrer" pour valider.`);
         } else {
             alert("Aucune prise détectée. Vérifie l'image.");
         }
