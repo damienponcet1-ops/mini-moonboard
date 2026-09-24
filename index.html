@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Mini MoonBoard</title>
+
+  <!-- Métadonnées PWA pour iOS et Android -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#121212">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MoonBoard">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <style>
+    * { box-sizing: border-box; touch-action: manipulation; }
+    body {
+      margin: 0;
+      padding: 10px;
+      background-color: #121212;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 { font-size: 1.2rem; margin: 5px 0 10px 0; }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:active { background: #555; }
+    #btnConnect.connected { background: #008800; border-color: #00ff00; }
+
+    /* Conteneur principal avec image de fond */
+    .board-container {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      aspect-ratio: 11 / 12; /* Ratio Mini MoonBoard */
+      background: url('mini_moonboard_bg.jpg') no-repeat center/cover;
+      border: 2px solid #333;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    /* Grille 11x12 */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(11, 1fr);
+      grid-template-rows: repeat(12, 1fr);
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Prises cliquables */
+    .hold {
+      border-radius: 50%;
+      margin: 15%;
+      border: 1px dashed rgba(255, 255, 255, 0.25);
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    /* États de couleur (Vert, Bleu, Rouge, Jaune) */
+    .hold.state-1 { background-color: rgba(0, 255, 0, 0.7); border: 2px solid #ffffff; }
+    .hold.state-2 { background-color: rgba(0, 136, 255, 0.7); border: 2px solid #ffffff; }
+    .hold.state-3 { background-color: rgba(255, 0, 0, 0.7); border: 2px solid #ffffff; }
+    .hold.state-4 { background-color: rgba(255, 255, 0, 0.7); border: 2px solid #ffffff; }
+  </style>
+</head>
+<body>
+
+  <h1>Mini MoonBoard DIY</h1>
+
+  <div class="controls">
+    <button id="btnConnect" onclick="connectBLE()">Connexion BLE</button>
+    <button onclick="clearBoard()">Effacer</button>
+  </div>
+
+  <div class="board-container">
+    <div class="grid" id="boardGrid"></div>
+  </div>
+
+  <script>
+    const cols = ['A','B','C','D','E','F','G','H','I','J','K'];
+    const rows = 12;
+    let holdStates = {};
+
+    const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+    const RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+    let rxCharacteristic = null;
+
+    // Construction de la grille (de la ligne 12 en haut à la ligne 1 en bas)
+    const gridEl = document.getElementById('boardGrid');
+    for (let r = rows; r >= 1; r--) {
+      cols.forEach(c => {
+        const holdId = `${c}${r}`;
+        holdStates[holdId] = 0;
+
+        const div = document.createElement('div');
+        div.className = 'hold';
+        div.id = `hold-${holdId}`;
+        div.onclick = () => toggleHold(holdId);
+        gridEl.appendChild(div);
+      });
+    }
+
+    function toggleHold(holdId) {
+      holdStates[holdId] = (holdStates[holdId] + 1) % 5;
+      updateUI(holdId);
+      sendBLEFrame();
+    }
+
+    function updateUI(holdId) {
+      const el = document.getElementById(`hold-${holdId}`);
+      el.className = `hold state-${holdStates[holdId]}`;
+    }
+
+    function clearBoard() {
+      Object.keys(holdStates).forEach(id => {
+        holdStates[id] = 0;
+        updateUI(id);
+      });
+      sendBLEFrame();
+    }
+
+    async function connectBLE() {
+      try {
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [{ name: 'MoonBoard' }],
+          optionalServices: [SERVICE_UUID]
+        });
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService(SERVICE_UUID);
+        rxCharacteristic = await service.getCharacteristic(RX_UUID);
+        
+        const btn = document.getElementById('btnConnect');
+        btn.innerText = "Connecté";
+        btn.classList.add('connected');
+      } catch (err) {
+        alert("Erreur BLE : " + err);
+      }
+    }
+
+    function sendBLEFrame() {
+      if (!rxCharacteristic) return;
+
+      let parts = [];
+      Object.keys(holdStates).forEach(id => {
+        const state = holdStates[id];
+        if (state === 1) parts.push(`S${id}`);      // Vert (Start)
+        else if (state === 2) parts.push(`P${id}`); // Bleu (Hand)
+        else if (state === 3) parts.push(`F${id}`); // Rouge (Finish)
+        else if (state === 4) parts.push(`E${id}`); // Jaune (Foot)
+      });
+
+      const frame = `l#${parts.join(',') execution}#`;
+      const encoder = new TextEncoder();
+      rxCharacteristic.writeValue(encoder.encode(frame));
+    }
+
+    // Enregistrement du Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+</body>
+</html>
