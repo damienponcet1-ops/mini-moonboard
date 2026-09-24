@@ -25,7 +25,7 @@
       align-items: center;
     }
 
-    h1 { font-size: 1.2rem; margin: 5px 0 10px 0; text-align: center; color: #f39c12; }
+    h1 { font-size: 1.1rem; margin: 5px 0 10px 0; text-align: center; color: #f39c12; min-height: 25px;}
 
     .controls-row {
       display: flex;
@@ -120,6 +120,9 @@
     .hold.state-2 { border: 3px solid #0088ff; background-color: rgba(0, 136, 255, 0.3); box-shadow: 0 0 10px #0088ff; }
     .hold.state-3 { border: 3px solid #ff0000; background-color: rgba(255, 0, 0, 0.3); box-shadow: 0 0 10px #ff0000; }
   </style>
+  
+  <!-- Intégration de l'Intelligence Artificielle de lecture de texte (OCR) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
 
@@ -154,7 +157,7 @@
     const cols = ['A','B','C','D','E','F','G','H','I','J','K'];
     const rows = 12;
     let holdStates = {};
-    let scannedTitle = ""; // Stocke le titre du bloc scanné
+    let scannedTitle = ""; // Stockera le nom pré-écrit du bloc
 
     const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
     const RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
@@ -176,6 +179,7 @@
       });
     }
 
+    // --- ENREGISTREMENT AVEC PRÉ-REMPLISSAGE DU NOM ---
     function saveCurrentRoute() {
       let route = { depart: [], progression: [], arrivee: [] };
       let hasHolds = false;
@@ -189,10 +193,13 @@
         return;
       }
 
-      // Pré-remplissage automatique avec le nom scanné ou affiché
+      // Utilise le nom scanné, ou "Mon Bloc" par défaut
       let defaultName = scannedTitle || document.getElementById('pageTitle').innerText;
-      if (defaultName === "Mini MoonBoard") defaultName = "Mon Bloc";
+      if (defaultName.includes("Analyse") || defaultName === "Mini MoonBoard") {
+        defaultName = "Mon Bloc";
+      }
       
+      // La fenêtre s'ouvre avec le nom et la cote DÉJÀ ÉCRITS dedans
       let routeName = prompt("Nom et cotation du bloc :", defaultName);
       if (!routeName || routeName.trim() === "") return;
 
@@ -201,7 +208,6 @@
       initRouteSelector();
       document.getElementById('routeSelect').value = routeName;
       document.getElementById('pageTitle').innerText = routeName;
-      alert("Bloc '" + routeName + "' enregistré !");
     }
 
     function clearSavedRoutes() {
@@ -274,93 +280,106 @@
       sendBLEFrame();
     }
 
-    // --- ANALYSE CIBLÉE DES ÉTIQUETTES COLORÉES (A1, B2...) ---
-    document.getElementById('fileInput').addEventListener('change', function(e) {
+    // --- LE NOUVEAU SCANNER BASÉ UNIQUEMENT SUR LE TEXTE ---
+    document.getElementById('fileInput').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if(!file) return;
-      const img = new Image();
-      img.onload = function() { analyzeCapture(img); };
-      img.src = URL.createObjectURL(file);
-      e.target.value = ''; 
-    });
 
-    function analyzeCapture(img) {
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      document.getElementById('pageTitle').innerText = "⏳ Analyse du texte en cours...";
 
-      // Cadrage strict du panneau MoonBoard sur la capture officielle
-      const boardTop = canvas.height * 0.31;    
-      const boardHeight = canvas.height * 0.48; 
-      const boardLeft = canvas.width * 0.02;   
-      const boardWidth = canvas.width * 0.96;  
+      try {
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+        await new Promise(resolve => { img.onload = resolve; });
 
-      const cellW = boardWidth / 11;
-      const cellH = boardHeight / 12;
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width; canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-      Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
-      document.getElementById('routeSelect').value = ""; 
+        // Lecture intégrale du texte via Tesseract
+        const { data } = await Tesseract.recognize(img, 'eng');
 
-      let foundCount = 0;
-
-      for(let r = 0; r < 12; r++) {
-        for(let c = 0; c < 11; c++) {
-          const boardRow = 12 - r;
-          const boardCol = cols[c];
-          const holdId = `${boardCol}${boardRow}`;
-
-          let counts = { g: 0, b: 0, r: 0 };
-
-          // Analyse concentrée uniquement sur le cœur de la case (étiquette adresse)
-          const startX = Math.floor(boardLeft + c * cellW + cellW * 0.30);
-          const endX = Math.floor(boardLeft + (c + 1) * cellW - cellW * 0.30);
-          const startY = Math.floor(boardTop + r * cellH + cellH * 0.30);
-          const endY = Math.floor(boardTop + (r + 1) * cellH - cellH * 0.30);
-
-          for(let y = startY; y < endY; y += 2) {
-            for(let x = startX; x < endX; x += 2) {
-              const i = (y * canvas.width + x) * 4;
-              const red = imgData[i];
-              const green = imgData[i+1];
-              const blue = imgData[i+2];
-
-              // Détection stricte des couleurs de pastilles de l'application
-              // Vert Départ (0, 230, 60 environ)
-              if (green > 180 && red < 80 && blue < 100) counts.g++;
-              // Bleu Progression (0, 120, 255 environ)
-              else if (blue > 180 && green > 80 && green < 180 && red < 80) counts.b++;
-              // Rouge Arrivée (240, 30, 30 environ)
-              else if (red > 200 && green < 60 && blue < 60) counts.r++;
-            }
+        // 1. RECHERCHE DU NOM ET DE LA COTATION
+        let detectedName = "Bloc Scanné";
+        const lines = data.lines.map(l => l.text.trim());
+        let setByIndex = lines.findIndex(l => l.toLowerCase().includes('set by'));
+        
+        if (setByIndex > 0) {
+          // Le titre est généralement la ligne juste au-dessus de "Set by"
+          let rawTitle = lines[setByIndex - 1].replace(/[^A-Za-z0-9 \-+]/g, '').trim();
+          let grade = "";
+          // La cotation est dans la ligne juste en dessous
+          if (setByIndex + 1 < lines.length) {
+            let gradeMatch = lines[setByIndex + 1].match(/(V\d+|[4-9][A-C]\+?)/i);
+            if (gradeMatch) grade = gradeMatch[1];
           }
+          detectedName = grade ? `${rawTitle} (${grade})` : rawTitle;
+        }
 
-          let state = 0;
-          if (counts.g > 3) state = 1;
-          else if (counts.b > 3) state = 2;
-          else if (counts.r > 3) state = 3;
+        scannedTitle = detectedName;
+        document.getElementById('pageTitle').innerText = detectedName;
 
-          if (state > 0) {
-            holdStates[holdId] = state;
-            updateUI(holdId);
+        // On efface le panneau pour les nouvelles prises
+        Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
+        document.getElementById('routeSelect').value = ""; 
+        let foundCount = 0;
+
+        // 2. RECHERCHE DES ADRESSES DES PRISES ET DE LEUR COULEUR
+        data.words.forEach(word => {
+          let text = word.text.replace(/[^A-K0-9]/gi, '').toUpperCase();
+          
+          // Si le texte lu correspond EXACTEMENT à une adresse (ex: A5, C12)
+          if (/^[A-K](1[0-2]|[1-9])$/.test(text)) {
+            const box = word.bbox;
+            const margin = 6; 
+            
+            // On vérifie la couleur des pixels juste à côté du texte (sur l'étiquette)
+            const pts = [
+              {x: box.x0 - margin, y: (box.y0 + box.y1)/2},
+              {x: box.x1 + margin, y: (box.y0 + box.y1)/2},
+              {x: (box.x0 + box.x1)/2, y: box.y0 - margin},
+              {x: (box.x0 + box.x1)/2, y: box.y1 + margin}
+            ];
+            
+            let g=0, b=0, r=0;
+            pts.forEach(pt => {
+              let px = Math.floor(pt.x), py = Math.floor(pt.y);
+              if(px>=0 && px<canvas.width && py>=0 && py<canvas.height) {
+                let i = (py * canvas.width + px) * 4;
+                let pr = imgData[i], pg = imgData[i+1], pb = imgData[i+2];
+                // Vérification stricte des couleurs de l'étiquette
+                if (pg > 140 && pr < 100 && pb < 100) g++;
+                else if (pb > 140 && pr < 100) b++;
+                else if (pr > 150 && pg < 80 && pb < 80) r++;
+              }
+            });
+            
+            let state = 2; // Bleu (Progression) par défaut
+            if (g > b && g > r) state = 1; // Vert
+            else if (r > b && r > g) state = 3; // Rouge
+            
+            holdStates[text] = state; // On allume directement l'adresse !
+            updateUI(text);
             foundCount++;
           }
+        });
+
+        if (foundCount > 0) {
+          sendBLEFrame();
+        } else {
+          alert("L'analyse a terminé, mais aucune adresse (ex: A5, C12) n'a été trouvée sur l'image.");
         }
+
+      } catch (err) {
+        alert("Erreur lors de la lecture du texte : " + err);
+        document.getElementById('pageTitle').innerText = "Mini MoonBoard";
       }
 
-      // Proposer un titre par défaut propre
-      scannedTitle = "Bloc Scanné " + new Date().toLocaleTimeString().substring(0,5);
-      document.getElementById('pageTitle').innerText = scannedTitle;
-
-      if (foundCount > 0) {
-        sendBLEFrame();
-        alert(`${foundCount} prises détectées sur la capture !\n\nClique directement sur "💾 Enregistrer" pour l'ajouter à ta liste.`);
-      } else {
-        alert("Aucune étiquette de prise détectée. Assure-toi d'importer une capture complète de l'application officielle.");
-      }
-    }
+      e.target.value = '';
+    });
+    // -----------------------------------------------------------
 
     async function toggleBLE() {
       if (bleDevice && bleDevice.gatt.connected) {
