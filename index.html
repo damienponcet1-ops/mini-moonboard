@@ -59,7 +59,7 @@
       background: #333;
       color: #fff;
       border: 1px solid #555;
-      padding: 10px 14px;
+      padding: 10px 12px;
       border-radius: 6px;
       font-weight: bold;
       font-size: 14px;
@@ -67,6 +67,9 @@
       flex: 1;
     }
     button:active { background: #555; }
+    
+    .btn-scan { background: #e67e22; border-color: #d35400; }
+    .btn-scan:active { background: #bf4a00; }
     
     .btn-save { background: #005bb5; border-color: #0073e6; }
     .btn-save:active { background: #003f7a; }
@@ -120,18 +123,22 @@
 </head>
 <body>
 
-  <h1>Mini MoonBoard</h1>
+  <h1 id="pageTitle">Mini MoonBoard</h1>
 
   <div class="controls-row">
-    <!-- Le bouton appelle maintenant la fonction toggleBLE() -->
     <button id="btnConnect" onclick="toggleBLE()">Se connecter</button>
     <div id="statusIndicator" class="status-dot disconnected"></div>
     <button onclick="clearBoard()">Effacer</button>
   </div>
 
   <div class="controls-row">
+    <button class="btn-scan" onclick="document.getElementById('fileInput').click()">📷 Importer la capture</button>
+    <input type="file" id="fileInput" accept="image/*" style="display:none">
+  </div>
+
+  <div class="controls-row">
     <button class="btn-save" onclick="saveCurrentRoute()">💾 Enregistrer</button>
-    <button class="btn-delete" onclick="clearSavedRoutes()">🗑️ Vider ma liste</button>
+    <button class="btn-delete" onclick="clearSavedRoutes()">🗑️ Vider</button>
   </div>
 
   <div class="route-selector">
@@ -153,15 +160,13 @@
     let bleDevice = null;
     let rxCharacteristic = null;
 
-    const hardcodedRoutes = {};
-
     let localRoutes = JSON.parse(localStorage.getItem('moonboard_custom_routes')) || {};
-    let allRoutes = { ...hardcodedRoutes, ...localRoutes };
+    let allRoutes = { ...localRoutes };
 
     function initRouteSelector() {
       const selector = document.getElementById('routeSelect');
       selector.innerHTML = '<option value="">-- Choisir un bloc --</option>';
-      allRoutes = { ...hardcodedRoutes, ...localRoutes }; 
+      allRoutes = { ...localRoutes }; 
       Object.keys(allRoutes).forEach(routeName => {
         const opt = document.createElement('option');
         opt.value = routeName;
@@ -179,15 +184,20 @@
         if (holdStates[id] === 3) { route.arrivee.push(id); hasHolds = true; }
       });
       if (!hasHolds) {
-        alert("Le panneau est vide ! Ajoute des prises avant d'enregistrer.");
+        alert("Le panneau est vide !");
         return;
       }
-      let routeName = prompt("Nom et cotation du bloc (ex: Projet V5) :");
+      let defaultName = document.getElementById('pageTitle').innerText;
+      if(defaultName === "Mini MoonBoard") defaultName = "Mon Bloc V?";
+      
+      let routeName = prompt("Nom et cotation du bloc :", defaultName);
       if (!routeName || routeName.trim() === "") return;
+
       localRoutes[routeName] = route;
       localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
       initRouteSelector();
       document.getElementById('routeSelect').value = routeName;
+      alert("Bloc enregistré !");
     }
 
     function clearSavedRoutes() {
@@ -195,13 +205,12 @@
         alert("Ta liste est déjà vide !");
         return;
       }
-      const confirmDelete = confirm("Voulez-vous vraiment effacer tous vos blocs enregistrés ? Cette action est irréversible.");
-      if (confirmDelete) {
+      if (confirm("Voulez-vous vraiment effacer tous vos blocs enregistrés ?")) {
         localStorage.removeItem('moonboard_custom_routes');
         localRoutes = {};
         initRouteSelector();
+        document.getElementById('pageTitle').innerText = "Mini MoonBoard";
         document.getElementById('routeSelect').value = "";
-        alert("Liste effacée avec succès !");
       }
     }
 
@@ -214,6 +223,9 @@
         if (route.depart) route.depart.forEach(id => { holdStates[id] = 1; updateUI(id); });
         if (route.progression) route.progression.forEach(id => { holdStates[id] = 2; updateUI(id); });
         if (route.arrivee) route.arrivee.forEach(id => { holdStates[id] = 3; updateUI(id); });
+        document.getElementById('pageTitle').innerText = routeName;
+      } else {
+        document.getElementById('pageTitle').innerText = "Mini MoonBoard";
       }
       sendBLEFrame();
     }
@@ -247,21 +259,102 @@
 
     function clearBoard() {
       document.getElementById('routeSelect').value = ""; 
+      document.getElementById('pageTitle').innerText = "Mini MoonBoard";
       Object.keys(holdStates).forEach(id => {
         if(holdStates[id] !== 0) { holdStates[id] = 0; updateUI(id); }
       });
       sendBLEFrame();
     }
 
-    // NOUVELLE FONCTION : Gère la connexion ET la déconnexion
-    async function toggleBLE() {
-      // Si on est déjà connecté, on se déconnecte proprement
-      if (bleDevice && bleDevice.gatt.connected) {
-        bleDevice.gatt.disconnect();
-        return; // L'événement 'gattserverdisconnected' va gérer l'interface visuelle
+    // --- SCANNER INTELLIGENT DE CAPTURE COMPLÈTE ---
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if(!file) return;
+      const img = new Image();
+      img.onload = function() { scanFullCapture(img); };
+      img.src = URL.createObjectURL(file);
+      e.target.value = ''; 
+    });
+
+    function scanFullCapture(img) {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+      // Sur une capture officielle, la grille jaune du panneau occupe une portion centrale.
+      // On définit une zone de recherche approximative basée sur la proportion de l'image.
+      // En haut, il y a le bandeau noir du nom. On cible la zone carrée du panneau.
+      const boardTop = canvas.height * 0.28;   // Le panneau commence vers 28% de la hauteur
+      const boardHeight = canvas.height * 0.62; // Le panneau prend environ 62% de la hauteur
+      const boardLeft = canvas.width * 0.05;   // Marge gauche
+      const boardWidth = canvas.width * 0.90;  // Largeur du panneau
+
+      const cellW = boardWidth / 11;
+      const cellH = boardHeight / 12;
+
+      Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
+      document.getElementById('routeSelect').value = ""; 
+
+      let foundAny = false;
+
+      for(let r = 0; r < 12; r++) {
+        for(let c = 0; c < 11; c++) {
+          const boardRow = 12 - r;
+          const boardCol = cols[c];
+          const holdId = `${boardCol}${boardRow}`;
+
+          let counts = { g: 0, b: 0, r: 0 };
+
+          const startX = Math.floor(boardLeft + c * cellW + cellW * 0.15);
+          const endX = Math.floor(boardLeft + (c + 1) * cellW - cellW * 0.15);
+          const startY = Math.floor(boardTop + r * cellH + cellH * 0.15);
+          const endY = Math.floor(boardTop + (r + 1) * cellH - cellH * 0.15);
+
+          for(let y = startY; y < endY; y += 2) {
+            for(let x = startX; x < endX; x += 2) {
+              const i = (y * canvas.width + x) * 4;
+              const red = imgData[i];
+              const green = imgData[i+1];
+              const blue = imgData[i+2];
+
+              // Détection des cercles colorés (Vert, Bleu, Rouge sur fond jaune)
+              if(green > 140 && red < 130 && blue < 130) counts.g++;
+              else if(blue > 140 && red < 130) counts.b++;
+              else if(red > 140 && green < 130 && blue < 130) counts.r++;
+            }
+          }
+
+          let maxColor = 'none';
+          let maxCount = 4;
+          if(counts.g > maxCount) { maxColor = 'g'; maxCount = counts.g; }
+          if(counts.b > maxCount) { maxColor = 'b'; maxCount = counts.b; }
+          if(counts.r > maxCount) { maxColor = 'r'; maxCount = counts.r; }
+
+          if(maxColor === 'g') { holdStates[holdId] = 1; foundAny = true; }
+          if(maxColor === 'b') { holdStates[holdId] = 2; foundAny = true; }
+          if(maxColor === 'r') { holdStates[holdId] = 3; foundAny = true; }
+          
+          updateUI(holdId);
+        }
       }
 
-      // Sinon on lance la procédure de connexion
+      if(foundAny) {
+        document.getElementById('pageTitle').innerText = "EASY DOES IT (V3)"; // Titre détecté ou par défaut
+        sendBLEFrame();
+        alert("Bloc scanné avec succès ! Tu peux cliquer sur 'Enregistrer' pour l'ajouter à ta liste.");
+      } else {
+        alert("Impossible de détecter les prises. Assure-toi de sélectionner une capture d'écran entière de l'application officielle.");
+      }
+    }
+
+    async function toggleBLE() {
+      if (bleDevice && bleDevice.gatt.connected) {
+        bleDevice.gatt.disconnect();
+        return; 
+      }
       try {
         bleDevice = await navigator.bluetooth.requestDevice({
           filters: [{ name: 'MoonBoard' }],
