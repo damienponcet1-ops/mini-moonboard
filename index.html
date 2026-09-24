@@ -75,10 +75,11 @@
       overflow: hidden;
     }
 
+    /* Correction du calque : object-fit contain pour garder les proportions sans décalage */
     #overlayImage {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
-      object-fit: cover;
+      object-fit: contain; 
       pointer-events: none; 
       opacity: 0;
       transition: opacity 0.2s ease;
@@ -115,7 +116,7 @@
 </head>
 <body>
 
-  <div class="version-badge">V27</div>
+  <div class="version-badge">V28</div>
   <h1 id="pageTitle">Mini MoonBoard</h1>
 
   <div class="controls-row">
@@ -263,7 +264,6 @@
       document.getElementById('overlayImage').style.opacity = val;
     }
 
-    // --- CHARGEMENT DE LA CAPTURE POUR LA TRANSPARENCE ET LECTURE DU TITRE ---
     document.getElementById('fileInput').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if(!file) return;
@@ -342,7 +342,7 @@
 
     function onDisconnected() {
       rxCharacteristic = null;
-      document.getElementById('btnConnect').innerText = "Se connecter";
+      document.getElementById('btnConnect').innerText = "Se déconnecter";
       document.getElementById('statusIndicator').className = "status-dot disconnected";
     }
 
