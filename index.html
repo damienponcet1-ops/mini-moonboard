@@ -27,7 +27,6 @@
 
     h1 { font-size: 1.2rem; margin: 5px 0 15px 0; }
 
-    /* Barre de contrôle avec l'indicateur Bluetooth */
     .controls {
       display: flex;
       align-items: center;
@@ -47,7 +46,6 @@
     }
     button:active { background: #555; }
 
-    /* Pastille d'état Bluetooth */
     .status-dot {
       width: 14px;
       height: 14px;
@@ -57,30 +55,26 @@
     .status-dot.disconnected { background-color: #ff3b30; box-shadow: 0 0 8px rgba(255, 59, 48, 0.6); }
     .status-dot.connected { background-color: #34c759; box-shadow: 0 0 8px rgba(52, 199, 89, 0.8); }
 
-    /* Conteneur de l'image du panneau */
     .board-container {
       position: relative;
       width: 100%;
       max-width: 420px;
-      aspect-ratio: 11 / 12; /* Ratio strict du Mini MoonBoard */
+      aspect-ratio: 11 / 12;
       background: url('mini_moonboard_bg.jpg') no-repeat center/cover;
       border: 2px solid #444;
       border-radius: 8px;
     }
 
-    /* Grille 11x12 superposée */
     .grid {
       display: grid;
       grid-template-columns: repeat(11, 1fr);
       grid-template-rows: repeat(12, 1fr);
       width: 100%;
       height: 100%;
-      /* Marges intérieures pour compresser la grille et l'aligner sur ta photo */
-      /* Ajuste ces % si besoin : Haut, Droite, Bas, Gauche */
-      padding: 5% 4% 8% 4%; 
+      /* REGLAGE DU DECALAGE : Haut, Droite, Bas, Gauche */
+      padding: 7% 3% 6% 5%; 
     }
 
-    /* Style des cercles de sélection avec texte A1, B2... */
     .hold {
       width: 85%;
       height: 85%;
@@ -93,24 +87,18 @@
       align-items: center;
       font-size: 10px;
       font-weight: bold;
-      color: rgba(255, 255, 255, 0.7); /* Texte blanc semi-transparent */
+      color: rgba(255, 255, 255, 0.7);
+      
+      /* LIGNE DE CALIBRAGE A SUPPRIMER QUAND C'EST ALIGNÉ */
+      border: 1px solid red;
     }
 
-    /* État 0 : Éteint */
-    .hold.state-0 { border: 1px dashed rgba(255, 255, 255, 0.2); background-color: transparent; }
-
-    /* État 1 : Départ (Vert) */
+    .hold.state-0 { background-color: transparent; }
+    
     .hold.state-1 { border: 3px solid #00ff00; background-color: rgba(0, 255, 0, 0.3); box-shadow: 0 0 10px #00ff00; color: #fff; }
-    
-    /* État 2 : Progression (Bleu) */
     .hold.state-2 { border: 3px solid #0088ff; background-color: rgba(0, 136, 255, 0.3); box-shadow: 0 0 10px #0088ff; color: #fff; }
-    
-    /* État 3 : Arrivée (Rouge) */
     .hold.state-3 { border: 3px solid #ff0000; background-color: rgba(255, 0, 0, 0.3); box-shadow: 0 0 10px #ff0000; color: #fff; }
-    
-    /* État 4 : Pied (Jaune) */
     .hold.state-4 { border: 3px solid #ffff00; background-color: rgba(255, 255, 0, 0.3); box-shadow: 0 0 10px #ffff00; color: #fff; }
-
   </style>
 </head>
 <body>
@@ -137,18 +125,16 @@
     let bleDevice = null;
     let rxCharacteristic = null;
 
-    // Construction de la grille tactile (Ligne 12 en haut -> Ligne 1 en bas)
     const gridEl = document.getElementById('boardGrid');
     for (let r = rows; r >= 1; r--) {
       cols.forEach(c => {
         const holdId = `${c}${r}`;
-        holdStates[holdId] = 0; // 0 = éteint
+        holdStates[holdId] = 0;
 
         const div = document.createElement('div');
         div.className = 'hold state-0';
         div.id = `hold-${holdId}`;
         
-        // Affiche le nom de la prise (ex: A1) dans le cercle
         div.innerText = holdId; 
         
         div.onclick = () => toggleHold(holdId);
@@ -156,14 +142,12 @@
       });
     }
 
-    // Gestion des couleurs : Vert -> Bleu -> Rouge -> Jaune -> Éteint
     function toggleHold(holdId) {
       holdStates[holdId] = (holdStates[holdId] + 1) % 5;
       updateUI(holdId);
       sendBLEFrame();
     }
 
-    // Mise à jour visuelle du cercle
     function updateUI(holdId) {
       const el = document.getElementById(`hold-${holdId}`);
       el.className = `hold state-${holdStates[holdId]}`;
@@ -179,7 +163,6 @@
       sendBLEFrame();
     }
 
-    // Connexion Bluetooth
     async function connectBLE() {
       try {
         bleDevice = await navigator.bluetooth.requestDevice({
@@ -193,7 +176,6 @@
         const service = await server.getPrimaryService(SERVICE_UUID);
         rxCharacteristic = await service.getCharacteristic(RX_UUID);
         
-        // Mise à jour de l'interface (Connecté)
         document.getElementById('btnConnect').innerText = "Connecté";
         document.getElementById('statusIndicator').className = "status-dot connected";
 
@@ -203,24 +185,22 @@
       }
     }
 
-    // Gestion de la déconnexion
     function onDisconnected() {
       rxCharacteristic = null;
       document.getElementById('btnConnect').innerText = "Se connecter";
       document.getElementById('statusIndicator').className = "status-dot disconnected";
     }
 
-    // Envoi des données à l'ESP32
     function sendBLEFrame() {
       if (!rxCharacteristic) return;
 
       let parts = [];
       Object.keys(holdStates).forEach(id => {
         const state = holdStates[id];
-        if (state === 1) parts.push(`S${id}`);      // Départ
-        else if (state === 2) parts.push(`P${id}`); // Progression
-        else if (state === 3) parts.push(`F${id}`); // Arrivée
-        else if (state === 4) parts.push(`E${id}`); // Pied
+        if (state === 1) parts.push(`S${id}`);
+        else if (state === 2) parts.push(`P${id}`);
+        else if (state === 3) parts.push(`F${id}`);
+        else if (state === 4) parts.push(`E${id}`);
       });
 
       const frame = `l#${parts.join(',')}#`;
@@ -228,7 +208,6 @@
       rxCharacteristic.writeValue(encoder.encode(frame));
     }
 
-    // Lancement du Service Worker pour le mode hors-ligne
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js');
     }
