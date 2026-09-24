@@ -12,6 +12,9 @@
   <meta name="apple-mobile-web-app-title" content="MoonBoard">
   <link rel="apple-touch-icon" href="icon-192.png">
 
+  <!-- Script Tesseract ramené pour l'OCR, mais utilisé en asynchrone pour ne pas planter l'appli -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
   <style>
     * { box-sizing: border-box; touch-action: manipulation; }
     body { margin: 0; padding: 10px; background-color: #121212; color: #ffffff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; position: relative; }
@@ -28,9 +31,13 @@
       border: 1px solid #444;
     }
 
-    h1 { font-size: 1.1rem; margin: 5px 0 10px 0; text-align: center; color: #f39c12; min-height: 25px;}
+    h1 { font-size: 1.1rem; margin: 5px 0 10px 0; text-align: center; color: #f39c12; min-height: 25px; transition: color 0.3s; }
 
     .controls-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; width: 100%; max-width: 420px; }
+    
+    /* Ligne du haut compacte */
+    .top-row { gap: 6px; }
+    .top-row button { padding: 10px 4px; font-size: 13px; flex: 1; }
     
     .overlay-controls {
       display: none;
@@ -45,96 +52,43 @@
       border: 1px solid #444;
     }
 
-    .opacity-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      font-size: 0.85rem;
-      color: #aaa;
-    }
+    .opacity-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.85rem; color: #aaa; }
+    .opacity-row input[type="range"] { flex: 1; }
     
-    .opacity-row input { flex: 1; }
-    .btn-toggle { background: #555; color: white; border: 1px solid #777; font-size: 0.8rem; padding: 6px 10px; border-radius: 4px; cursor: pointer; white-space: nowrap; }
+    .btn-toggle { background: #555; color: white; border: 1px solid #777; font-size: 0.8rem; padding: 6px 8px; border-radius: 4px; cursor: pointer; white-space: nowrap; }
     .btn-toggle:active { background: #777; }
 
-    .calibration-panel {
-      display: none;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid #444;
-    }
+    .calibration-panel { display: none; flex-direction: column; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #444; }
 
-    /* Nouvelle ligne pour la liste déroulante et les flèches */
-    .route-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; max-width: 420px; margin-bottom: 10px; }
-    
-    .btn-nav { background: #444; color: #fff; border: 1px solid #666; font-size: 18px; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+    /* Ligne de Navigation et Coche */
+    .route-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; max-width: 420px; margin-bottom: 10px; }
+    .btn-nav { background: #444; color: #fff; border: 1px solid #666; font-size: 16px; padding: 10px 14px; border-radius: 6px; cursor: pointer; flex-shrink: 0; }
     .btn-nav:active { background: #666; }
-
-    select { flex: 1; padding: 10px; background-color: #222; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 16px; font-weight: bold; appearance: none; text-align: center; }
+    select { flex: 1; padding: 10px; background-color: #222; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 15px; font-weight: bold; appearance: none; text-align: center; min-width: 0; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
     
-    /* Bouton pour marquer un bloc comme réalisé */
-    .status-row { display: none; align-items: center; justify-content: center; width: 100%; max-width: 420px; margin-bottom: 15px; }
-    .checkbox-label { background: #1e1e1e; border: 1px solid #444; padding: 8px 15px; border-radius: 20px; font-size: 14px; font-weight: bold; color: #ccc; display: flex; align-items: center; gap: 8px; cursor: pointer; }
-    .checkbox-label input { width: 18px; height: 18px; accent-color: #34c759; }
+    .chk-completed { width: 26px; height: 26px; accent-color: #34c759; margin-left: 4px; cursor: pointer; flex-shrink: 0; visibility: hidden; }
 
-    button { background: #333; color: #fff; border: 1px solid #555; padding: 10px 12px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; flex: 1; }
+    button { background: #333; color: #fff; border: 1px solid #555; padding: 10px 12px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; }
     button:active { background: #555; }
     
     .btn-scan { background: #e67e22; border-color: #d35400; }
     .btn-scan:active { background: #bf4a00; }
-    .btn-save { background: #005bb5; border-color: #0073e6; }
+    .btn-save { background: #005bb5; border-color: #0073e6; flex: 2;}
     .btn-save:active { background: #003f7a; }
-    .btn-delete { background: #d9534f; border-color: #d43f3a; }
+    .btn-delete { background: #d9534f; border-color: #d43f3a; flex: 1;}
     .btn-delete:active { background: #c9302c; }
 
     .status-dot { width: 14px; height: 14px; border-radius: 50%; transition: background-color 0.3s, box-shadow 0.3s; flex-shrink: 0; }
     .status-dot.disconnected { background-color: #ff3b30; box-shadow: 0 0 8px rgba(255, 59, 48, 0.6); }
     .status-dot.connected { background-color: #34c759; box-shadow: 0 0 8px rgba(52, 199, 89, 0.8); }
 
-    .board-container {
-      position: relative;
-      width: 100%;
-      max-width: 420px;
-      aspect-ratio: 11 / 12;
-      background: url('mini_moonboard_bg.jpg') no-repeat center/cover;
-      border: 2px solid #444;
-      border-radius: 8px;
-      overflow: hidden;
-    }
+    .board-container { position: relative; width: 100%; max-width: 420px; aspect-ratio: 11 / 12; background: url('mini_moonboard_bg.jpg') no-repeat center/cover; border: 2px solid #444; border-radius: 8px; overflow: hidden; }
 
-    #overlayImage {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      object-fit: fill; 
-      pointer-events: none; 
-      opacity: 0.5;
-      z-index: 1;
-      transform-origin: center center;
-    }
+    #overlayImage { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; opacity: 0.5; z-index: 1; transform-origin: center center; }
 
-    .grid {
-      position: relative;
-      z-index: 2; 
-      display: grid;
-      grid-template-columns: repeat(11, 1fr);
-      grid-template-rows: repeat(12, 1fr);
-      width: 100%;
-      height: 100%;
-      padding: 7% 1% 6% 7%; 
-    }
+    .grid { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(11, 1fr); grid-template-rows: repeat(12, 1fr); width: 100%; height: 100%; padding: 7% 1% 6% 7%; }
 
-    .hold {
-      width: 85%;
-      height: 85%;
-      margin: 7.5%;
-      border-radius: 50%;
-      transition: all 0.15s ease-out;
-      cursor: pointer;
-    }
-
+    .hold { width: 85%; height: 85%; margin: 7.5%; border-radius: 50%; transition: all 0.15s ease-out; cursor: pointer; }
     .hold.state-0 { background-color: transparent; }
     .hold.state-1 { border: 3px solid #00ff00; background-color: rgba(0, 255, 0, 0.4); box-shadow: 0 0 10px #00ff00; }
     .hold.state-2 { border: 3px solid #0088ff; background-color: rgba(0, 136, 255, 0.4); box-shadow: 0 0 10px #0088ff; }
@@ -143,20 +97,33 @@
 </head>
 <body>
 
-  <div class="version-badge">V36</div>
+  <div class="version-badge">V37</div>
   <h1 id="pageTitle">Mini MoonBoard</h1>
 
-  <div class="controls-row">
+  <!-- 1ère Ligne 100% repensée (Bluetooth + Effacer + Charger) -->
+  <div class="controls-row top-row">
     <button id="btnConnect" onclick="toggleBLE()">Se connecter</button>
     <div id="statusIndicator" class="status-dot disconnected"></div>
     <button onclick="clearBoard()">Effacer</button>
-  </div>
-
-  <div class="controls-row">
-    <button class="btn-scan" onclick="document.getElementById('fileInput').click()">📷 Charger la capture</button>
+    <button class="btn-scan" onclick="document.getElementById('fileInput').click()">📷 Charger</button>
     <input type="file" id="fileInput" accept="image/*" style="display:none">
   </div>
 
+  <!-- Ligne d'enregistrement -->
+  <div class="controls-row">
+    <button class="btn-save" onclick="saveCurrentRoute()">💾 Enregistrer</button>
+    <button class="btn-delete" onclick="clearSavedRoutes()">🗑️ Vider</button>
+  </div>
+
+  <!-- Ligne de Navigation et Coche -->
+  <div class="route-nav-row">
+    <button class="btn-nav" onclick="prevRoute()">◄</button>
+    <select id="routeSelect" onchange="loadSelectedRoute()"></select>
+    <button class="btn-nav" onclick="nextRoute()">►</button>
+    <input type="checkbox" id="chkCompleted" class="chk-completed" onchange="toggleCompleted()" title="Marquer comme réalisé">
+  </div>
+
+  <!-- Barre de calque et Calibration -->
   <div class="overlay-controls" id="overlayControls">
     <div class="opacity-row">
       <label>Opacité :</label>
@@ -178,37 +145,17 @@
     </div>
   </div>
 
-  <div class="controls-row">
-    <button class="btn-save" onclick="saveCurrentRoute()">💾 Enregistrer</button>
-    <button class="btn-delete" onclick="clearSavedRoutes()">🗑️ Vider</button>
-  </div>
-
-  <!-- Ligne de Navigation des Blocs -->
-  <div class="route-nav-row">
-    <button class="btn-nav" onclick="prevRoute()">◄</button>
-    <select id="routeSelect" onchange="loadSelectedRoute()"></select>
-    <button class="btn-nav" onclick="nextRoute()">►</button>
-  </div>
-
-  <!-- Ligne de Statut Réalisé -->
-  <div class="status-row" id="statusRow">
-    <label class="checkbox-label">
-      <input type="checkbox" id="chkCompleted" onchange="toggleCompleted()"> 
-      ✅ Bloc réalisé
-    </label>
-  </div>
-
   <div class="board-container">
     <img id="overlayImage" alt="Capture superposée" style="display:none;">
     <div class="grid" id="boardGrid"></div>
   </div>
 
   <script>
-    // === INITIALISATION ===
     const cols = ['A','B','C','D','E','F','G','H','I','J','K'];
     const rows = 12;
     let holdStates = {};
     let isOverlayVisible = true;
+    window.scannedRouteName = "";
 
     const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
     const RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
@@ -223,24 +170,21 @@
     document.getElementById('scaleYRange').value = savedScaleY;
     document.getElementById('offsetYRange').value = savedOffsetY;
 
-    // === GESTION DE LA LISTE ET SAUVEGARDE ===
     function initRouteSelector() {
       const selector = document.getElementById('routeSelect');
-      const currentVal = selector.value; // Mémorise la sélection actuelle
+      const currentVal = selector.value; 
       
       selector.innerHTML = '<option value="">-- Choisir un bloc --</option>';
       Object.keys(localRoutes).forEach(routeName => {
         const opt = document.createElement('option');
         opt.value = routeName;
-        // Ajoute la coche dans le nom si le bloc est réalisé
         const prefix = localRoutes[routeName].completed ? "✅ " : "";
         opt.innerText = prefix + routeName;
         selector.appendChild(opt);
       });
       
-      if (currentVal && localRoutes[currentVal]) {
-        selector.value = currentVal;
-      }
+      if (currentVal && localRoutes[currentVal]) selector.value = currentVal;
+      updateCheckboxState();
     }
 
     function saveCurrentRoute() {
@@ -254,19 +198,17 @@
       
       if (!hasHolds) { alert("Le panneau est vide !"); return; }
 
-      let routeName = prompt("Nom et cotation du bloc :", "Mon Bloc (6A+)");
+      let defaultName = window.scannedRouteName ? window.scannedRouteName : "Mon Bloc";
+      let routeName = prompt("Nom et cotation du bloc :", defaultName);
       if (!routeName || routeName.trim() === "") return;
 
-      // Conserve le statut réalisé s'il existait déjà
-      if (localRoutes[routeName]) {
-          route.completed = localRoutes[routeName].completed;
-      }
+      if (localRoutes[routeName]) route.completed = localRoutes[routeName].completed;
 
       localRoutes[routeName] = route;
       localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
       initRouteSelector();
       document.getElementById('routeSelect').value = routeName;
-      loadSelectedRoute(); // Recharge pour afficher la case "réalisé"
+      loadSelectedRoute();
     }
 
     function clearSavedRoutes() {
@@ -276,7 +218,6 @@
         localRoutes = {};
         initRouteSelector();
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
-        document.getElementById('statusRow').style.display = "none";
       }
     }
 
@@ -294,27 +235,20 @@
         if (route.arrivee) route.arrivee.forEach(id => { holdStates[id] = 3; updateUI(id); });
         
         document.getElementById('pageTitle').innerText = routeName;
-        
-        // Afficher et mettre à jour la case à cocher
-        document.getElementById('statusRow').style.display = "flex";
-        document.getElementById('chkCompleted').checked = !!route.completed;
       } else {
-        document.getElementById('pageTitle').innerText = "Mini MoonBoard";
-        document.getElementById('statusRow').style.display = "none";
+        document.getElementById('pageTitle').innerText = window.scannedRouteName || "Mini MoonBoard";
       }
+      updateCheckboxState();
       sendBLEFrame();
     }
 
-    // === NAVIGATION RAPIDE (FLECHES GAUCHE/DROITE) ===
     function prevRoute() {
       const keys = Object.keys(localRoutes);
       if (keys.length === 0) return;
       const selector = document.getElementById('routeSelect');
       let idx = keys.indexOf(selector.value);
-      
-      if (idx <= 0) idx = keys.length - 1; // Boucle à la fin
+      if (idx <= 0) idx = keys.length - 1; 
       else idx--;
-      
       selector.value = keys[idx];
       loadSelectedRoute();
     }
@@ -324,25 +258,33 @@
       if (keys.length === 0) return;
       const selector = document.getElementById('routeSelect');
       let idx = keys.indexOf(selector.value);
-      
-      if (idx === -1 || idx === keys.length - 1) idx = 0; // Boucle au début
+      if (idx === -1 || idx === keys.length - 1) idx = 0; 
       else idx++;
-      
       selector.value = keys[idx];
       loadSelectedRoute();
     }
 
-    // === GESTION DU STATUT "RÉALISÉ" ===
     function toggleCompleted() {
       const routeName = document.getElementById('routeSelect').value;
       if (routeName && localRoutes[routeName]) {
         localRoutes[routeName].completed = document.getElementById('chkCompleted').checked;
         localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
-        initRouteSelector(); // Met à jour le menu déroulant instantanément
+        initRouteSelector(); 
       }
     }
 
-    // === CRÉATION DE LA GRILLE ===
+    function updateCheckboxState() {
+      const routeName = document.getElementById('routeSelect').value;
+      const chk = document.getElementById('chkCompleted');
+      if (routeName && localRoutes[routeName]) {
+        chk.style.visibility = "visible";
+        chk.checked = !!localRoutes[routeName].completed;
+      } else {
+        chk.style.visibility = "hidden";
+        chk.checked = false;
+      }
+    }
+
     const gridEl = document.getElementById('boardGrid');
     for (let r = rows; r >= 1; r--) {
       cols.forEach(c => {
@@ -361,7 +303,7 @@
       holdStates[holdId] = (holdStates[holdId] + 1) % 4;
       updateUI(holdId);
       document.getElementById('routeSelect').value = ""; 
-      document.getElementById('statusRow').style.display = "none"; // Cache la coche si on édite
+      updateCheckboxState();
       sendBLEFrame();
     }
 
@@ -373,15 +315,13 @@
     function clearBoard() {
       document.getElementById('routeSelect').value = ""; 
       document.getElementById('pageTitle').innerText = "Mini MoonBoard";
-      document.getElementById('statusRow').style.display = "none";
+      window.scannedRouteName = "";
+      updateCheckboxState();
       Object.keys(holdStates).forEach(id => { if(holdStates[id] !== 0) { holdStates[id] = 0; updateUI(id); }});
       sendBLEFrame();
     }
 
-    // === GESTION DU CALQUE ET DE LA CALIBRATION ===
-    function changeOpacity(val) {
-      document.getElementById('overlayImage').style.opacity = val;
-    }
+    function changeOpacity(val) { document.getElementById('overlayImage').style.opacity = val; }
 
     function toggleOverlay() {
       const overlay = document.getElementById('overlayImage');
@@ -404,10 +344,8 @@
     function updateCalibration() {
       savedScaleY = document.getElementById('scaleYRange').value;
       savedOffsetY = document.getElementById('offsetYRange').value;
-      
       localStorage.setItem('mb_calib_scaleY', savedScaleY);
       localStorage.setItem('mb_calib_offsetY', savedOffsetY);
-      
       applyCalibration();
     }
 
@@ -416,11 +354,15 @@
       overlay.style.transform = `translateY(${savedOffsetY}%) scaleY(${savedScaleY})`;
     }
 
-    // === DECOUPAGE AUTOMATIQUE DE LA CAPTURE ===
+    // === DECOUPAGE DE L'IMAGE + LECTURE OCR ASYNCHRONE ===
     document.getElementById('fileInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if(!file) return;
 
+      const titleEl = document.getElementById('pageTitle');
+      titleEl.innerText = "⏳ Découpage de l'image...";
+      titleEl.style.color = "#f39c12";
+      
       const imageUrl = URL.createObjectURL(file);
       const img = new Image();
       
@@ -432,22 +374,18 @@
         ctx.drawImage(img, 0, 0);
         const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-        let topY = -1;
-        let botY = -1;
-        
+        let topY = -1, botY = -1;
         let scanX = Math.floor(canvas.width * 0.05); 
         for (let y = 0; y < canvas.height; y++) {
            let i = (y * canvas.width + scanX) * 4;
-           let r = imgData[i], g = imgData[i+1], b = imgData[i+2];
-           if (r > 150 && g > 150 && b < 100) {
+           if (imgData[i] > 150 && imgData[i+1] > 150 && imgData[i+2] < 100) {
                if (topY === -1) topY = y;
                botY = y;
            }
         }
         
         if (topY === -1 || (botY - topY) < (canvas.height * 0.3)) { 
-            topY = canvas.height * 0.25; 
-            botY = canvas.height * 0.85; 
+            topY = canvas.height * 0.25; botY = canvas.height * 0.85; 
         }
         
         const cropCanvas = document.createElement('canvas');
@@ -465,15 +403,57 @@
         document.getElementById('btnToggleOverlay').innerText = "Masquer";
         document.getElementById('opacityRange').value = "0.5";
         document.getElementById('overlayControls').style.display = "flex";
-
         applyCalibration(); 
+
+        // Lancement de l'IA de lecture en tâche de fond pour ne pas geler les boutons
+        if (typeof Tesseract !== 'undefined') {
+            titleEl.innerText = "⏳ Lecture du titre...";
+            setTimeout(async () => {
+                try {
+                    const headerCanvas = document.createElement('canvas');
+                    headerCanvas.width = img.width;
+                    headerCanvas.height = img.height * 0.25; 
+                    const hCtx = headerCanvas.getContext('2d');
+                    hCtx.drawImage(img, 0, 0);
+                    
+                    const { data } = await Tesseract.recognize(headerCanvas.toDataURL(), 'eng');
+                    let detectedName = "";
+                    let detectedGrade = "";
+                    
+                    const lines = data.lines.map(l => l.text.trim());
+                    let setByIndex = lines.findIndex(l => l.toLowerCase().includes('set by'));
+                    
+                    if (setByIndex > 0) detectedName = lines[setByIndex - 1];
+                    else {
+                       let validLine = lines.find(l => /[A-Za-z]/.test(l) && l.length > 3 && !l.includes(':'));
+                       if(validLine) detectedName = validLine;
+                    }
+
+                    let gradeLine = lines.find(l => l.toLowerCase().includes('user') || l.toLowerCase().includes('setter'));
+                    if (gradeLine) {
+                        let gradeMatch = gradeLine.match(/([4-9][A-C]\+?|V\d+)/i);
+                        if (gradeMatch) detectedGrade = gradeMatch[1].toUpperCase();
+                    }
+
+                    detectedName = detectedName.replace(/[^a-zA-Z0-9 \-\+\(\)\.]/g, '').replace(/\s+/g, ' ').trim();
+                    if(detectedName.length < 2) detectedName = "Nouveau Bloc";
+                    if(detectedGrade && !detectedName.includes(detectedGrade)) detectedName = `${detectedName} (${detectedGrade})`;
+
+                    window.scannedRouteName = detectedName;
+                    titleEl.innerText = detectedName;
+                } catch (err) {
+                    titleEl.innerText = "Mini MoonBoard";
+                }
+            }, 50); // Pause pour laisser l'interface respirer
+        } else {
+            titleEl.innerText = "Mini MoonBoard";
+        }
       };
       
       img.src = imageUrl;
       e.target.value = '';
     });
 
-    // === GESTION DU BLUETOOTH ===
     async function toggleBLE() {
       if (bleDevice && bleDevice.gatt.connected) {
         bleDevice.gatt.disconnect();
