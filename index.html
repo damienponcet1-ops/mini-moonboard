@@ -27,7 +27,6 @@
 
     h1 { font-size: 1.2rem; margin: 5px 0 10px 0; }
 
-    /* Organisation des boutons sur 2 lignes pour mobile */
     .controls-row {
       display: flex;
       align-items: center;
@@ -65,12 +64,15 @@
       font-weight: bold;
       font-size: 14px;
       cursor: pointer;
-      flex: 1; /* Les boutons prennent toute la largeur dispo */
+      flex: 1;
     }
     button:active { background: #555; }
     
     .btn-save { background: #005bb5; border-color: #0073e6; }
     .btn-save:active { background: #003f7a; }
+    
+    .btn-delete { background: #d9534f; border-color: #d43f3a; }
+    .btn-delete:active { background: #c9302c; }
 
     .status-dot {
       width: 14px;
@@ -114,7 +116,6 @@
     .hold.state-1 { border: 3px solid #00ff00; background-color: rgba(0, 255, 0, 0.3); box-shadow: 0 0 10px #00ff00; }
     .hold.state-2 { border: 3px solid #0088ff; background-color: rgba(0, 136, 255, 0.3); box-shadow: 0 0 10px #0088ff; }
     .hold.state-3 { border: 3px solid #ff0000; background-color: rgba(255, 0, 0, 0.3); box-shadow: 0 0 10px #ff0000; }
-    .hold.state-4 { border: 3px solid #ffff00; background-color: rgba(255, 255, 0, 0.3); box-shadow: 0 0 10px #ffff00; }
   </style>
 </head>
 <body>
@@ -128,7 +129,8 @@
   </div>
 
   <div class="controls-row">
-    <button class="btn-save" onclick="saveCurrentRoute()">💾 Enregistrer ce bloc</button>
+    <button class="btn-save" onclick="saveCurrentRoute()">💾 Enregistrer</button>
+    <button class="btn-delete" onclick="clearSavedRoutes()">🗑️ Vider ma liste</button>
   </div>
 
   <div class="route-selector">
@@ -151,10 +153,8 @@
     let bleDevice = null;
     let rxCharacteristic = null;
 
-    // Blocs "en dur" (depuis GitHub)
-    const hardcodedRoutes = {
-      "Échauffement 1 (V3)": { depart: ["F5", "E5"], progression: ["E6", "D8", "E10"], arrivee: ["F12"], pied: [] }
-    };
+    // Blocs "en dur" optionnels (tu peux les effacer si tu n'en veux plus)
+    const hardcodedRoutes = {};
 
     // Chargement des blocs depuis la mémoire du téléphone
     let localRoutes = JSON.parse(localStorage.getItem('moonboard_custom_routes')) || {};
@@ -164,7 +164,7 @@
       const selector = document.getElementById('routeSelect');
       selector.innerHTML = '<option value="">-- Choisir un bloc --</option>';
       
-      allRoutes = { ...hardcodedRoutes, ...localRoutes }; // On fusionne les deux listes
+      allRoutes = { ...hardcodedRoutes, ...localRoutes }; 
       
       Object.keys(allRoutes).forEach(routeName => {
         const opt = document.createElement('option');
@@ -175,15 +175,13 @@
     }
 
     function saveCurrentRoute() {
-      let route = { depart: [], progression: [], arrivee: [], pied: [] };
+      let route = { depart: [], progression: [], arrivee: [] };
       let hasHolds = false;
 
-      // On scanne la grille pour récupérer les prises allumées
       Object.keys(holdStates).forEach(id => {
         if (holdStates[id] === 1) { route.depart.push(id); hasHolds = true; }
         if (holdStates[id] === 2) { route.progression.push(id); hasHolds = true; }
         if (holdStates[id] === 3) { route.arrivee.push(id); hasHolds = true; }
-        if (holdStates[id] === 4) { route.pied.push(id); hasHolds = true; }
       });
 
       if (!hasHolds) {
@@ -191,18 +189,32 @@
         return;
       }
 
-      // On demande le nom à l'utilisateur
       let routeName = prompt("Nom et cotation du bloc (ex: Projet V5) :");
       if (!routeName || routeName.trim() === "") return;
 
-      // On sauvegarde dans la mémoire locale
       localRoutes[routeName] = route;
       localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
       
-      // On met à jour l'interface
       initRouteSelector();
       document.getElementById('routeSelect').value = routeName;
-      alert("Bloc '" + routeName + "' enregistré !");
+    }
+
+    // Nouvelle fonction pour effacer la liste enregistrée
+    function clearSavedRoutes() {
+      if (Object.keys(localRoutes).length === 0) {
+        alert("Ta liste est déjà vide !");
+        return;
+      }
+      
+      const confirmDelete = confirm("Voulez-vous vraiment effacer tous vos blocs enregistrés ? Cette action est irréversible.");
+      
+      if (confirmDelete) {
+        localStorage.removeItem('moonboard_custom_routes');
+        localRoutes = {};
+        initRouteSelector();
+        document.getElementById('routeSelect').value = "";
+        alert("Liste effacée avec succès !");
+      }
     }
 
     function loadSelectedRoute() {
@@ -216,7 +228,6 @@
         if (route.depart) route.depart.forEach(id => { holdStates[id] = 1; updateUI(id); });
         if (route.progression) route.progression.forEach(id => { holdStates[id] = 2; updateUI(id); });
         if (route.arrivee) route.arrivee.forEach(id => { holdStates[id] = 3; updateUI(id); });
-        if (route.pied) route.pied.forEach(id => { holdStates[id] = 4; updateUI(id); });
       }
       sendBLEFrame();
     }
@@ -237,7 +248,7 @@
     initRouteSelector();
 
     function toggleHold(holdId) {
-      holdStates[holdId] = (holdStates[holdId] + 1) % 5;
+      holdStates[holdId] = (holdStates[holdId] + 1) % 4;
       updateUI(holdId);
       document.getElementById('routeSelect').value = ""; 
       sendBLEFrame();
@@ -288,7 +299,6 @@
         if (state === 1) parts.push(`S${id}`);
         else if (state === 2) parts.push(`P${id}`);
         else if (state === 3) parts.push(`F${id}`);
-        else if (state === 4) parts.push(`E${id}`);
       });
       const frame = `l#${parts.join(',')}#`;
       const encoder = new TextEncoder();
