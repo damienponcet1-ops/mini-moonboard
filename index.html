@@ -32,7 +32,6 @@
 
     .controls-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; width: 100%; max-width: 420px; }
     
-    /* Bloc de contrôle du calque */
     .overlay-controls {
       display: none;
       flex-direction: column;
@@ -87,12 +86,11 @@
       overflow: hidden;
     }
 
-    /* Le calque est désormais découpé pour épouser parfaitement le conteneur */
     #overlayImage {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
       object-fit: fill; 
-      pointer-events: none; /* Laisse passer les clics vers la grille */
+      pointer-events: none; 
       opacity: 0.5;
       z-index: 1;
     }
@@ -122,12 +120,10 @@
     .hold.state-2 { border: 3px solid #0088ff; background-color: rgba(0, 136, 255, 0.4); box-shadow: 0 0 10px #0088ff; }
     .hold.state-3 { border: 3px solid #ff0000; background-color: rgba(255, 0, 0, 0.4); box-shadow: 0 0 10px #ff0000; }
   </style>
-  
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
 
-  <div class="version-badge">V33</div>
+  <div class="version-badge">V34</div>
   <h1 id="pageTitle">Mini MoonBoard</h1>
 
   <div class="controls-row">
@@ -141,7 +137,6 @@
     <input type="file" id="fileInput" accept="image/*" style="display:none">
   </div>
 
-  <!-- Barre de réglage de l'opacité ET bouton Afficher/Masquer -->
   <div class="overlay-controls" id="overlayControls">
     <div class="opacity-row">
       <label>Opacité :</label>
@@ -166,11 +161,10 @@
   </div>
 
   <script>
-    // === INITIALISATIONS ===
+    // === INITIALISATIONS (Code 100% natif, aucune dépendance externe) ===
     const cols = ['A','B','C','D','E','F','G','H','I','J','K'];
     const rows = 12;
     let holdStates = {};
-    window.scannedRouteName = ""; 
     let isOverlayVisible = true;
 
     const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
@@ -180,7 +174,6 @@
 
     let localRoutes = JSON.parse(localStorage.getItem('moonboard_custom_routes')) || {};
     
-    // Remplissage de la liste
     function initRouteSelector() {
       const selector = document.getElementById('routeSelect');
       selector.innerHTML = '<option value="">-- Choisir un bloc --</option>';
@@ -192,7 +185,6 @@
       });
     }
 
-    // === GESTION DES BOUTONS DE SAUVEGARDE ET LISTE ===
     function saveCurrentRoute() {
       let route = { depart: [], progression: [], arrivee: [] };
       let hasHolds = false;
@@ -204,8 +196,7 @@
       
       if (!hasHolds) { alert("Le panneau est vide !"); return; }
 
-      let defaultName = window.scannedRouteName ? window.scannedRouteName : "Mon Bloc";
-      let routeName = prompt("Nom et cotation du bloc :", defaultName);
+      let routeName = prompt("Nom et cotation du bloc :", "Mon Bloc (6A+)");
       if (!routeName || routeName.trim() === "") return;
 
       localRoutes[routeName] = route;
@@ -213,7 +204,6 @@
       initRouteSelector();
       document.getElementById('routeSelect').value = routeName;
       document.getElementById('pageTitle').innerText = routeName;
-      window.scannedRouteName = routeName; 
     }
 
     function clearSavedRoutes() {
@@ -223,7 +213,6 @@
         localRoutes = {};
         initRouteSelector();
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
-        window.scannedRouteName = "";
       }
     }
 
@@ -239,15 +228,12 @@
         if (route.progression) route.progression.forEach(id => { holdStates[id] = 2; updateUI(id); });
         if (route.arrivee) route.arrivee.forEach(id => { holdStates[id] = 3; updateUI(id); });
         document.getElementById('pageTitle').innerText = routeName;
-        window.scannedRouteName = routeName;
       } else {
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
-        window.scannedRouteName = "";
       }
       sendBLEFrame();
     }
 
-    // === CRÉATION DE LA GRILLE INTERACTIVE ===
     const gridEl = document.getElementById('boardGrid');
     for (let r = rows; r >= 1; r--) {
       cols.forEach(c => {
@@ -263,7 +249,6 @@
 
     initRouteSelector();
 
-    // === GESTION DES CLICS SUR LES PRISES ===
     function toggleHold(holdId) {
       holdStates[holdId] = (holdStates[holdId] + 1) % 4;
       updateUI(holdId);
@@ -279,12 +264,10 @@
     function clearBoard() {
       document.getElementById('routeSelect').value = ""; 
       document.getElementById('pageTitle').innerText = "Mini MoonBoard";
-      window.scannedRouteName = "";
       Object.keys(holdStates).forEach(id => { if(holdStates[id] !== 0) { holdStates[id] = 0; updateUI(id); }});
       sendBLEFrame();
     }
 
-    // === GESTION DU CALQUE (OPACITÉ ET BOUTON MASQUER) ===
     function changeOpacity(val) {
       const overlay = document.getElementById('overlayImage');
       overlay.style.opacity = val;
@@ -303,108 +286,67 @@
       }
     }
 
-    // === CHARGEMENT, DÉCOUPAGE AUTOMATIQUE ET LECTURE DE LA CAPTURE ===
+    // === DECOUPAGE INTELLIGENT DE L'IMAGE ===
     document.getElementById('fileInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if(!file) return;
 
-      document.getElementById('pageTitle').innerText = "⏳ Traitement de l'image...";
       const imageUrl = URL.createObjectURL(file);
-      
       const img = new Image();
-      img.onload = async function() {
-        try {
-          // 1. Découpage pour superposer parfaitement le panneau jaune
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-          let topY = canvas.height, botY = 0;
-          
-          // Recherche du haut et du bas du rectangle jaune (on scanne le milieu)
-          let centerX = Math.floor(canvas.width / 2);
-          for (let y = 0; y < canvas.height; y++) {
-             let i = (y * canvas.width + centerX) * 4;
-             if (imgData[i] > 180 && imgData[i+1] > 180 && imgData[i+2] < 120) {
-                 if (y < topY) topY = y;
-                 if (y > botY) botY = y;
-             }
-          }
-          
-          // Si la détection foire, on prend des valeurs génériques
-          if (topY >= botY) { topY = canvas.height * 0.25; botY = canvas.height * 0.85; }
-          
-          // On dessine l'image recadrée (crop) sur un nouveau canvas
-          const cropCanvas = document.createElement('canvas');
-          cropCanvas.width = canvas.width;
-          cropCanvas.height = botY - topY;
-          const cropCtx = cropCanvas.getContext('2d');
-          cropCtx.drawImage(img, 0, topY, canvas.width, botY - topY, 0, 0, cropCanvas.width, cropCanvas.height);
-
-          // Affichage de l'image recadrée en fond
-          const overlay = document.getElementById('overlayImage');
-          overlay.src = cropCanvas.toDataURL();
-          overlay.style.display = "block";
-          overlay.style.opacity = "0.5";
-          
-          isOverlayVisible = true;
-          document.getElementById('btnToggleOverlay').innerText = "Masquer";
-          document.getElementById('opacityRange').value = "0.5";
-          document.getElementById('overlayControls').style.display = "flex";
-
-          // 2. Lecture du texte via Tesseract protégé (sans risque de crash)
-          if (typeof Tesseract !== 'undefined') {
-              const headerCanvas = document.createElement('canvas');
-              headerCanvas.width = img.width;
-              headerCanvas.height = img.height * 0.25; // On ne lit que le haut de l'image originale
-              const hCtx = headerCanvas.getContext('2d');
-              hCtx.drawImage(img, 0, 0);
-              
-              const { data } = await Tesseract.recognize(headerCanvas.toDataURL(), 'eng');
-              let detectedName = "Mon Bloc";
-              let detectedGrade = "";
-              
-              const lines = data.lines.map(l => l.text.trim());
-              let setByIndex = lines.findIndex(l => l.toLowerCase().includes('set by'));
-              if (setByIndex > 0) {
-                detectedName = lines[setByIndex - 1];
-              } else {
-                 let validLine = lines.find(l => /[A-Za-z]/.test(l) && l.length > 3 && !l.includes(':'));
-                 if(validLine) detectedName = validLine;
-              }
-
-              let gradeLine = lines.find(l => l.toLowerCase().includes('user') || l.toLowerCase().includes('setter'));
-              if (gradeLine) {
-                  let gradeMatch = gradeLine.match(/([4-9][A-C]\+?|V\d+)/i);
-                  if (gradeMatch) detectedGrade = gradeMatch[1].toUpperCase();
-              }
-
-              detectedName = detectedName.replace(/[^a-zA-Z0-9 \-\+\(\)\.]/g, '').replace(/\s+/g, ' ').trim();
-              if(detectedName.length < 2) detectedName = "Mon Bloc";
-              
-              if(detectedGrade && !detectedName.includes(detectedGrade)) {
-                  detectedName = `${detectedName} (${detectedGrade})`;
-              }
-
-              window.scannedRouteName = detectedName;
-              document.getElementById('pageTitle').innerText = detectedName;
-          } else {
-              document.getElementById('pageTitle').innerText = "Mini MoonBoard";
-          }
-        } catch (err) {
-          console.error("Erreur d'analyse: ", err);
-          document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+        let topY = -1;
+        let botY = -1;
+        
+        // Scan sur le bord gauche (à 5% de la largeur) pour éviter le logo central et le texte
+        let scanX = Math.floor(canvas.width * 0.05); 
+        
+        for (let y = 0; y < canvas.height; y++) {
+           let i = (y * canvas.width + scanX) * 4;
+           let r = imgData[i], g = imgData[i+1], b = imgData[i+2];
+           // Détection du jaune
+           if (r > 150 && g > 150 && b < 100) {
+               if (topY === -1) topY = y;
+               botY = y;
+           }
         }
+        
+        // Sécurité en cas d'image inattendue
+        if (topY === -1 || (botY - topY) < (canvas.height * 0.3)) { 
+            topY = canvas.height * 0.25; 
+            botY = canvas.height * 0.85; 
+        }
+        
+        const cropCanvas = document.createElement('canvas');
+        cropCanvas.width = canvas.width;
+        cropCanvas.height = botY - topY;
+        const cropCtx = cropCanvas.getContext('2d');
+        
+        // Découpe exactement le carré jaune
+        cropCtx.drawImage(img, 0, topY, canvas.width, botY - topY, 0, 0, cropCanvas.width, cropCanvas.height);
+
+        const overlay = document.getElementById('overlayImage');
+        overlay.src = cropCanvas.toDataURL();
+        overlay.style.display = "block";
+        overlay.style.opacity = "0.5";
+        
+        isOverlayVisible = true;
+        document.getElementById('btnToggleOverlay').innerText = "Masquer";
+        document.getElementById('opacityRange').value = "0.5";
+        document.getElementById('overlayControls').style.display = "flex";
       };
       
       img.src = imageUrl;
       e.target.value = '';
     });
 
-    // === GESTION DU BLUETOOTH (Vérifiée pour éviter tout crash) ===
     async function toggleBLE() {
       if (bleDevice && bleDevice.gatt.connected) {
         bleDevice.gatt.disconnect();
