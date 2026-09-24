@@ -14,114 +14,31 @@
 
   <style>
     * { box-sizing: border-box; touch-action: manipulation; }
-    body {
-      margin: 0;
-      padding: 10px;
-      background-color: #121212;
-      color: #ffffff;
-      font-family: sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
+    body { margin: 0; padding: 10px; background-color: #121212; color: #ffffff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
     h1 { font-size: 1.1rem; margin: 5px 0 10px 0; text-align: center; color: #f39c12; min-height: 25px;}
-
-    .controls-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 10px;
-      width: 100%;
-      max-width: 420px;
-    }
-
-    .route-selector {
-      width: 100%;
-      max-width: 420px;
-      margin-bottom: 10px;
-    }
-    select {
-      width: 100%;
-      padding: 10px;
-      background-color: #222;
-      color: #fff;
-      border: 1px solid #555;
-      border-radius: 6px;
-      font-size: 16px;
-      font-weight: bold;
-      appearance: none;
-      text-align: center;
-    }
-
-    button {
-      background: #333;
-      color: #fff;
-      border: 1px solid #555;
-      padding: 10px 12px;
-      border-radius: 6px;
-      font-weight: bold;
-      font-size: 14px;
-      cursor: pointer;
-      flex: 1;
-    }
+    .controls-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; width: 100%; max-width: 420px; }
+    .route-selector { width: 100%; max-width: 420px; margin-bottom: 10px; }
+    select { width: 100%; padding: 10px; background-color: #222; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 16px; font-weight: bold; appearance: none; text-align: center; }
+    button { background: #333; color: #fff; border: 1px solid #555; padding: 10px 12px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; flex: 1; }
     button:active { background: #555; }
-    
     .btn-scan { background: #e67e22; border-color: #d35400; }
     .btn-scan:active { background: #bf4a00; }
-    
     .btn-save { background: #005bb5; border-color: #0073e6; }
     .btn-save:active { background: #003f7a; }
-    
     .btn-delete { background: #d9534f; border-color: #d43f3a; }
     .btn-delete:active { background: #c9302c; }
-
-    .status-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      transition: background-color 0.3s, box-shadow 0.3s;
-      flex-shrink: 0;
-    }
+    .status-dot { width: 14px; height: 14px; border-radius: 50%; transition: background-color 0.3s, box-shadow 0.3s; flex-shrink: 0; }
     .status-dot.disconnected { background-color: #ff3b30; box-shadow: 0 0 8px rgba(255, 59, 48, 0.6); }
     .status-dot.connected { background-color: #34c759; box-shadow: 0 0 8px rgba(52, 199, 89, 0.8); }
-
-    .board-container {
-      position: relative;
-      width: 100%;
-      max-width: 420px;
-      aspect-ratio: 11 / 12;
-      background: url('mini_moonboard_bg.jpg') no-repeat center/cover;
-      border: 2px solid #444;
-      border-radius: 8px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(11, 1fr);
-      grid-template-rows: repeat(12, 1fr);
-      width: 100%;
-      height: 100%;
-      padding: 7% 1% 6% 7%; 
-    }
-
-    .hold {
-      width: 85%;
-      height: 85%;
-      margin: 7.5%;
-      border-radius: 50%;
-      transition: all 0.15s ease-out;
-      cursor: pointer;
-    }
-
+    .board-container { position: relative; width: 100%; max-width: 420px; aspect-ratio: 11 / 12; background: url('mini_moonboard_bg.jpg') no-repeat center/cover; border: 2px solid #444; border-radius: 8px; }
+    .grid { display: grid; grid-template-columns: repeat(11, 1fr); grid-template-rows: repeat(12, 1fr); width: 100%; height: 100%; padding: 7% 1% 6% 7%; }
+    .hold { width: 85%; height: 85%; margin: 7.5%; border-radius: 50%; transition: all 0.15s ease-out; cursor: pointer; }
     .hold.state-0 { background-color: transparent; }
     .hold.state-1 { border: 3px solid #00ff00; background-color: rgba(0, 255, 0, 0.3); box-shadow: 0 0 10px #00ff00; }
     .hold.state-2 { border: 3px solid #0088ff; background-color: rgba(0, 136, 255, 0.3); box-shadow: 0 0 10px #0088ff; }
     .hold.state-3 { border: 3px solid #ff0000; background-color: rgba(255, 0, 0, 0.3); box-shadow: 0 0 10px #ff0000; }
   </style>
   
-  <!-- Intégration de l'Intelligence Artificielle de lecture de texte (OCR) -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
@@ -135,7 +52,7 @@
   </div>
 
   <div class="controls-row">
-    <button class="btn-scan" onclick="document.getElementById('fileInput').click()">📷 Importer la capture</button>
+    <button class="btn-scan" onclick="document.getElementById('fileInput').click()">📷 Scanner Capture</button>
     <input type="file" id="fileInput" accept="image/*" style="display:none">
   </div>
 
@@ -157,7 +74,7 @@
     const cols = ['A','B','C','D','E','F','G','H','I','J','K'];
     const rows = 12;
     let holdStates = {};
-    let scannedTitle = ""; // Stockera le nom pré-écrit du bloc
+    let currentScannedTitle = ""; // Stockage sécurisé du titre scanné
 
     const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
     const RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
@@ -165,13 +82,11 @@
     let rxCharacteristic = null;
 
     let localRoutes = JSON.parse(localStorage.getItem('moonboard_custom_routes')) || {};
-    let allRoutes = { ...localRoutes };
-
+    
     function initRouteSelector() {
       const selector = document.getElementById('routeSelect');
       selector.innerHTML = '<option value="">-- Choisir un bloc --</option>';
-      allRoutes = { ...localRoutes }; 
-      Object.keys(allRoutes).forEach(routeName => {
+      Object.keys(localRoutes).forEach(routeName => {
         const opt = document.createElement('option');
         opt.value = routeName;
         opt.innerText = routeName;
@@ -179,7 +94,7 @@
       });
     }
 
-    // --- ENREGISTREMENT AVEC PRÉ-REMPLISSAGE DU NOM ---
+    // --- SAUVEGARDE AVEC TITRE PRÉ-REMPLI ---
     function saveCurrentRoute() {
       let route = { depart: [], progression: [], arrivee: [] };
       let hasHolds = false;
@@ -188,18 +103,12 @@
         if (holdStates[id] === 2) { route.progression.push(id); hasHolds = true; }
         if (holdStates[id] === 3) { route.arrivee.push(id); hasHolds = true; }
       });
-      if (!hasHolds) {
-        alert("Le panneau est vide !");
-        return;
-      }
+      if (!hasHolds) { alert("Le panneau est vide !"); return; }
 
-      // Utilise le nom scanné, ou "Mon Bloc" par défaut
-      let defaultName = scannedTitle || document.getElementById('pageTitle').innerText;
-      if (defaultName.includes("Analyse") || defaultName === "Mini MoonBoard") {
-        defaultName = "Mon Bloc";
-      }
+      // Récupère le titre stocké par le scanner, ou propose "Mon Bloc"
+      let defaultName = currentScannedTitle || "Mon Bloc";
       
-      // La fenêtre s'ouvre avec le nom et la cote DÉJÀ ÉCRITS dedans
+      // La popup s'ouvre avec le texte pré-écrit
       let routeName = prompt("Nom et cotation du bloc :", defaultName);
       if (!routeName || routeName.trim() === "") return;
 
@@ -208,37 +117,33 @@
       initRouteSelector();
       document.getElementById('routeSelect').value = routeName;
       document.getElementById('pageTitle').innerText = routeName;
+      currentScannedTitle = routeName; // Met à jour le titre actuel
     }
 
     function clearSavedRoutes() {
-      if (Object.keys(localRoutes).length === 0) {
-        alert("Ta liste est déjà vide !");
-        return;
-      }
-      if (confirm("Voulez-vous vraiment effacer tous vos blocs enregistrés ?")) {
+      if (Object.keys(localRoutes).length === 0) return alert("Liste déjà vide !");
+      if (confirm("Effacer tous les blocs enregistrés ?")) {
         localStorage.removeItem('moonboard_custom_routes');
         localRoutes = {};
         initRouteSelector();
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
-        scannedTitle = "";
-        document.getElementById('routeSelect').value = "";
+        currentScannedTitle = "";
       }
     }
 
     function loadSelectedRoute() {
-      const selector = document.getElementById('routeSelect');
-      const routeName = selector.value;
+      const routeName = document.getElementById('routeSelect').value;
       Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
-      if (routeName && allRoutes[routeName]) {
-        const route = allRoutes[routeName];
+      if (routeName && localRoutes[routeName]) {
+        const route = localRoutes[routeName];
         if (route.depart) route.depart.forEach(id => { holdStates[id] = 1; updateUI(id); });
         if (route.progression) route.progression.forEach(id => { holdStates[id] = 2; updateUI(id); });
         if (route.arrivee) route.arrivee.forEach(id => { holdStates[id] = 3; updateUI(id); });
         document.getElementById('pageTitle').innerText = routeName;
-        scannedTitle = routeName;
+        currentScannedTitle = routeName;
       } else {
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
-        scannedTitle = "";
+        currentScannedTitle = "";
       }
       sendBLEFrame();
     }
@@ -266,114 +171,132 @@
     }
 
     function updateUI(holdId) {
-      const el = document.getElementById(`hold-${holdId}`);
-      el.className = `hold state-${holdStates[holdId]}`;
+      document.getElementById(`hold-${holdId}`).className = `hold state-${holdStates[holdId]}`;
     }
 
     function clearBoard() {
       document.getElementById('routeSelect').value = ""; 
       document.getElementById('pageTitle').innerText = "Mini MoonBoard";
-      scannedTitle = "";
-      Object.keys(holdStates).forEach(id => {
-        if(holdStates[id] !== 0) { holdStates[id] = 0; updateUI(id); }
-      });
+      currentScannedTitle = "";
+      Object.keys(holdStates).forEach(id => { if(holdStates[id] !== 0) { holdStates[id] = 0; updateUI(id); }});
       sendBLEFrame();
     }
 
-    // --- LE NOUVEAU SCANNER BASÉ UNIQUEMENT SUR LE TEXTE ---
+    // --- LE SCANNER INTELLIGENT (TITRE + ÉTIQUETTES PRÉCISES) ---
     document.getElementById('fileInput').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if(!file) return;
 
-      document.getElementById('pageTitle').innerText = "⏳ Analyse du texte en cours...";
+      document.getElementById('pageTitle').innerText = "⏳ Analyse en cours...";
 
       try {
         const img = new Image();
         img.src = URL.createObjectURL(file);
         await new Promise(resolve => { img.onload = resolve; });
 
+        // 1. ISOLER LE HAUT DE L'IMAGE POUR LIRE LE TITRE SANS ERREUR
+        const headerCanvas = document.createElement('canvas');
+        headerCanvas.width = img.width;
+        headerCanvas.height = img.height * 0.22; // On ne garde que les 22% du haut (bandeau noir)
+        const hCtx = headerCanvas.getContext('2d');
+        hCtx.drawImage(img, 0, 0);
+        
+        const { data } = await Tesseract.recognize(headerCanvas.toDataURL(), 'eng');
+        let detectedName = "Bloc Scanné";
+        const lines = data.lines.map(l => l.text.trim());
+        let setByIndex = lines.findIndex(l => l.toLowerCase().includes('set by'));
+        if (setByIndex > 0) {
+          let rawTitle = lines[setByIndex - 1].replace(/[^A-Za-z0-9 \-+!]/g, '').trim();
+          let grade = "";
+          if (setByIndex + 1 < lines.length) {
+            let gradeMatch = lines[setByIndex + 1].match(/(V\d+|[4-9][A-C]\+?)/i);
+            if (gradeMatch) grade = gradeMatch[1];
+          }
+          detectedName = grade ? `${rawTitle} (${grade})` : rawTitle;
+        } else if (lines.length > 0) {
+           // Si "set by" n'est pas trouvé, on prend la première grande ligne
+           let possibleTitle = lines.find(l => l.length > 4 && !l.includes(':'));
+           if (possibleTitle) detectedName = possibleTitle.replace(/[^A-Za-z0-9 \-+!]/g, '').trim();
+        }
+
+        currentScannedTitle = detectedName; // On mémorise pour le bouton Enregistrer
+        document.getElementById('pageTitle').innerText = detectedName;
+
+        // 2. ANALYSE STRICTE DES ÉTIQUETTES SOUS LES PRISES
         const canvas = document.createElement('canvas');
         canvas.width = img.width; canvas.height = img.height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
         const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-        // Lecture intégrale du texte via Tesseract
-        const { data } = await Tesseract.recognize(img, 'eng');
-
-        // 1. RECHERCHE DU NOM ET DE LA COTATION
-        let detectedName = "Bloc Scanné";
-        const lines = data.lines.map(l => l.text.trim());
-        let setByIndex = lines.findIndex(l => l.toLowerCase().includes('set by'));
-        
-        if (setByIndex > 0) {
-          // Le titre est généralement la ligne juste au-dessus de "Set by"
-          let rawTitle = lines[setByIndex - 1].replace(/[^A-Za-z0-9 \-+]/g, '').trim();
-          let grade = "";
-          // La cotation est dans la ligne juste en dessous
-          if (setByIndex + 1 < lines.length) {
-            let gradeMatch = lines[setByIndex + 1].match(/(V\d+|[4-9][A-C]\+?)/i);
-            if (gradeMatch) grade = gradeMatch[1];
-          }
-          detectedName = grade ? `${rawTitle} (${grade})` : rawTitle;
+        // On cherche où se trouve exactement le panneau jaune dans l'image
+        let topY = -1, bottomY = -1;
+        let centerX = Math.floor(img.width / 2);
+        for(let y=0; y<img.height; y++) {
+            let i = (y * img.width + centerX) * 4;
+            // Détection du jaune du panneau Moonboard (Rouge fort, Vert fort, Bleu faible)
+            if (imgData[i] > 200 && imgData[i+1] > 200 && imgData[i+2] < 120) {
+                if (topY === -1) topY = y;
+                bottomY = y;
+            }
         }
+        
+        if (topY === -1) { alert("Panneau jaune introuvable sur l'image."); return; }
 
-        scannedTitle = detectedName;
-        document.getElementById('pageTitle').innerText = detectedName;
+        // Calcul de la grille géométrique
+        let marginX = img.width * 0.035; // Petite marge gauche/droite
+        let cellW = (img.width - (marginX * 2)) / 11;
+        let cellH = (bottomY - topY) / 12;
 
-        // On efface le panneau pour les nouvelles prises
         Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
-        document.getElementById('routeSelect').value = ""; 
         let foundCount = 0;
 
-        // 2. RECHERCHE DES ADRESSES DES PRISES ET DE LEUR COULEUR
-        data.words.forEach(word => {
-          let text = word.text.replace(/[^A-K0-9]/gi, '').toUpperCase();
-          
-          // Si le texte lu correspond EXACTEMENT à une adresse (ex: A5, C12)
-          if (/^[A-K](1[0-2]|[1-9])$/.test(text)) {
-            const box = word.bbox;
-            const margin = 6; 
-            
-            // On vérifie la couleur des pixels juste à côté du texte (sur l'étiquette)
-            const pts = [
-              {x: box.x0 - margin, y: (box.y0 + box.y1)/2},
-              {x: box.x1 + margin, y: (box.y0 + box.y1)/2},
-              {x: (box.x0 + box.x1)/2, y: box.y0 - margin},
-              {x: (box.x0 + box.x1)/2, y: box.y1 + margin}
-            ];
-            
-            let g=0, b=0, r=0;
-            pts.forEach(pt => {
-              let px = Math.floor(pt.x), py = Math.floor(pt.y);
-              if(px>=0 && px<canvas.width && py>=0 && py<canvas.height) {
-                let i = (py * canvas.width + px) * 4;
-                let pr = imgData[i], pg = imgData[i+1], pb = imgData[i+2];
-                // Vérification stricte des couleurs de l'étiquette
-                if (pg > 140 && pr < 100 && pb < 100) g++;
-                else if (pb > 140 && pr < 100) b++;
-                else if (pr > 150 && pg < 80 && pb < 80) r++;
-              }
-            });
-            
-            let state = 2; // Bleu (Progression) par défaut
-            if (g > b && g > r) state = 1; // Vert
-            else if (r > b && r > g) state = 3; // Rouge
-            
-            holdStates[text] = state; // On allume directement l'adresse !
-            updateUI(text);
-            foundCount++;
-          }
-        });
+        for (let r=0; r<12; r++) {
+            for (let c=0; c<11; c++) {
+                const holdId = `${cols[c]}${12-r}`;
+                
+                // On vise EXACTEMENT l'emplacement de l'étiquette contenant le texte
+                // (Au centre horizontal, et très bas dans la case verticale)
+                let targetX = Math.floor(marginX + c * cellW + cellW * 0.5);
+                let targetY = Math.floor(topY + r * cellH + cellH * 0.85);
+
+                let isGreen = 0, isBlue = 0, isRed = 0;
+                
+                // On inspecte une toute petite zone de 10x10 pixels autour de l'étiquette
+                for(let y = targetY - 5; y < targetY + 5; y++) {
+                    for(let x = targetX - 5; x < targetX + 5; x++) {
+                       let i = (y * canvas.width + x) * 4;
+                       let pr = imgData[i], pg = imgData[i+1], pb = imgData[i+2];
+                       
+                       // Filtres ultra-stricts pour ignorer le bois marron
+                       if (pg > 180 && pr < 100 && pb < 100) isGreen++;
+                       if (pb > 150 && pr < 100 && pg > 100) isBlue++;
+                       if (pr > 180 && pg < 80 && pb < 80) isRed++;
+                    }
+                }
+                
+                let state = 0;
+                if (isGreen > 5) state = 1;
+                else if (isBlue > 5) state = 2;
+                else if (isRed > 5) state = 3;
+
+                if (state > 0) {
+                    holdStates[holdId] = state;
+                    updateUI(holdId);
+                    foundCount++;
+                }
+            }
+        }
 
         if (foundCount > 0) {
-          sendBLEFrame();
+            sendBLEFrame();
+            alert(`Succès : Titre lu + ${foundCount} prises trouvées !\n\nClique sur "Enregistrer" pour sauvegarder.`);
         } else {
-          alert("L'analyse a terminé, mais aucune adresse (ex: A5, C12) n'a été trouvée sur l'image.");
+            alert("Aucune étiquette colorée n'a été détectée. Vérifie l'image.");
         }
 
       } catch (err) {
-        alert("Erreur lors de la lecture du texte : " + err);
+        alert("Erreur lors de l'analyse : " + err);
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
       }
 
@@ -387,21 +310,14 @@
         return; 
       }
       try {
-        bleDevice = await navigator.bluetooth.requestDevice({
-          filters: [{ name: 'MoonBoard' }],
-          optionalServices: [SERVICE_UUID]
-        });
+        bleDevice = await navigator.bluetooth.requestDevice({ filters: [{ name: 'MoonBoard' }], optionalServices: [SERVICE_UUID] });
         bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
         const server = await bleDevice.gatt.connect();
         const service = await server.getPrimaryService(SERVICE_UUID);
         rxCharacteristic = await service.getCharacteristic(RX_UUID);
-        
         document.getElementById('btnConnect').innerText = "Se déconnecter";
         document.getElementById('statusIndicator').className = "status-dot connected";
-      } catch (err) {
-        alert("Erreur BLE : " + err);
-        onDisconnected();
-      }
+      } catch (err) { alert("Erreur BLE : " + err); onDisconnected(); }
     }
 
     function onDisconnected() {
@@ -414,19 +330,15 @@
       if (!rxCharacteristic) return;
       let parts = [];
       Object.keys(holdStates).forEach(id => {
-        const state = holdStates[id];
-        if (state === 1) parts.push(`S${id}`);
-        else if (state === 2) parts.push(`P${id}`);
-        else if (state === 3) parts.push(`F${id}`);
+        if (holdStates[id] === 1) parts.push(`S${id}`);
+        else if (holdStates[id] === 2) parts.push(`P${id}`);
+        else if (holdStates[id] === 3) parts.push(`F${id}`);
       });
-      const frame = `l#${parts.join(',')}#`;
       const encoder = new TextEncoder();
-      rxCharacteristic.writeValue(encoder.encode(frame));
+      rxCharacteristic.writeValue(encoder.encode(`l#${parts.join(',')}#`));
     }
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
-    }
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
   </script>
 </body>
 </html>
