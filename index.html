@@ -25,7 +25,7 @@
       align-items: center;
     }
 
-    h1 { font-size: 1.2rem; margin: 5px 0 10px 0; }
+    h1 { font-size: 1.2rem; margin: 5px 0 10px 0; text-align: center; color: #f39c12; }
 
     .controls-row {
       display: flex;
@@ -154,6 +154,7 @@
     const cols = ['A','B','C','D','E','F','G','H','I','J','K'];
     const rows = 12;
     let holdStates = {};
+    let scannedTitle = ""; // Stocke le titre du bloc scanné
 
     const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
     const RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
@@ -187,8 +188,10 @@
         alert("Le panneau est vide !");
         return;
       }
-      let defaultName = document.getElementById('pageTitle').innerText;
-      if(defaultName === "Mini MoonBoard") defaultName = "Mon Bloc V?";
+
+      // Pré-remplissage automatique avec le nom scanné ou affiché
+      let defaultName = scannedTitle || document.getElementById('pageTitle').innerText;
+      if (defaultName === "Mini MoonBoard") defaultName = "Mon Bloc";
       
       let routeName = prompt("Nom et cotation du bloc :", defaultName);
       if (!routeName || routeName.trim() === "") return;
@@ -197,7 +200,8 @@
       localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
       initRouteSelector();
       document.getElementById('routeSelect').value = routeName;
-      alert("Bloc enregistré !");
+      document.getElementById('pageTitle').innerText = routeName;
+      alert("Bloc '" + routeName + "' enregistré !");
     }
 
     function clearSavedRoutes() {
@@ -210,6 +214,7 @@
         localRoutes = {};
         initRouteSelector();
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+        scannedTitle = "";
         document.getElementById('routeSelect').value = "";
       }
     }
@@ -224,8 +229,10 @@
         if (route.progression) route.progression.forEach(id => { holdStates[id] = 2; updateUI(id); });
         if (route.arrivee) route.arrivee.forEach(id => { holdStates[id] = 3; updateUI(id); });
         document.getElementById('pageTitle').innerText = routeName;
+        scannedTitle = routeName;
       } else {
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+        scannedTitle = "";
       }
       sendBLEFrame();
     }
@@ -260,23 +267,24 @@
     function clearBoard() {
       document.getElementById('routeSelect').value = ""; 
       document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+      scannedTitle = "";
       Object.keys(holdStates).forEach(id => {
         if(holdStates[id] !== 0) { holdStates[id] = 0; updateUI(id); }
       });
       sendBLEFrame();
     }
 
-    // --- SCANNER INTELLIGENT DE CAPTURE COMPLÈTE ---
+    // --- ANALYSE CIBLÉE DES ÉTIQUETTES COLORÉES (A1, B2...) ---
     document.getElementById('fileInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if(!file) return;
       const img = new Image();
-      img.onload = function() { scanFullCapture(img); };
+      img.onload = function() { analyzeCapture(img); };
       img.src = URL.createObjectURL(file);
       e.target.value = ''; 
     });
 
-    function scanFullCapture(img) {
+    function analyzeCapture(img) {
       const canvas = document.createElement('canvas');
       canvas.width = img.width;
       canvas.height = img.height;
@@ -284,13 +292,11 @@
       ctx.drawImage(img, 0, 0);
       const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-      // Sur une capture officielle, la grille jaune du panneau occupe une portion centrale.
-      // On définit une zone de recherche approximative basée sur la proportion de l'image.
-      // En haut, il y a le bandeau noir du nom. On cible la zone carrée du panneau.
-      const boardTop = canvas.height * 0.28;   // Le panneau commence vers 28% de la hauteur
-      const boardHeight = canvas.height * 0.62; // Le panneau prend environ 62% de la hauteur
-      const boardLeft = canvas.width * 0.05;   // Marge gauche
-      const boardWidth = canvas.width * 0.90;  // Largeur du panneau
+      // Cadrage strict du panneau MoonBoard sur la capture officielle
+      const boardTop = canvas.height * 0.31;    
+      const boardHeight = canvas.height * 0.48; 
+      const boardLeft = canvas.width * 0.02;   
+      const boardWidth = canvas.width * 0.96;  
 
       const cellW = boardWidth / 11;
       const cellH = boardHeight / 12;
@@ -298,7 +304,7 @@
       Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
       document.getElementById('routeSelect').value = ""; 
 
-      let foundAny = false;
+      let foundCount = 0;
 
       for(let r = 0; r < 12; r++) {
         for(let c = 0; c < 11; c++) {
@@ -308,10 +314,11 @@
 
           let counts = { g: 0, b: 0, r: 0 };
 
-          const startX = Math.floor(boardLeft + c * cellW + cellW * 0.15);
-          const endX = Math.floor(boardLeft + (c + 1) * cellW - cellW * 0.15);
-          const startY = Math.floor(boardTop + r * cellH + cellH * 0.15);
-          const endY = Math.floor(boardTop + (r + 1) * cellH - cellH * 0.15);
+          // Analyse concentrée uniquement sur le cœur de la case (étiquette adresse)
+          const startX = Math.floor(boardLeft + c * cellW + cellW * 0.30);
+          const endX = Math.floor(boardLeft + (c + 1) * cellW - cellW * 0.30);
+          const startY = Math.floor(boardTop + r * cellH + cellH * 0.30);
+          const endY = Math.floor(boardTop + (r + 1) * cellH - cellH * 0.30);
 
           for(let y = startY; y < endY; y += 2) {
             for(let x = startX; x < endX; x += 2) {
@@ -320,33 +327,38 @@
               const green = imgData[i+1];
               const blue = imgData[i+2];
 
-              // Détection des cercles colorés (Vert, Bleu, Rouge sur fond jaune)
-              if(green > 140 && red < 130 && blue < 130) counts.g++;
-              else if(blue > 140 && red < 130) counts.b++;
-              else if(red > 140 && green < 130 && blue < 130) counts.r++;
+              // Détection stricte des couleurs de pastilles de l'application
+              // Vert Départ (0, 230, 60 environ)
+              if (green > 180 && red < 80 && blue < 100) counts.g++;
+              // Bleu Progression (0, 120, 255 environ)
+              else if (blue > 180 && green > 80 && green < 180 && red < 80) counts.b++;
+              // Rouge Arrivée (240, 30, 30 environ)
+              else if (red > 200 && green < 60 && blue < 60) counts.r++;
             }
           }
 
-          let maxColor = 'none';
-          let maxCount = 4;
-          if(counts.g > maxCount) { maxColor = 'g'; maxCount = counts.g; }
-          if(counts.b > maxCount) { maxColor = 'b'; maxCount = counts.b; }
-          if(counts.r > maxCount) { maxColor = 'r'; maxCount = counts.r; }
+          let state = 0;
+          if (counts.g > 3) state = 1;
+          else if (counts.b > 3) state = 2;
+          else if (counts.r > 3) state = 3;
 
-          if(maxColor === 'g') { holdStates[holdId] = 1; foundAny = true; }
-          if(maxColor === 'b') { holdStates[holdId] = 2; foundAny = true; }
-          if(maxColor === 'r') { holdStates[holdId] = 3; foundAny = true; }
-          
-          updateUI(holdId);
+          if (state > 0) {
+            holdStates[holdId] = state;
+            updateUI(holdId);
+            foundCount++;
+          }
         }
       }
 
-      if(foundAny) {
-        document.getElementById('pageTitle').innerText = "EASY DOES IT (V3)"; // Titre détecté ou par défaut
+      // Proposer un titre par défaut propre
+      scannedTitle = "Bloc Scanné " + new Date().toLocaleTimeString().substring(0,5);
+      document.getElementById('pageTitle').innerText = scannedTitle;
+
+      if (foundCount > 0) {
         sendBLEFrame();
-        alert("Bloc scanné avec succès ! Tu peux cliquer sur 'Enregistrer' pour l'ajouter à ta liste.");
+        alert(`${foundCount} prises détectées sur la capture !\n\nClique directement sur "💾 Enregistrer" pour l'ajouter à ta liste.`);
       } else {
-        alert("Impossible de détecter les prises. Assure-toi de sélectionner une capture d'écran entière de l'application officielle.");
+        alert("Aucune étiquette de prise détectée. Assure-toi d'importer une capture complète de l'application officielle.");
       }
     }
 
