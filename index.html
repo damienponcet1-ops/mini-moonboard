@@ -71,8 +71,10 @@
       grid-template-rows: repeat(12, 1fr);
       width: 100%;
       height: 100%;
+      
       /* REGLAGE DU DECALAGE : Haut, Droite, Bas, Gauche */
-      padding: 7% 3% 6% 5%; 
+      /* J'ai augmenté la gauche (7%) et diminué la droite (1%) pour décaler vers la droite */
+      padding: 7% 1% 6% 7%; 
     }
 
     .hold {
@@ -85,20 +87,17 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 10px;
-      font-weight: bold;
-      color: rgba(255, 255, 255, 0.7);
       
-      /* LIGNE DE CALIBRAGE A SUPPRIMER QUAND C'EST ALIGNÉ */
+      /* LIGNE DE CALIBRAGE A SUPPRIMER QUAND C'EST PARFAITEMENT ALIGNÉ */
       border: 1px solid red;
     }
 
     .hold.state-0 { background-color: transparent; }
     
-    .hold.state-1 { border: 3px solid #00ff00; background-color: rgba(0, 255, 0, 0.3); box-shadow: 0 0 10px #00ff00; color: #fff; }
-    .hold.state-2 { border: 3px solid #0088ff; background-color: rgba(0, 136, 255, 0.3); box-shadow: 0 0 10px #0088ff; color: #fff; }
-    .hold.state-3 { border: 3px solid #ff0000; background-color: rgba(255, 0, 0, 0.3); box-shadow: 0 0 10px #ff0000; color: #fff; }
-    .hold.state-4 { border: 3px solid #ffff00; background-color: rgba(255, 255, 0, 0.3); box-shadow: 0 0 10px #ffff00; color: #fff; }
+    .hold.state-1 { border: 3px solid #00ff00; background-color: rgba(0, 255, 0, 0.3); box-shadow: 0 0 10px #00ff00; }
+    .hold.state-2 { border: 3px solid #0088ff; background-color: rgba(0, 136, 255, 0.3); box-shadow: 0 0 10px #0088ff; }
+    .hold.state-3 { border: 3px solid #ff0000; background-color: rgba(255, 0, 0, 0.3); box-shadow: 0 0 10px #ff0000; }
+    .hold.state-4 { border: 3px solid #ffff00; background-color: rgba(255, 255, 0, 0.3); box-shadow: 0 0 10px #ffff00; }
   </style>
 </head>
 <body>
@@ -135,7 +134,7 @@
         div.className = 'hold state-0';
         div.id = `hold-${holdId}`;
         
-        div.innerText = holdId; 
+        // Le texte a été supprimé ici pour rendre l'interface plus propre
         
         div.onclick = () => toggleHold(holdId);
         gridEl.appendChild(div);
