@@ -40,7 +40,7 @@
       width: 100%;
       max-width: 420px;
       background: #1e1e1e;
-      padding: 8px;
+      padding: 10px;
       border-radius: 6px;
       border: 1px solid #444;
     }
@@ -58,9 +58,28 @@
     .btn-toggle { background: #555; color: white; border: 1px solid #777; font-size: 0.8rem; padding: 6px 10px; border-radius: 4px; cursor: pointer; white-space: nowrap; }
     .btn-toggle:active { background: #777; }
 
-    .route-selector { width: 100%; max-width: 420px; margin-bottom: 10px; }
-    select { width: 100%; padding: 10px; background-color: #222; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 16px; font-weight: bold; appearance: none; text-align: center; }
+    .calibration-panel {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #444;
+    }
+
+    /* Nouvelle ligne pour la liste déroulante et les flèches */
+    .route-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; max-width: 420px; margin-bottom: 10px; }
     
+    .btn-nav { background: #444; color: #fff; border: 1px solid #666; font-size: 18px; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+    .btn-nav:active { background: #666; }
+
+    select { flex: 1; padding: 10px; background-color: #222; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 16px; font-weight: bold; appearance: none; text-align: center; }
+    
+    /* Bouton pour marquer un bloc comme réalisé */
+    .status-row { display: none; align-items: center; justify-content: center; width: 100%; max-width: 420px; margin-bottom: 15px; }
+    .checkbox-label { background: #1e1e1e; border: 1px solid #444; padding: 8px 15px; border-radius: 20px; font-size: 14px; font-weight: bold; color: #ccc; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .checkbox-label input { width: 18px; height: 18px; accent-color: #34c759; }
+
     button { background: #333; color: #fff; border: 1px solid #555; padding: 10px 12px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; flex: 1; }
     button:active { background: #555; }
     
@@ -93,6 +112,7 @@
       pointer-events: none; 
       opacity: 0.5;
       z-index: 1;
+      transform-origin: center center;
     }
 
     .grid {
@@ -123,7 +143,7 @@
 </head>
 <body>
 
-  <div class="version-badge">V34</div>
+  <div class="version-badge">V36</div>
   <h1 id="pageTitle">Mini MoonBoard</h1>
 
   <div class="controls-row">
@@ -142,6 +162,19 @@
       <label>Opacité :</label>
       <input type="range" id="opacityRange" min="0" max="1" step="0.05" value="0.5" oninput="changeOpacity(this.value)">
       <button class="btn-toggle" id="btnToggleOverlay" onclick="toggleOverlay()">Masquer</button>
+      <button class="btn-toggle" onclick="toggleCalibration()">⚙️ Ajuster</button>
+    </div>
+    
+    <div class="calibration-panel" id="calibrationPanel">
+      <div class="opacity-row">
+        <label>Hauteur :</label>
+        <input type="range" id="scaleYRange" min="0.85" max="1.15" step="0.005" value="1" oninput="updateCalibration()">
+      </div>
+      <div class="opacity-row">
+        <label>Haut/Bas :</label>
+        <input type="range" id="offsetYRange" min="-10" max="10" step="0.1" value="0" oninput="updateCalibration()">
+      </div>
+      <div style="font-size: 0.7rem; color: #888; text-align: center;">Réglage mémorisé pour les prochaines captures</div>
     </div>
   </div>
 
@@ -150,9 +183,19 @@
     <button class="btn-delete" onclick="clearSavedRoutes()">🗑️ Vider</button>
   </div>
 
-  <div class="route-selector">
-    <select id="routeSelect" onchange="loadSelectedRoute()">
-    </select>
+  <!-- Ligne de Navigation des Blocs -->
+  <div class="route-nav-row">
+    <button class="btn-nav" onclick="prevRoute()">◄</button>
+    <select id="routeSelect" onchange="loadSelectedRoute()"></select>
+    <button class="btn-nav" onclick="nextRoute()">►</button>
+  </div>
+
+  <!-- Ligne de Statut Réalisé -->
+  <div class="status-row" id="statusRow">
+    <label class="checkbox-label">
+      <input type="checkbox" id="chkCompleted" onchange="toggleCompleted()"> 
+      ✅ Bloc réalisé
+    </label>
   </div>
 
   <div class="board-container">
@@ -161,7 +204,7 @@
   </div>
 
   <script>
-    // === INITIALISATIONS (Code 100% natif, aucune dépendance externe) ===
+    // === INITIALISATION ===
     const cols = ['A','B','C','D','E','F','G','H','I','J','K'];
     const rows = 12;
     let holdStates = {};
@@ -174,19 +217,34 @@
 
     let localRoutes = JSON.parse(localStorage.getItem('moonboard_custom_routes')) || {};
     
+    let savedScaleY = localStorage.getItem('mb_calib_scaleY') || 1;
+    let savedOffsetY = localStorage.getItem('mb_calib_offsetY') || 0;
+
+    document.getElementById('scaleYRange').value = savedScaleY;
+    document.getElementById('offsetYRange').value = savedOffsetY;
+
+    // === GESTION DE LA LISTE ET SAUVEGARDE ===
     function initRouteSelector() {
       const selector = document.getElementById('routeSelect');
+      const currentVal = selector.value; // Mémorise la sélection actuelle
+      
       selector.innerHTML = '<option value="">-- Choisir un bloc --</option>';
       Object.keys(localRoutes).forEach(routeName => {
         const opt = document.createElement('option');
         opt.value = routeName;
-        opt.innerText = routeName;
+        // Ajoute la coche dans le nom si le bloc est réalisé
+        const prefix = localRoutes[routeName].completed ? "✅ " : "";
+        opt.innerText = prefix + routeName;
         selector.appendChild(opt);
       });
+      
+      if (currentVal && localRoutes[currentVal]) {
+        selector.value = currentVal;
+      }
     }
 
     function saveCurrentRoute() {
-      let route = { depart: [], progression: [], arrivee: [] };
+      let route = { depart: [], progression: [], arrivee: [], completed: false };
       let hasHolds = false;
       Object.keys(holdStates).forEach(id => {
         if (holdStates[id] === 1) { route.depart.push(id); hasHolds = true; }
@@ -199,11 +257,16 @@
       let routeName = prompt("Nom et cotation du bloc :", "Mon Bloc (6A+)");
       if (!routeName || routeName.trim() === "") return;
 
+      // Conserve le statut réalisé s'il existait déjà
+      if (localRoutes[routeName]) {
+          route.completed = localRoutes[routeName].completed;
+      }
+
       localRoutes[routeName] = route;
       localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
       initRouteSelector();
       document.getElementById('routeSelect').value = routeName;
-      document.getElementById('pageTitle').innerText = routeName;
+      loadSelectedRoute(); // Recharge pour afficher la case "réalisé"
     }
 
     function clearSavedRoutes() {
@@ -213,6 +276,7 @@
         localRoutes = {};
         initRouteSelector();
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+        document.getElementById('statusRow').style.display = "none";
       }
     }
 
@@ -222,18 +286,63 @@
       const routeName = selector.value;
       
       Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
+      
       if (routeName && localRoutes[routeName]) {
         const route = localRoutes[routeName];
         if (route.depart) route.depart.forEach(id => { holdStates[id] = 1; updateUI(id); });
         if (route.progression) route.progression.forEach(id => { holdStates[id] = 2; updateUI(id); });
         if (route.arrivee) route.arrivee.forEach(id => { holdStates[id] = 3; updateUI(id); });
+        
         document.getElementById('pageTitle').innerText = routeName;
+        
+        // Afficher et mettre à jour la case à cocher
+        document.getElementById('statusRow').style.display = "flex";
+        document.getElementById('chkCompleted').checked = !!route.completed;
       } else {
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+        document.getElementById('statusRow').style.display = "none";
       }
       sendBLEFrame();
     }
 
+    // === NAVIGATION RAPIDE (FLECHES GAUCHE/DROITE) ===
+    function prevRoute() {
+      const keys = Object.keys(localRoutes);
+      if (keys.length === 0) return;
+      const selector = document.getElementById('routeSelect');
+      let idx = keys.indexOf(selector.value);
+      
+      if (idx <= 0) idx = keys.length - 1; // Boucle à la fin
+      else idx--;
+      
+      selector.value = keys[idx];
+      loadSelectedRoute();
+    }
+
+    function nextRoute() {
+      const keys = Object.keys(localRoutes);
+      if (keys.length === 0) return;
+      const selector = document.getElementById('routeSelect');
+      let idx = keys.indexOf(selector.value);
+      
+      if (idx === -1 || idx === keys.length - 1) idx = 0; // Boucle au début
+      else idx++;
+      
+      selector.value = keys[idx];
+      loadSelectedRoute();
+    }
+
+    // === GESTION DU STATUT "RÉALISÉ" ===
+    function toggleCompleted() {
+      const routeName = document.getElementById('routeSelect').value;
+      if (routeName && localRoutes[routeName]) {
+        localRoutes[routeName].completed = document.getElementById('chkCompleted').checked;
+        localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
+        initRouteSelector(); // Met à jour le menu déroulant instantanément
+      }
+    }
+
+    // === CRÉATION DE LA GRILLE ===
     const gridEl = document.getElementById('boardGrid');
     for (let r = rows; r >= 1; r--) {
       cols.forEach(c => {
@@ -246,13 +355,13 @@
         gridEl.appendChild(div);
       });
     }
-
     initRouteSelector();
 
     function toggleHold(holdId) {
       holdStates[holdId] = (holdStates[holdId] + 1) % 4;
       updateUI(holdId);
       document.getElementById('routeSelect').value = ""; 
+      document.getElementById('statusRow').style.display = "none"; // Cache la coche si on édite
       sendBLEFrame();
     }
 
@@ -264,13 +373,14 @@
     function clearBoard() {
       document.getElementById('routeSelect').value = ""; 
       document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+      document.getElementById('statusRow').style.display = "none";
       Object.keys(holdStates).forEach(id => { if(holdStates[id] !== 0) { holdStates[id] = 0; updateUI(id); }});
       sendBLEFrame();
     }
 
+    // === GESTION DU CALQUE ET DE LA CALIBRATION ===
     function changeOpacity(val) {
-      const overlay = document.getElementById('overlayImage');
-      overlay.style.opacity = val;
+      document.getElementById('overlayImage').style.opacity = val;
     }
 
     function toggleOverlay() {
@@ -286,7 +396,27 @@
       }
     }
 
-    // === DECOUPAGE INTELLIGENT DE L'IMAGE ===
+    function toggleCalibration() {
+      const panel = document.getElementById('calibrationPanel');
+      panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+    }
+
+    function updateCalibration() {
+      savedScaleY = document.getElementById('scaleYRange').value;
+      savedOffsetY = document.getElementById('offsetYRange').value;
+      
+      localStorage.setItem('mb_calib_scaleY', savedScaleY);
+      localStorage.setItem('mb_calib_offsetY', savedOffsetY);
+      
+      applyCalibration();
+    }
+
+    function applyCalibration() {
+      const overlay = document.getElementById('overlayImage');
+      overlay.style.transform = `translateY(${savedOffsetY}%) scaleY(${savedScaleY})`;
+    }
+
+    // === DECOUPAGE AUTOMATIQUE DE LA CAPTURE ===
     document.getElementById('fileInput').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if(!file) return;
@@ -305,20 +435,16 @@
         let topY = -1;
         let botY = -1;
         
-        // Scan sur le bord gauche (à 5% de la largeur) pour éviter le logo central et le texte
         let scanX = Math.floor(canvas.width * 0.05); 
-        
         for (let y = 0; y < canvas.height; y++) {
            let i = (y * canvas.width + scanX) * 4;
            let r = imgData[i], g = imgData[i+1], b = imgData[i+2];
-           // Détection du jaune
            if (r > 150 && g > 150 && b < 100) {
                if (topY === -1) topY = y;
                botY = y;
            }
         }
         
-        // Sécurité en cas d'image inattendue
         if (topY === -1 || (botY - topY) < (canvas.height * 0.3)) { 
             topY = canvas.height * 0.25; 
             botY = canvas.height * 0.85; 
@@ -328,8 +454,6 @@
         cropCanvas.width = canvas.width;
         cropCanvas.height = botY - topY;
         const cropCtx = cropCanvas.getContext('2d');
-        
-        // Découpe exactement le carré jaune
         cropCtx.drawImage(img, 0, topY, canvas.width, botY - topY, 0, 0, cropCanvas.width, cropCanvas.height);
 
         const overlay = document.getElementById('overlayImage');
@@ -341,12 +465,15 @@
         document.getElementById('btnToggleOverlay').innerText = "Masquer";
         document.getElementById('opacityRange').value = "0.5";
         document.getElementById('overlayControls').style.display = "flex";
+
+        applyCalibration(); 
       };
       
       img.src = imageUrl;
       e.target.value = '';
     });
 
+    // === GESTION DU BLUETOOTH ===
     async function toggleBLE() {
       if (bleDevice && bleDevice.gatt.connected) {
         bleDevice.gatt.disconnect();
