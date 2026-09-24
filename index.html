@@ -74,6 +74,7 @@
     const cols = ['A','B','C','D','E','F','G','H','I','J','K'];
     const rows = 12;
     let holdStates = {};
+    window.scannedRouteName = ""; // Variable globale sécurisée pour le nom du bloc
 
     const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
     const RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
@@ -93,7 +94,7 @@
       });
     }
 
-    // --- SAUVEGARDE AVEC TEXTE PRÉ-REMPLI CORRIGÉ ---
+    // --- SAUVEGARDE AVEC TEXTE PRÉ-REMPLI GARANTI ---
     function saveCurrentRoute() {
       let route = { depart: [], progression: [], arrivee: [] };
       let hasHolds = false;
@@ -105,14 +106,8 @@
       
       if (!hasHolds) { alert("Le panneau est vide !"); return; }
 
-      // On lit ce qui est ACTUELLEMENT affiché en haut de la page
-      let currentTitle = document.getElementById('pageTitle').innerText;
-      let defaultName = "Mon Bloc";
-      
-      // Si le titre n'est pas le titre par défaut ou un message d'analyse, on l'utilise
-      if (currentTitle && currentTitle !== "Mini MoonBoard" && !currentTitle.includes("Analyse")) {
-          defaultName = currentTitle;
-      }
+      // Utilisation stricte de la variable globale pour éviter les bugs de l'HTML
+      let defaultName = window.scannedRouteName ? window.scannedRouteName : "Mon Bloc";
       
       // La popup s'ouvre avec le texte pré-écrit
       let routeName = prompt("Nom et cotation du bloc :", defaultName);
@@ -123,6 +118,7 @@
       initRouteSelector();
       document.getElementById('routeSelect').value = routeName;
       document.getElementById('pageTitle').innerText = routeName;
+      window.scannedRouteName = routeName; // Mise à jour
     }
 
     function clearSavedRoutes() {
@@ -132,6 +128,7 @@
         localRoutes = {};
         initRouteSelector();
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+        window.scannedRouteName = "";
       }
     }
 
@@ -144,8 +141,10 @@
         if (route.progression) route.progression.forEach(id => { holdStates[id] = 2; updateUI(id); });
         if (route.arrivee) route.arrivee.forEach(id => { holdStates[id] = 3; updateUI(id); });
         document.getElementById('pageTitle').innerText = routeName;
+        window.scannedRouteName = routeName;
       } else {
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+        window.scannedRouteName = "";
       }
       sendBLEFrame();
     }
@@ -179,11 +178,12 @@
     function clearBoard() {
       document.getElementById('routeSelect').value = ""; 
       document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+      window.scannedRouteName = "";
       Object.keys(holdStates).forEach(id => { if(holdStates[id] !== 0) { holdStates[id] = 0; updateUI(id); }});
       sendBLEFrame();
     }
 
-    // --- LE SCANNER CIBLÉ EXCLUSIVEMENT SUR L'EMPLACEMENT DES ÉTIQUETTES ---
+    // --- LE SCANNER INFAILLIBLE : FORMAT FIXE + LIGNE VERTICALE ---
     document.getElementById('fileInput').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if(!file) return;
@@ -195,18 +195,18 @@
         img.src = URL.createObjectURL(file);
         await new Promise(resolve => { img.onload = resolve; });
 
-        // 1. ISOLER LE HAUT DE L'IMAGE POUR LIRE LE TITRE
+        // 1. ISOLER LE HAUT DE L'IMAGE POUR LIRE LE TITRE (OCR)
         const headerCanvas = document.createElement('canvas');
         headerCanvas.width = img.width;
-        headerCanvas.height = img.height * 0.20; // 20% du haut (le bandeau noir)
+        headerCanvas.height = img.height * 0.22; // On scanne le bandeau du haut
         const hCtx = headerCanvas.getContext('2d');
         hCtx.drawImage(img, 0, 0);
         
         const { data } = await Tesseract.recognize(headerCanvas.toDataURL(), 'eng');
         let detectedName = "Bloc Scanné";
-        const lines = data.lines.map(l => l.text.trim());
-        let setByIndex = lines.findIndex(l => l.toLowerCase().includes('set by'));
+        const lines = data.lines.map(l => l.text.trim().replace(/\n/g, ' '));
         
+        let setByIndex = lines.findIndex(l => l.toLowerCase().includes('set by'));
         if (setByIndex > 0) {
           let rawTitle = lines[setByIndex - 1].replace(/[^A-Za-z0-9 \-+!]/g, '').trim();
           let grade = "";
@@ -220,70 +220,77 @@
            if (possibleTitle) detectedName = possibleTitle.replace(/[^A-Za-z0-9 \-+!]/g, '').trim();
         }
 
-        // On affiche le titre trouvé sur la page Web immédiatement
+        // On sauvegarde le titre PROPREMENT dans la variable globale
+        window.scannedRouteName = detectedName;
         document.getElementById('pageTitle').innerText = detectedName;
 
-        // 2. RECHERCHE GÉOMÉTRIQUE EXACTE DES ÉTIQUETTES (A1, B2...)
+        // 2. DÉTECTION DES PRISES PAR QUADRILLAGE FIXE
         const canvas = document.createElement('canvas');
         canvas.width = img.width; canvas.height = img.height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
         const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-        // Trouver les limites exactes du panneau jaune
-        let scanX = Math.floor(canvas.width * 0.1); // Scanner une colonne à 10% du bord gauche (pour éviter le logo blanc central)
-        let topY = -1, bottomY = -1;
+        // Trouver automatiquement le panneau jaune en scannant le centre de l'image de haut en bas
+        let centerX = Math.floor(canvas.width / 2);
+        let boardTop = -1, boardBottom = -1;
         
         for (let y = 0; y < canvas.height; y++) {
-            let i = (y * canvas.width + scanX) * 4;
+            let i = (y * canvas.width + centerX) * 4;
             let r = imgData[i], g = imgData[i+1], b = imgData[i+2];
-            // Si c'est le jaune du panneau Moonboard
-            if (r > 180 && g > 180 && b < 130) {
-                if (topY === -1) topY = y;
-                bottomY = y; // Va se mettre à jour jusqu'à la dernière ligne jaune
+            // Est-ce que ce pixel est jaune ? (Fort rouge, Fort vert, Faible bleu)
+            if (r > 180 && g > 180 && b < 120) {
+                if (boardTop === -1) boardTop = y;
+                boardBottom = y;
             }
         }
 
-        if (topY === -1) { 
-            alert("Panneau jaune introuvable sur l'image."); 
-            document.getElementById('pageTitle').innerText = "Mini MoonBoard";
-            return; 
+        // Sécurité si l'image est bizarre
+        if (boardTop === -1) {
+            boardTop = canvas.height * 0.31;
+            boardBottom = canvas.height * 0.80;
         }
 
         // Découpage parfait de la grille
-        let boardW = canvas.width;
-        let boardH = bottomY - topY;
-        let cellW = boardW / 11;
-        let cellH = boardH / 12;
+        let cellW = canvas.width / 11;
+        let cellH = (boardBottom - boardTop) / 12;
 
         Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
         let foundCount = 0;
 
-        // On inspecte uniquement le bas-centre de chaque case
+        // Scanne toutes les cases
         for (let r = 0; r < 12; r++) {
             for (let c = 0; c < 11; c++) {
                 let holdId = cols[c] + (12 - r);
                 
-                // Cible : Le centre horizontal de la case
-                let centerX = Math.floor((c + 0.5) * cellW);
-                // Cible : La partie basse de la case (là où se trouve l'étiquette avec l'adresse)
-                let startY = Math.floor(topY + (r + 0.70) * cellH);
-                let endY = Math.floor(topY + (r + 0.95) * cellH);
+                let cellLeft = c * cellW;
+                let cellTop = boardTop + r * cellH;
+                let cellCenterX = Math.floor(cellLeft + cellW / 2);
 
                 let state = 0;
                 
-                // On scanne une fine ligne verticale à cet emplacement exact
-                for (let y = startY; y < endY; y++) {
-                    let i = (y * canvas.width + centerX) * 4;
-                    let pr = imgData[i], pg = imgData[i+1], pb = imgData[i+2];
-                    
-                    // Détection des couleurs pures (ignore totalement le jaune et le marron)
-                    if (pg > 180 && pr < 100 && pb < 100) { state = 1; break; } // Vert (Départ)
-                    else if (pb > 180 && pr < 100 && pg < 150) { state = 2; break; } // Bleu (Progression)
-                    else if (pr > 180 && pg < 80 && pb < 80) { state = 3; break; } // Rouge (Arrivée)
+                // LE SECRET : On trace une ligne verticale de 10 pixels de large
+                // qui traverse TOUTE la case de haut en bas.
+                // Dès qu'on croise du rouge, bleu ou vert pur (cercle OU étiquette), on valide !
+                for (let y = cellTop; y < cellTop + cellH; y += 2) {
+                    for (let x = cellCenterX - 5; x <= cellCenterX + 5; x += 2) {
+                        let px = Math.floor(x); let py = Math.floor(y);
+                        if(px < 0 || px >= canvas.width || py < 0 || py >= canvas.height) continue;
+                        
+                        let i = (py * canvas.width + px) * 4;
+                        let pr = imgData[i], pg = imgData[i+1], pb = imgData[i+2];
+                        
+                        // Détection stricte des couleurs (ignore totalement le bois et le jaune)
+                        if (pg > 160 && pr < 100 && pb < 100) { state = 1; } // Vert pur
+                        else if (pb > 160 && pr < 120 && pg < 150) { state = 2; } // Bleu pur
+                        else if (pr > 180 && pg < 90 && pb < 90) { state = 3; } // Rouge pur
+                        
+                        if (state > 0) break; // Prise trouvée, on arrête de chercher dans cette case
+                    }
+                    if (state > 0) break;
                 }
 
-                if (state !== 0) {
+                if (state > 0) {
                     holdStates[holdId] = state;
                     updateUI(holdId);
                     foundCount++;
@@ -293,15 +300,15 @@
 
         if (foundCount > 0) {
             sendBLEFrame();
+            alert(`Titre lu : ${window.scannedRouteName}\n${foundCount} prises trouvées !\n\nClique sur "Enregistrer".`);
         } else {
-            alert("Aucune étiquette d'adresse détectée !");
+            alert("Aucune prise détectée. Vérifie l'image.");
         }
 
       } catch (err) {
-        alert("Erreur lors de l'analyse : " + err);
+        alert("Erreur : " + err);
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
       }
-
       e.target.value = '';
     });
     // -----------------------------------------------------------
