@@ -75,11 +75,11 @@
       overflow: hidden;
     }
 
-    /* Correction du calque : object-fit contain pour garder les proportions sans décalage */
+    /* CORRECTION : On repasse en 'cover' pour que la capture remplisse tout le cadre carré exactement comme le fond */
     #overlayImage {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
-      object-fit: contain; 
+      object-fit: cover; 
       pointer-events: none; 
       opacity: 0;
       transition: opacity 0.2s ease;
@@ -116,7 +116,7 @@
 </head>
 <body>
 
-  <div class="version-badge">V28</div>
+  <div class="version-badge">V29</div>
   <h1 id="pageTitle">Mini MoonBoard</h1>
 
   <div class="controls-row">
@@ -209,7 +209,7 @@
     }
 
     function loadSelectedRoute() {
-      const routeName = document.getElementById('routeSelect').value;
+      const routeName = document.getElementById('routeSelect'].value;
       Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
       if (routeName && localRoutes[routeName]) {
         const route = localRoutes[routeName];
