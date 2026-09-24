@@ -75,12 +75,11 @@
       overflow: hidden;
     }
 
-    /* Calque pour la capture d'écran superposée en transparence */
     #overlayImage {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
       object-fit: cover;
-      pointer-events: none; /* Laisse passer les clics pour pouvoir tapoter sur la grille par-dessus */
+      pointer-events: none; 
       opacity: 0;
       transition: opacity 0.2s ease;
       z-index: 1;
@@ -88,7 +87,7 @@
 
     .grid {
       position: relative;
-      z-index: 2; /* Au-dessus de l'image de fond */
+      z-index: 2; 
       display: grid;
       grid-template-columns: repeat(11, 1fr);
       grid-template-rows: repeat(12, 1fr);
@@ -116,7 +115,7 @@
 </head>
 <body>
 
-  <div class="version-badge">V26</div>
+  <div class="version-badge">V27</div>
   <h1 id="pageTitle">Mini MoonBoard</h1>
 
   <div class="controls-row">
@@ -130,7 +129,6 @@
     <input type="file" id="fileInput" accept="image/*" style="display:none">
   </div>
 
-  <!-- Curseur d'opacité qui apparaît dès qu'une image est chargée -->
   <div class="opacity-control" id="opacityRow">
     <label>Transparence capture :</label>
     <input type="range" id="opacityRange" min="0.1" max="0.9" step="0.05" value="0.5" oninput="changeOpacity(this.value)">
@@ -147,9 +145,7 @@
   </div>
 
   <div class="board-container">
-    <!-- Image de surimpression -->
     <img id="overlayImage" alt="Capture superposée">
-    <!-- Grille interactive des prises -->
     <div class="grid" id="boardGrid"></div>
   </div>
 
@@ -212,7 +208,7 @@
     }
 
     function loadSelectedRoute() {
-      const routeName = document.getElementById('routeSelect'].value;
+      const routeName = document.getElementById('routeSelect').value;
       Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
       if (routeName && localRoutes[routeName]) {
         const route = localRoutes[routeName];
@@ -251,7 +247,8 @@
     }
 
     function updateUI(holdId) {
-      document.getElementById(`hold-${holdId}`).className = `hold state-${holdStates[holdId]}`;
+      const el = document.getElementById(`hold-${holdId}`);
+      if(el) el.className = `hold state-${holdStates[holdId]}`;
     }
 
     function clearBoard() {
@@ -266,7 +263,7 @@
       document.getElementById('overlayImage').style.opacity = val;
     }
 
-    // --- MODE SUPERPOSITION VISUELLE + LECTURE DU TITRE ---
+    // --- CHARGEMENT DE LA CAPTURE POUR LA TRANSPARENCE ET LECTURE DU TITRE ---
     document.getElementById('fileInput').addEventListener('change', async function(e) {
       const file = e.target.files[0];
       if(!file) return;
@@ -276,7 +273,7 @@
       const imageUrl = URL.createObjectURL(file);
       const overlay = document.getElementById('overlayImage');
       overlay.src = imageUrl;
-      overlay.style.opacity = "0.5"; // Transparence par défaut à 50%
+      overlay.style.opacity = "0.5"; 
       document.getElementById('opacityRow').style.display = "flex";
 
       try {
@@ -284,7 +281,6 @@
         img.src = imageUrl;
         await new Promise(resolve => { img.onload = resolve; });
 
-        // Lecture du titre via Tesseract pour le pré-remplissage à l'enregistrement
         const headerCanvas = document.createElement('canvas');
         headerCanvas.width = img.width;
         headerCanvas.height = img.height * 0.25; 
@@ -327,7 +323,6 @@
 
       e.target.value = '';
     });
-    // -----------------------------------------------------------
 
     async function toggleBLE() {
       if (bleDevice && bleDevice.gatt.connected) {
@@ -347,7 +342,7 @@
 
     function onDisconnected() {
       rxCharacteristic = null;
-      document.getElementById('btnConnect').innerText = "Se déconnecter";
+      document.getElementById('btnConnect').innerText = "Se connecter";
       document.getElementById('statusIndicator').className = "status-dot disconnected";
     }
 
