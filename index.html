@@ -18,19 +18,20 @@
     
     .version-badge { position: absolute; top: 10px; right: 15px; font-size: 0.75rem; color: #777; background: #222; padding: 3px 6px; border-radius: 4px; border: 1px solid #444; }
 
-    /* Le petit point minimaliste pour "No Kickboard" en haut à gauche */
-    .kickboard-dot { position: absolute; top: 12px; left: 15px; width: 14px; height: 14px; border-radius: 50%; cursor: pointer; transition: all 0.3s; border: 1px solid #555; background-color: #333; }
-    .kickboard-dot.active { background-color: #ff3b30; border-color: #ff3b30; box-shadow: 0 0 8px rgba(255, 59, 48, 0.8); }
+    /* Le bandeau du titre avec le gros point rouge intégré */
+    .title-container { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 420px; margin: 10px 0 15px 0; overflow: hidden; }
+    
+    /* Le point rouge No Kickboard (agrandi) */
+    .kickboard-dot { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; transition: all 0.3s; border: 2px solid #555; background-color: #333; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .kickboard-dot.active { background-color: #ff3b30; border-color: #ff3b30; box-shadow: 0 0 12px rgba(255, 59, 48, 0.8); }
 
-    .title-container { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; max-width: 420px; margin: 5px 0 10px 0; overflow: hidden; }
+    h1 { font-size: 1.15rem; margin: 0; color: #f39c12; transition: color 0.3s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; max-width: 60%; }
     
-    h1 { font-size: 1.1rem; margin: 0; color: #f39c12; transition: color 0.3s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; max-width: 75%; }
-    
-    /* Boutons de titre */
-    .btn-title { background: transparent; border: 1px solid #555; color: #aaa; border-radius: 6px; padding: 4px 6px; font-size: 13px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; height: 26px; flex-shrink: 0; }
+    /* Boutons autour du titre */
+    .btn-title { background: transparent; border: 1px solid #555; color: #aaa; border-radius: 6px; padding: 4px 6px; font-size: 14px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; height: 28px; flex-shrink: 0; }
     .btn-title:active { background: #333; color: #fff; }
 
-    /* Structure des contrôles minimaliste */
+    /* Structure des contrôles */
     .control-panel { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 420px; margin-bottom: 10px; }
     .controls-row { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
     .compact-row { gap: 6px; }
@@ -40,7 +41,7 @@
     .filter-select-mini { background-color: #1a1a1a; color: #f39c12; border: 1px solid #f39c12; font-weight: bold; appearance: none; text-align: center; cursor: pointer; }
 
     /* Navigation */
-    .route-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; margin-bottom: 8px; }
+    .route-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; max-width: 420px; margin-bottom: 10px; }
     .btn-nav { background: #444; color: #fff; border: 1px solid #666; font-size: 16px; padding: 8px 14px; border-radius: 6px; cursor: pointer; flex-shrink: 0; }
     .btn-nav:active { background: #666; }
     
@@ -52,29 +53,23 @@
     button { background: #333; color: #fff; border: 1px solid #555; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; }
     button:active { background: #555; }
     
-    /* Bouton Bleu (Connecter, Sauvegarder) */
     .btn-save { background: #005bb5; border-color: #0073e6; flex: 2;}
     .btn-save:active { background: #003f7a; }
     
-    /* NOUVEAU bouton Nouveau/Effacer (Orange) */
-    .btn-new { background: #e67e22; border-color: #d35400; flex:1;}
-    .btn-new:active { background: #bf4a00; }
+    .btn-clear { background: #e67e22; border-color: #d35400; flex: 1;}
+    .btn-clear:active { background: #bf4a00; }
+    .btn-new { background: #d35400; border-color: #ba4a00; flex: 0.4; font-size: 15px;}
+    .btn-new:active { background: #a04000; }
     
-    /* Boutons de suppression (Rouge) */
     .btn-remove { background: #d9534f; border-color: #d43f3a; flex: 1.5; padding: 8px 4px; }
     .btn-remove:active { background: #c9302c; }
     .btn-delete { background: #555; border-color: #444; flex: 1; padding: 8px 4px; }
     .btn-delete:active { background: #333; }
     
-    /* Boutons Verts (Exporter) */
-    .btn-export { background: #27ae60; border-color: #2ecc71; flex:1.2; padding: 8px 4px;}
+    .btn-export { background: #27ae60; border-color: #2ecc71; flex:1;}
     .btn-export:active { background: #1e8449; }
-    
-    /* Boutons Mauves (Importation) */
-    .btn-import-file { background: #8e44ad; border-color: #9b59b6; flex:1; padding: 8px 4px; }
+    .btn-import-file { background: #8e44ad; border-color: #9b59b6; flex:1; }
     .btn-import-file:active { background: #6c3483; }
-    .btn-import-paste { background: #c39bd3; color: #333; border: 1px solid #9b59b6; flex:1.8; padding: 8px 2px; font-size: 12px;}
-    .btn-import-paste:active { background: #a569bd; color: white; }
 
     /* Indicateur d'état BLE */
     .status-dot { width: 14px; height: 14px; border-radius: 50%; transition: background-color 0.3s, box-shadow 0.3s; flex-shrink: 0; }
@@ -93,23 +88,23 @@
 </head>
 <body>
 
-  <div class="version-badge">V50</div>
-  
-  <!-- Point rouge No Kickboard (en haut à gauche) -->
-  <div id="kickboardDot" class="kickboard-dot" onclick="toggleKickboard()" title="No Kickboard (Clique pour activer/désactiver)"></div>
+  <div class="version-badge">V51</div>
   
   <div class="title-container">
-    <button class="btn-title" onclick="editCurrentTitle()" title="Renommer / Éditer le nom du bloc">✏️</button>
+    <!-- Gros Point Rouge No Kickboard intégré au bandeau -->
+    <div id="kickboardDot" class="kickboard-dot" onclick="toggleKickboard()" title="No Kickboard (Clique pour activer/désactiver)"></div>
+    <button class="btn-title" onclick="editCurrentTitle()" title="Renommer le bloc">✏️</button>
     <h1 id="pageTitle">Mini MoonBoard</h1>
     <button class="btn-title" id="btnCopyTitle" onclick="copyTitle()" title="Copier le nom du bloc">📋</button>
   </div>
 
   <div class="control-panel">
-    <!-- Ligne 1 : Connexion, Filtrage -->
+    <!-- Ligne 1 : Connexion, Effacer, Nouveau, Filtrage -->
     <div class="controls-row compact-row">
         <button id="btnConnect" class="btn-save" onclick="toggleBLE()">Se connecter</button>
         <div id="statusIndicator" class="status-dot disconnected"></div>
-        <button class="btn-new" onclick="clearBoard()">🆕 Nouveau</button>
+        <button class="btn-clear" onclick="clearHolds()">Effacer</button>
+        <button class="btn-new" onclick="createNewRoute()" title="Créer un nouveau bloc">📝</button>
         <select id="gradeFilter" class="filter-select-mini" onchange="initRouteSelector()">
           <option value="">Cotation</option>
           <option value="6A+">6A+</option>
@@ -130,11 +125,10 @@
         </select>
     </div>
 
-    <!-- Ligne 2 : Fichiers et Imports -->
+    <!-- Ligne 2 : Fichiers -->
     <div class="controls-row compact-row">
         <button class="btn-export" onclick="exportRoutes()">📤 Exporter</button>
-        <button class="btn-import-file" onclick="document.getElementById('importInput').click()">📥 Fichier</button>
-        <button class="btn-import-paste" onclick="importFromPaste()">📋 Coller JSON</button>
+        <button class="btn-import-file" onclick="document.getElementById('importInput').click()">📥 Importer JSON</button>
         <input type="file" id="importInput" accept=".json" style="display:none" onchange="importRoutes(event)">
     </div>
 
@@ -147,7 +141,7 @@
   </div>
 
   <!-- Ligne 4 : Navigation et Coche -->
-  <div class="route-nav-row max-width: 420px;">
+  <div class="route-nav-row">
     <button class="btn-nav" onclick="prevRoute()">◄</button>
     <select id="routeSelect" onchange="loadSelectedRoute()"></select>
     <button class="btn-nav" onclick="nextRoute()">►</button>
@@ -179,7 +173,6 @@
         const newTitle = prompt("Éditer le nom et la cotation du bloc :", oldTitle);
         if (newTitle !== null && newTitle.trim() !== "") {
             titleEl.innerText = newTitle;
-            // Si on édite une route chargée, on deselectionne pour forcer à re-sauvegarder
             document.getElementById('routeSelect').value = "";
             updateCheckboxState();
         }
@@ -200,7 +193,6 @@
     function toggleKickboard() {
       isNoKickboard = !isNoKickboard;
       updateKickboardUI();
-      // Si on modifie une route chargée, on deselectionne pour forcer à re-sauvegarder
       document.getElementById('routeSelect').value = "";
       updateCheckboxState();
     }
@@ -255,7 +247,7 @@
       
       if (!hasHolds) { alert("Erreur : Le panneau est vide ! Clique sur des prises d'abord."); return; }
 
-      // Si le bloc existe déjà, on conserve l'état 'completed'
+      // Conserve l'état 'completed' s'il existait déjà
       if (localRoutes[title]) { route.completed = localRoutes[title].completed; }
       
       // Enregistre l'état du point rouge
@@ -267,7 +259,7 @@
       initRouteSelector();
       document.getElementById('routeSelect').value = title;
       updateCheckboxState();
-      alert(`Le bloc "${title}" a bien été enregistré dans ton téléphone.`);
+      alert(`Le bloc "${title}" a bien été enregistré !`);
     }
 
     function loadSelectedRoute() {
@@ -275,7 +267,7 @@
       if (!selector) return;
       const routeName = selector.value;
       
-      Object.keys(holdStates).forEach(id => { holdStates[id] = 0; updateUI(id); });
+      clearHoldsOnly(); // Vide la grille visuellement
       
       if (routeName && localRoutes[routeName]) {
         const route = localRoutes[routeName];
@@ -286,7 +278,6 @@
         document.getElementById('pageTitle').innerText = routeName;
         isNoKickboard = !!route.noKickboard;
       } else {
-        // Mode "Nouveau Bloc"
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
         isNoKickboard = false;
       }
@@ -296,18 +287,34 @@
       sendBLEFrame();
     }
 
-    // NOUVEAU bouton : Efface la grille et prépare un nouveau bloc manuel
-    function clearBoard() {
+    // Vide uniquement les prises (garde le nom/statut intact pour permettre l'édition)
+    function clearHolds() {
+      clearHoldsOnly();
+      sendBLEFrame();
+    }
+
+    // Fonction interne pour vider la grille
+    function clearHoldsOnly() {
+      Object.keys(holdStates).forEach(id => {
+        if(holdStates[id] !== 0) {
+          holdStates[id] = 0;
+          updateUI(id);
+        }
+      });
+    }
+
+    // Prépare un tout nouveau bloc (vide grille + réinitialise le titre)
+    function createNewRoute() {
       document.getElementById('routeSelect').value = ""; 
       document.getElementById('pageTitle').innerText = "Mini MoonBoard";
       isNoKickboard = false;
       updateKickboardUI();
       updateCheckboxState();
-      Object.keys(holdStates).forEach(id => { if(holdStates[id] !== 0) { holdStates[id] = 0; updateUI(id); }});
+      clearHoldsOnly();
       sendBLEFrame();
     }
 
-    // === GESTION DE LA SUPPRESSION (❌ et ⚠️) ===
+    // === GESTION DE LA SUPPRESSION ===
     function deleteCurrentRoute() {
       const selector = document.getElementById('routeSelect');
       const routeName = selector.value;
@@ -317,21 +324,21 @@
         return;
       }
       
-      if (confirm(`⚠️ ATTENTION ⚠️\n\nEs-tu sûr de vouloir supprimer définitivement le bloc "${routeName}" ?`)) {
+      if (confirm(`Es-tu sûr de vouloir supprimer définitivement le bloc "${routeName}" ?`)) {
         delete localRoutes[routeName];
         localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
         initRouteSelector();
-        clearBoard(); 
+        createNewRoute(); // On remet l'interface à zéro
       }
     }
 
     function clearSavedRoutes() {
       if (Object.keys(localRoutes).length === 0) return alert("La liste est déjà vide.");
-      if (confirm("⚠️ ATTENTION DANGER ⚠️\n\nEs-tu sûr de vouloir effacer TOUS les blocs enregistrés de ton téléphone ? Action irréversible ! (Pense à faire un Export avant si tu veux les garder).")) {
+      if (confirm("⚠️ ATTENTION DANGER ⚠️\n\nEs-tu sûr de vouloir effacer TOUS les blocs enregistrés ? Action irréversible !")) {
         localStorage.removeItem('moonboard_custom_routes');
         localRoutes = {};
         initRouteSelector();
-        clearBoard();
+        createNewRoute();
       }
     }
 
@@ -345,11 +352,7 @@
       if (isIOS && navigator.canShare) {
         const file = new File([blob], "mes_blocs_moonboard.json", { type: 'application/json' });
         try {
-          await navigator.share({
-            files: [file],
-            title: 'Sauvegarde MoonBoard',
-            text: 'Sauvegarde de mes blocs Mini DIY.'
-          });
+          await navigator.share({ files: [file], title: 'Sauvegarde MoonBoard' });
           return;
         } catch (error) { console.log('Partage annulé ou erreur :', error); }
       }
@@ -366,40 +369,21 @@
     function importRoutes(event) {
       const file = event.target.files[0];
       if(!file) return;
-      if(!file.name.toLowerCase().endsWith('.json')){
-          alert("Erreur : Ce n'est pas un fichier .json. Si tu utilises Notes, Safari a probablement ajouté '.txt'. Utilise le bouton 'Coller JSON' à la place, c'est plus simple !");
-          event.target.value = '';
-          return;
-      }
       const reader = new FileReader();
       reader.onload = function(e) {
-        try { const importedRoutes = JSON.parse(e.target.result); processImportData(importedRoutes);
+        try {
+          const importedRoutes = JSON.parse(e.target.result);
+          localRoutes = { ...localRoutes, ...importedRoutes };
+          localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
+          initRouteSelector();
+          alert("Succès ! Blocs importés et fusionnés avec ta liste.");
         } catch(err) { alert("Erreur : Le fichier n'est pas un JSON valide."); }
       };
       reader.readAsText(file);
       event.target.value = ''; 
     }
 
-    function importFromPaste() {
-        try {
-            const text = prompt("Collez le code JSON généré par l'IA ici :");
-            if (!text || text.trim() === "") return;
-            const importedRoutes = JSON.parse(text);
-            processImportData(importedRoutes);
-        } catch (err) { alert("Erreur : Texte non valide. Copie TOUT le texte généré par l'IA, y compris les accolades { et }."); }
-    }
-    
-    function processImportData(data){
-        if(!data || typeof data !== 'object') { alert("Erreur de données."); return; }
-        const count = Object.keys(data).length;
-        if(count === 0){ alert("Aucun bloc trouvé."); return; }
-        localRoutes = { ...localRoutes, ...data }; // Fusion
-        localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
-        initRouteSelector();
-        alert(`Succès ! ${count} bloc(s) importé(s) et fusionné(s) dans ta liste.`);
-    }
-
-    // === NAVIGATION (◄/►, Coche) ===
+    // === NAVIGATION ===
     function prevRoute() {
       const selector = document.getElementById('routeSelect');
       const options = Array.from(selector.options).filter(opt => opt.value !== "");
@@ -459,7 +443,6 @@
     function toggleHold(holdId) {
       holdStates[holdId] = (holdStates[holdId] + 1) % 4;
       updateUI(holdId);
-      // Si on modifie le panneau, on délectionne la route pour forcer à re-sauvegarder
       document.getElementById('routeSelect').value = ""; 
       updateCheckboxState();
       sendBLEFrame();
