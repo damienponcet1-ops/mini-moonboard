@@ -71,8 +71,16 @@
     .btn-delete { background: #555; border-color: #444; flex: 1; padding: 8px 4px; }
     .btn-delete:active { background: #333; }
     
-    .btn-export { background: #27ae60; border-color: #2ecc71; }
-    .btn-import { background: #8e44ad; border-color: #9b59b6; }
+    .btn-export { background: #27ae60; border-color: #2ecc71; flex:1; padding: 8px 4px;}
+    .btn-export:active { background: #1e8449; }
+    
+    /* Boutons d'importation (Fichier et Coller) */
+    .btn-import-file { background: #8e44ad; border-color: #9b59b6; flex:1; padding: 8px 4px; }
+    .btn-import-file:active { background: #6c3483; }
+    
+    /* NOUVEAU bouton pour coller directement le JSON */
+    .btn-import-paste { background: #c39bd3; color: #333; border: 1px solid #9b59b6; flex:1.5; padding: 8px 2px; font-size: 12px;}
+    .btn-import-paste:active { background: #a569bd; color: white; }
 
     .status-dot { width: 14px; height: 14px; border-radius: 50%; transition: background-color 0.3s, box-shadow 0.3s; flex-shrink: 0; }
     .status-dot.disconnected { background-color: #ff3b30; box-shadow: 0 0 8px rgba(255, 59, 48, 0.6); }
@@ -93,7 +101,7 @@
 </head>
 <body>
 
-  <div class="version-badge">V48</div>
+  <div class="version-badge">V49</div>
   
   <!-- Point rouge No Kickboard (en haut à gauche) -->
   <div id="kickboardDot" class="kickboard-dot" onclick="toggleKickboard()" title="No Kickboard (Clique pour activer/désactiver)"></div>
@@ -128,10 +136,13 @@
     </select>
   </div>
 
-  <!-- Ligne 2 : Fichiers -->
+  <!-- Ligne 2 : Fichiers et Imports -->
   <div class="controls-row compact-row">
     <button class="btn-export" onclick="exportRoutes()">📤 Exporter</button>
-    <button class="btn-import" onclick="document.getElementById('importInput').click()">📥 Importer</button>
+    <!-- Boutons d'import réorganisés -->
+    <button class="btn-import-file" onclick="document.getElementById('importInput').click()">📥 Fichier</button>
+    <button class="btn-import-paste" onclick="importFromPaste()">📋 Coller JSON</button>
+    
     <button class="btn-scan" onclick="document.getElementById('fileInput').click()">📷 Charger</button>
     <input type="file" id="importInput" accept=".json" style="display:none" onchange="importRoutes(event)">
     <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
@@ -278,21 +289,62 @@
       setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 0);
     }
 
+    // Import classique par fichier
     function importRoutes(event) {
       const file = event.target.files[0];
       if(!file) return;
+      
+      // Verification simpliste de l'extension pour iOS
+      if(!file.name.toLowerCase().endsWith('.json')){
+          alert("Erreur : Safari a probablement ajouté '.txt' à ton fichier. Essaie d'utiliser le bouton 'Coller JSON' à la place, c'est plus simple sur iPhone !");
+          event.target.value = '';
+          return;
+      }
+      
       const reader = new FileReader();
       reader.onload = function(e) {
         try {
           const importedRoutes = JSON.parse(e.target.result);
-          localRoutes = { ...localRoutes, ...importedRoutes };
-          localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
-          initRouteSelector();
-          alert("Sauvegarde importée avec succès !");
-        } catch(err) { alert("Erreur : Fichier invalide."); }
+          processImportData(importedRoutes);
+        } catch(err) { alert("Erreur : Le fichier n'est pas un JSON valide."); }
       };
       reader.readAsText(file);
       event.target.value = ''; 
+    }
+
+    // NOUVEAU : Importation par copier/coller direct
+    async function importFromPaste() {
+        try {
+            // Safari demande une permission explicite ou un contexte sécurisé (HTTPS)
+            // Sur iOS, prompt est souvent plus robuste pour récupérer du texte collé
+            const text = prompt("Collez le code JSON généré par l'IA ici :");
+            if (!text || text.trim() === "") return;
+
+            const importedRoutes = JSON.parse(text);
+            processImportData(importedRoutes);
+        } catch (err) {
+            alert("Erreur : Le texte collé n'est pas un JSON valide. Assure-toi d'avoir bien copié TOUT le texte généré par l'IA, y compris les accolades { et }.");
+        }
+    }
+    
+    // Fonction commune pour traiter les données importées
+    function processImportData(data){
+        if(!data || typeof data !== 'object') {
+            alert("Erreur : Données invalides.");
+            return;
+        }
+        
+        const count = Object.keys(data).length;
+        if(count === 0){
+            alert("Aucun bloc trouvé dans les données.");
+            return;
+        }
+
+        // Fusionner avec les routes locales
+        localRoutes = { ...localRoutes, ...data };
+        localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
+        initRouteSelector();
+        alert(`Succès ! ${count} bloc(s) importé(s) et fusionné(s) avec ta liste.`);
     }
 
     function initRouteSelector() {
@@ -349,7 +401,6 @@
       loadSelectedRoute();
     }
 
-    // NOUVEAU : Supprimer UNIQUEMENT le bloc sélectionné
     function deleteCurrentRoute() {
       const selector = document.getElementById('routeSelect');
       const routeName = selector.value;
@@ -363,7 +414,7 @@
         delete localRoutes[routeName];
         localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
         initRouteSelector();
-        clearBoard(); // Nettoie la vue après suppression
+        clearBoard(); 
       }
     }
 
