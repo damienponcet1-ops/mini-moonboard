@@ -20,14 +20,17 @@
     
     .version-badge { position: absolute; top: 10px; right: 15px; font-size: 0.75rem; color: #777; background: #222; padding: 3px 6px; border-radius: 4px; border: 1px solid #444; }
 
-    h1 { font-size: 1.1rem; margin: 5px 0 10px 0; text-align: center; color: #f39c12; min-height: 25px; transition: color 0.3s; }
+    h1 { font-size: 1.1rem; margin: 5px 0 8px 0; text-align: center; color: #f39c12; min-height: 25px; transition: color 0.3s; }
 
-    .controls-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; width: 100%; max-width: 420px; }
+    .controls-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; width: 100%; max-width: 420px; }
     
-    .top-row { gap: 6px; }
-    .top-row button { padding: 10px 4px; font-size: 13px; flex: 1; }
+    /* Lignes optimisées pour gagner de la place */
+    .compact-row { gap: 6px; }
+    .compact-row button, .filter-select-mini { padding: 8px 4px; font-size: 13px; flex: 1; border-radius: 6px; }
     
-    .overlay-controls { display: none; flex-direction: column; gap: 5px; margin-bottom: 10px; width: 100%; max-width: 420px; background: #1e1e1e; padding: 10px; border-radius: 6px; border: 1px solid #444; }
+    .filter-select-mini { background-color: #1a1a1a; color: #f39c12; border: 1px solid #f39c12; font-weight: bold; appearance: none; text-align: center; cursor: pointer; }
+
+    .overlay-controls { display: none; flex-direction: column; gap: 5px; margin-bottom: 8px; width: 100%; max-width: 420px; background: #1e1e1e; padding: 8px; border-radius: 6px; border: 1px solid #444; }
 
     .opacity-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.85rem; color: #aaa; margin-bottom: 4px; }
     .opacity-row input[type="range"] { flex: 1; }
@@ -35,19 +38,17 @@
     .btn-toggle { background: #555; color: white; border: 1px solid #777; font-size: 0.8rem; padding: 6px 8px; border-radius: 4px; cursor: pointer; white-space: nowrap; }
     .btn-toggle:active { background: #777; }
 
-    .calibration-panel { display: none; flex-direction: column; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #444; }
+    .calibration-panel { display: none; flex-direction: column; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #444; }
 
-    .route-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; max-width: 420px; margin-bottom: 10px; }
-    .btn-nav { background: #444; color: #fff; border: 1px solid #666; font-size: 16px; padding: 10px 14px; border-radius: 6px; cursor: pointer; flex-shrink: 0; }
+    .route-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; max-width: 420px; margin-bottom: 8px; }
+    .btn-nav { background: #444; color: #fff; border: 1px solid #666; font-size: 16px; padding: 8px 14px; border-radius: 6px; cursor: pointer; flex-shrink: 0; }
     .btn-nav:active { background: #666; }
     
-    select { flex: 1; padding: 10px; background-color: #222; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 15px; font-weight: bold; appearance: none; text-align: center; min-width: 0; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
+    select { flex: 1; padding: 8px; background-color: #222; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 15px; font-weight: bold; appearance: none; text-align: center; min-width: 0; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
     
-    .filter-select { background-color: #1a1a1a; border-color: #f39c12; color: #f39c12; font-size: 14px; padding: 8px; margin-bottom: 5px;}
+    .chk-completed { width: 24px; height: 24px; accent-color: #34c759; margin-left: 4px; cursor: pointer; flex-shrink: 0; visibility: hidden; }
 
-    .chk-completed { width: 26px; height: 26px; accent-color: #34c759; margin-left: 4px; cursor: pointer; flex-shrink: 0; visibility: hidden; }
-
-    button { background: #333; color: #fff; border: 1px solid #555; padding: 10px 12px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; }
+    button { background: #333; color: #fff; border: 1px solid #555; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; }
     button:active { background: #555; }
     
     .btn-scan { background: #e67e22; border-color: #d35400; }
@@ -57,9 +58,8 @@
     .btn-delete { background: #d9534f; border-color: #d43f3a; flex: 1;}
     .btn-delete:active { background: #c9302c; }
     
-    /* Boutons de sauvegarde fichier */
-    .btn-export { background: #27ae60; border-color: #2ecc71; font-size: 0.8rem; padding: 8px; flex: 1;}
-    .btn-import { background: #8e44ad; border-color: #9b59b6; font-size: 0.8rem; padding: 8px; flex: 1;}
+    .btn-export { background: #27ae60; border-color: #2ecc71; }
+    .btn-import { background: #8e44ad; border-color: #9b59b6; }
 
     .status-dot { width: 14px; height: 14px; border-radius: 50%; transition: background-color 0.3s, box-shadow 0.3s; flex-shrink: 0; }
     .status-dot.disconnected { background-color: #ff3b30; box-shadow: 0 0 8px rgba(255, 59, 48, 0.6); }
@@ -80,32 +80,16 @@
 </head>
 <body>
 
-  <div class="version-badge">V40</div>
+  <div class="version-badge">V41</div>
   <h1 id="pageTitle">Mini MoonBoard</h1>
 
-  <div class="controls-row top-row">
+  <!-- Ligne 1 : Connexion, Effacer, Cotations -->
+  <div class="controls-row compact-row">
     <button id="btnConnect" onclick="toggleBLE()">Se connecter</button>
     <div id="statusIndicator" class="status-dot disconnected"></div>
     <button onclick="clearBoard()">Effacer</button>
-    <button class="btn-scan" onclick="document.getElementById('fileInput').click()">📷 Charger</button>
-    <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
-  </div>
-
-  <div class="controls-row">
-    <button class="btn-save" onclick="saveCurrentRoute()">💾 Enregistrer</button>
-    <button class="btn-delete" onclick="clearSavedRoutes()">🗑️ Vider</button>
-  </div>
-  
-  <!-- Nouvelle ligne pour importer/exporter le fichier de sauvegarde -->
-  <div class="controls-row" style="gap: 5px;">
-    <button class="btn-export" onclick="exportRoutes()">📤 Exporter (Sauvegarde)</button>
-    <button class="btn-import" onclick="document.getElementById('importInput').click()">📥 Importer</button>
-    <input type="file" id="importInput" accept=".json" style="display:none" onchange="importRoutes(event)">
-  </div>
-
-  <div class="controls-row" style="margin-bottom: 5px;">
-    <select id="gradeFilter" class="filter-select" onchange="initRouteSelector()">
-      <option value="">Toutes les cotations</option>
+    <select id="gradeFilter" class="filter-select-mini" onchange="initRouteSelector()">
+      <option value="">Cotation</option>
       <option value="6A+">6A+</option>
       <option value="6B">6B</option>
       <option value="6B+">6B+</option>
@@ -124,6 +108,22 @@
     </select>
   </div>
 
+  <!-- Ligne 2 : Fichiers (Exporter, Importer, Charger) -->
+  <div class="controls-row compact-row">
+    <button class="btn-export" onclick="exportRoutes()">📤 Exporter</button>
+    <button class="btn-import" onclick="document.getElementById('importInput').click()">📥 Importer</button>
+    <button class="btn-scan" onclick="document.getElementById('fileInput').click()">📷 Charger</button>
+    <input type="file" id="importInput" accept=".json" style="display:none" onchange="importRoutes(event)">
+    <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+  </div>
+
+  <!-- Ligne 3 : Sauvegarde -->
+  <div class="controls-row">
+    <button class="btn-save" onclick="saveCurrentRoute()">💾 Enregistrer</button>
+    <button class="btn-delete" onclick="clearSavedRoutes()">🗑️ Vider</button>
+  </div>
+
+  <!-- Ligne 4 : Navigation et Coche -->
   <div class="route-nav-row">
     <button class="btn-nav" onclick="prevRoute()">◄</button>
     <select id="routeSelect" onchange="loadSelectedRoute()"></select>
@@ -154,7 +154,7 @@
         <label>Haut/Bas :</label>
         <input type="range" id="offsetYRange" min="-10" max="10" step="0.1" value="0" oninput="updateCalibration()">
       </div>
-      <div style="font-size: 0.7rem; color: #888; text-align: center;">Réglage mémorisé pour les prochaines captures</div>
+      <div style="font-size: 0.7rem; color: #888; text-align: center;">Réglage mémorisé</div>
     </div>
   </div>
 
@@ -187,16 +187,24 @@
     document.getElementById('scaleYRange').value = savedScaleY;
     document.getElementById('offsetYRange').value = savedOffsetY;
 
-    // === GESTION DE LA LISTE ET IMPORT/EXPORT ===
+    // === EXPORT CORRIGÉ POUR IPHONE (Via Blob) ===
     function exportRoutes() {
       if (Object.keys(localRoutes).length === 0) return alert("Aucun bloc à sauvegarder !");
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(localRoutes));
-      const dlAnchorElem = document.createElement('a');
-      dlAnchorElem.setAttribute("href", dataStr);
-      dlAnchorElem.setAttribute("download", "mes_blocs_moonboard.json");
-      dlAnchorElem.click();
+      
+      const blob = new Blob([JSON.stringify(localRoutes)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "mes_blocs_moonboard.json";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 0);
     }
 
+    // === IMPORT ===
     function importRoutes(event) {
       const file = event.target.files[0];
       if(!file) return;
@@ -204,7 +212,6 @@
       reader.onload = function(e) {
         try {
           const importedRoutes = JSON.parse(e.target.result);
-          // Fusionne les blocs importés avec les blocs existants
           localRoutes = { ...localRoutes, ...importedRoutes };
           localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
           initRouteSelector();
@@ -214,7 +221,7 @@
         }
       };
       reader.readAsText(file);
-      event.target.value = ''; // Reset l'input
+      event.target.value = ''; 
     }
 
     function initRouteSelector() {
