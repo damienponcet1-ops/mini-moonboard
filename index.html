@@ -62,10 +62,14 @@
     
     .btn-scan { background: #e67e22; border-color: #d35400; }
     .btn-scan:active { background: #bf4a00; }
+    
+    /* Boutons Ligne 3 (Enregistrer, Supprimer, Vider) */
     .btn-save { background: #005bb5; border-color: #0073e6; flex: 2;}
     .btn-save:active { background: #003f7a; }
-    .btn-delete { background: #d9534f; border-color: #d43f3a; flex: 1;}
-    .btn-delete:active { background: #c9302c; }
+    .btn-remove { background: #d9534f; border-color: #d43f3a; flex: 1.5; padding: 8px 4px; }
+    .btn-remove:active { background: #c9302c; }
+    .btn-delete { background: #555; border-color: #444; flex: 1; padding: 8px 4px; }
+    .btn-delete:active { background: #333; }
     
     .btn-export { background: #27ae60; border-color: #2ecc71; }
     .btn-import { background: #8e44ad; border-color: #9b59b6; }
@@ -89,7 +93,7 @@
 </head>
 <body>
 
-  <div class="version-badge">V47</div>
+  <div class="version-badge">V48</div>
   
   <!-- Point rouge No Kickboard (en haut à gauche) -->
   <div id="kickboardDot" class="kickboard-dot" onclick="toggleKickboard()" title="No Kickboard (Clique pour activer/désactiver)"></div>
@@ -133,10 +137,11 @@
     <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
   </div>
 
-  <!-- Ligne 3 : Sauvegarde -->
+  <!-- Ligne 3 : Sauvegarde et Suppression -->
   <div class="controls-row">
     <button class="btn-save" onclick="saveCurrentRoute()">💾 Enregistrer</button>
-    <button class="btn-delete" onclick="clearSavedRoutes()">🗑️ Vider</button>
+    <button class="btn-remove" onclick="deleteCurrentRoute()">❌ Supprimer</button>
+    <button class="btn-delete" onclick="clearSavedRoutes()">⚠️ Vider</button>
   </div>
 
   <!-- Ligne 4 : Navigation et Coche -->
@@ -344,9 +349,27 @@
       loadSelectedRoute();
     }
 
+    // NOUVEAU : Supprimer UNIQUEMENT le bloc sélectionné
+    function deleteCurrentRoute() {
+      const selector = document.getElementById('routeSelect');
+      const routeName = selector.value;
+      
+      if (!routeName || !localRoutes[routeName]) {
+        alert("Aucun bloc sauvegardé n'est actuellement sélectionné.");
+        return;
+      }
+      
+      if (confirm(`Es-tu sûr de vouloir supprimer définitivement le bloc "${routeName}" ?`)) {
+        delete localRoutes[routeName];
+        localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
+        initRouteSelector();
+        clearBoard(); // Nettoie la vue après suppression
+      }
+    }
+
     function clearSavedRoutes() {
       if (Object.keys(localRoutes).length === 0) return alert("Liste déjà vide !");
-      if (confirm("Effacer TOUS les blocs enregistrés ? Action irréversible !")) {
+      if (confirm("⚠️ ATTENTION : Es-tu sûr de vouloir effacer TOUS les blocs enregistrés de l'application ? Action irréversible !")) {
         localStorage.removeItem('moonboard_custom_routes');
         localRoutes = {};
         initRouteSelector();
