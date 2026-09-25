@@ -18,18 +18,14 @@
     
     .version-badge { position: absolute; top: 10px; right: 15px; font-size: 0.75rem; color: #777; background: #222; padding: 3px 6px; border-radius: 4px; border: 1px solid #444; }
 
-    /* Le bandeau du titre avec le gros point rouge intégré */
-    .title-container { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 420px; margin: 10px 0 15px 0; overflow: hidden; }
+    /* LIGNE 1 : Le bandeau du titre avec le gros point rouge intégré */
+    .title-container { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; max-width: 420px; margin: 10px 0 15px 0; overflow: hidden; }
     
-    /* Le point rouge No Kickboard (agrandi) */
-    .kickboard-dot { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; transition: all 0.3s; border: 2px solid #555; background-color: #333; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-    .kickboard-dot.active { background-color: #ff3b30; border-color: #ff3b30; box-shadow: 0 0 12px rgba(255, 59, 48, 0.8); }
+    /* Le point rouge No Kickboard (agrandi à 32px) */
+    .kickboard-dot { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; transition: all 0.3s; border: 2px solid #555; background-color: #333; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .kickboard-dot.active { background-color: #ff3b30; border-color: #ff3b30; box-shadow: 0 0 14px rgba(255, 59, 48, 0.9); }
 
-    h1 { font-size: 1.15rem; margin: 0; color: #f39c12; transition: color 0.3s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; max-width: 60%; }
-    
-    /* Boutons autour du titre */
-    .btn-title { background: transparent; border: 1px solid #555; color: #aaa; border-radius: 6px; padding: 4px 6px; font-size: 14px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; height: 28px; flex-shrink: 0; }
-    .btn-title:active { background: #333; color: #fff; }
+    h1 { font-size: 1.25rem; margin: 0; color: #f39c12; transition: color 0.3s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; max-width: 75%; }
 
     /* Structure des contrôles */
     .control-panel { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 420px; margin-bottom: 10px; }
@@ -40,7 +36,7 @@
     /* Style spécifique pour le sélecteur de cotation */
     .filter-select-mini { background-color: #1a1a1a; color: #f39c12; border: 1px solid #f39c12; font-weight: bold; appearance: none; text-align: center; cursor: pointer; }
 
-    /* Navigation */
+    /* LIGNE 5 : Navigation */
     .route-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; max-width: 420px; margin-bottom: 10px; }
     .btn-nav { background: #444; color: #fff; border: 1px solid #666; font-size: 16px; padding: 8px 14px; border-radius: 6px; cursor: pointer; flex-shrink: 0; }
     .btn-nav:active { background: #666; }
@@ -49,27 +45,31 @@
     
     .chk-completed { width: 24px; height: 24px; accent-color: #34c759; margin-left: 4px; cursor: pointer; flex-shrink: 0; visibility: hidden; }
 
-    /* Styles Boutons */
+    /* Styles Boutons Communs */
     button { background: #333; color: #fff; border: 1px solid #555; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; }
     button:active { background: #555; }
     
+    /* Ligne 2 : Connecter, Effacer, Nouveau */
     .btn-save { background: #005bb5; border-color: #0073e6; flex: 2;}
     .btn-save:active { background: #003f7a; }
-    
-    .btn-clear { background: #e67e22; border-color: #d35400; flex: 1;}
+    .btn-clear { background: #e67e22; border-color: #d35400; flex: 1.2;}
     .btn-clear:active { background: #bf4a00; }
-    .btn-new { background: #d35400; border-color: #ba4a00; flex: 0.4; font-size: 15px;}
+    .btn-new { background: #d35400; border-color: #ba4a00; flex: 0.5; font-size: 16px;}
     .btn-new:active { background: #a04000; }
     
-    .btn-remove { background: #d9534f; border-color: #d43f3a; flex: 1.5; padding: 8px 4px; }
-    .btn-remove:active { background: #c9302c; }
-    .btn-delete { background: #555; border-color: #444; flex: 1; padding: 8px 4px; }
-    .btn-delete:active { background: #333; }
-    
+    /* Ligne 3 : Imports/Exports */
     .btn-export { background: #27ae60; border-color: #2ecc71; flex:1;}
     .btn-export:active { background: #1e8449; }
     .btn-import-file { background: #8e44ad; border-color: #9b59b6; flex:1; }
     .btn-import-file:active { background: #6c3483; }
+    .btn-import-paste { background: #c39bd3; color: #333; border: 1px solid #9b59b6; flex:1.2; padding: 8px 2px; font-size: 13px;}
+    .btn-import-paste:active { background: #a569bd; color: white; }
+    
+    /* Ligne 4 : Suppression */
+    .btn-remove { background: #d9534f; border-color: #d43f3a; flex: 1.5; padding: 8px 4px; }
+    .btn-remove:active { background: #c9302c; }
+    .btn-delete { background: #555; border-color: #444; flex: 1; padding: 8px 4px; }
+    .btn-delete:active { background: #333; }
 
     /* Indicateur d'état BLE */
     .status-dot { width: 14px; height: 14px; border-radius: 50%; transition: background-color 0.3s, box-shadow 0.3s; flex-shrink: 0; }
@@ -88,23 +88,21 @@
 </head>
 <body>
 
-  <div class="version-badge">V51</div>
+  <div class="version-badge">V52</div>
   
+  <!-- LIGNE 1 : Titre et Point Rouge -->
   <div class="title-container">
-    <!-- Gros Point Rouge No Kickboard intégré au bandeau -->
     <div id="kickboardDot" class="kickboard-dot" onclick="toggleKickboard()" title="No Kickboard (Clique pour activer/désactiver)"></div>
-    <button class="btn-title" onclick="editCurrentTitle()" title="Renommer le bloc">✏️</button>
     <h1 id="pageTitle">Mini MoonBoard</h1>
-    <button class="btn-title" id="btnCopyTitle" onclick="copyTitle()" title="Copier le nom du bloc">📋</button>
   </div>
 
   <div class="control-panel">
-    <!-- Ligne 1 : Connexion, Effacer, Nouveau, Filtrage -->
+    <!-- Ligne 2 : Connexion, Effacer, Nouveau(Crayon), Filtrage -->
     <div class="controls-row compact-row">
         <button id="btnConnect" class="btn-save" onclick="toggleBLE()">Se connecter</button>
         <div id="statusIndicator" class="status-dot disconnected"></div>
         <button class="btn-clear" onclick="clearHolds()">Effacer</button>
-        <button class="btn-new" onclick="createNewRoute()" title="Créer un nouveau bloc">📝</button>
+        <button class="btn-new" onclick="createNewRoute()" title="Créer un nouveau bloc">✏️</button>
         <select id="gradeFilter" class="filter-select-mini" onchange="initRouteSelector()">
           <option value="">Cotation</option>
           <option value="6A+">6A+</option>
@@ -125,14 +123,15 @@
         </select>
     </div>
 
-    <!-- Ligne 2 : Fichiers -->
+    <!-- Ligne 3 : Fichiers et Imports -->
     <div class="controls-row compact-row">
         <button class="btn-export" onclick="exportRoutes()">📤 Exporter</button>
-        <button class="btn-import-file" onclick="document.getElementById('importInput').click()">📥 Importer JSON</button>
+        <button class="btn-import-file" onclick="document.getElementById('importInput').click()">📥 Importer</button>
+        <button class="btn-import-paste" onclick="importFromPaste()">📋 Coller JSON</button>
         <input type="file" id="importInput" accept=".json" style="display:none" onchange="importRoutes(event)">
     </div>
 
-    <!-- Ligne 3 : Sauvegarde et Suppression -->
+    <!-- Ligne 4 : Sauvegarde et Suppression -->
     <div class="controls-row">
         <button class="btn-save" onclick="saveCurrentRoute()">💾 Enregistrer</button>
         <button class="btn-remove" onclick="deleteCurrentRoute()">❌ Supprimer</button>
@@ -140,7 +139,7 @@
     </div>
   </div>
 
-  <!-- Ligne 4 : Navigation et Coche -->
+  <!-- Ligne 5 : Navigation et Coche -->
   <div class="route-nav-row">
     <button class="btn-nav" onclick="prevRoute()">◄</button>
     <select id="routeSelect" onchange="loadSelectedRoute()"></select>
@@ -148,6 +147,7 @@
     <input type="checkbox" id="chkCompleted" class="chk-completed" onchange="toggleCompleted()" title="Marquer comme réalisé">
   </div>
 
+  <!-- Ligne 6 : La Grille -->
   <div class="board-container">
     <div class="grid" id="boardGrid"></div>
   </div>
@@ -157,7 +157,6 @@
     const rows = 12;
     let holdStates = {};
     
-    // Variables pour l'état No Kickboard
     let isNoKickboard = false;
     let localRoutes = JSON.parse(localStorage.getItem('moonboard_custom_routes')) || {};
 
@@ -165,29 +164,6 @@
     const RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
     let bleDevice = null;
     let rxCharacteristic = null;
-
-    // === GESTION DU TITRE ===
-    function editCurrentTitle() {
-        const titleEl = document.getElementById('pageTitle');
-        const oldTitle = titleEl.innerText === "Mini MoonBoard" ? "" : titleEl.innerText;
-        const newTitle = prompt("Éditer le nom et la cotation du bloc :", oldTitle);
-        if (newTitle !== null && newTitle.trim() !== "") {
-            titleEl.innerText = newTitle;
-            document.getElementById('routeSelect').value = "";
-            updateCheckboxState();
-        }
-    }
-
-    function copyTitle() {
-      const title = document.getElementById('pageTitle').innerText;
-      if (title && title !== "Mini MoonBoard") {
-        navigator.clipboard.writeText(title).then(() => {
-          const btn = document.getElementById('btnCopyTitle');
-          btn.innerText = "✅";
-          setTimeout(() => { btn.innerText = "📋"; }, 1500);
-        }).catch(() => { alert("Copie impossible."); });
-      }
-    }
 
     // === GESTION DU POINT ROUGE NO KICKBOARD ===
     function toggleKickboard() {
@@ -230,11 +206,11 @@
     }
 
     function saveCurrentRoute() {
-      const title = document.getElementById('pageTitle').innerText;
+      let title = document.getElementById('pageTitle').innerText;
       
       if (title === "Mini MoonBoard" || title.trim() === "") {
-          alert("Erreur : Donne un nom à ton bloc avant de l'enregistrer (clique sur le crayon ✏️ en haut).");
-          return;
+          title = prompt("Nom et cotation du bloc :", "Nouveau Bloc");
+          if (!title || title.trim() === "") return; // Annulation
       }
       
       let route = { depart: [], progression: [], arrivee: [], completed: false, noKickboard: false };
@@ -247,15 +223,13 @@
       
       if (!hasHolds) { alert("Erreur : Le panneau est vide ! Clique sur des prises d'abord."); return; }
 
-      // Conserve l'état 'completed' s'il existait déjà
       if (localRoutes[title]) { route.completed = localRoutes[title].completed; }
       
-      // Enregistre l'état du point rouge
       route.noKickboard = isNoKickboard;
-
       localRoutes[title] = route;
       localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
       
+      document.getElementById('pageTitle').innerText = title;
       initRouteSelector();
       document.getElementById('routeSelect').value = title;
       updateCheckboxState();
@@ -267,7 +241,7 @@
       if (!selector) return;
       const routeName = selector.value;
       
-      clearHoldsOnly(); // Vide la grille visuellement
+      clearHoldsOnly(); 
       
       if (routeName && localRoutes[routeName]) {
         const route = localRoutes[routeName];
@@ -287,13 +261,11 @@
       sendBLEFrame();
     }
 
-    // Vide uniquement les prises (garde le nom/statut intact pour permettre l'édition)
     function clearHolds() {
       clearHoldsOnly();
       sendBLEFrame();
     }
 
-    // Fonction interne pour vider la grille
     function clearHoldsOnly() {
       Object.keys(holdStates).forEach(id => {
         if(holdStates[id] !== 0) {
@@ -303,7 +275,6 @@
       });
     }
 
-    // Prépare un tout nouveau bloc (vide grille + réinitialise le titre)
     function createNewRoute() {
       document.getElementById('routeSelect').value = ""; 
       document.getElementById('pageTitle').innerText = "Mini MoonBoard";
@@ -328,7 +299,7 @@
         delete localRoutes[routeName];
         localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
         initRouteSelector();
-        createNewRoute(); // On remet l'interface à zéro
+        createNewRoute();
       }
     }
 
@@ -373,14 +344,30 @@
       reader.onload = function(e) {
         try {
           const importedRoutes = JSON.parse(e.target.result);
-          localRoutes = { ...localRoutes, ...importedRoutes };
-          localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
-          initRouteSelector();
-          alert("Succès ! Blocs importés et fusionnés avec ta liste.");
+          processImportData(importedRoutes);
         } catch(err) { alert("Erreur : Le fichier n'est pas un JSON valide."); }
       };
       reader.readAsText(file);
       event.target.value = ''; 
+    }
+
+    function importFromPaste() {
+        try {
+            const text = prompt("Collez le code JSON généré par l'IA ici :");
+            if (!text || text.trim() === "") return;
+            const importedRoutes = JSON.parse(text);
+            processImportData(importedRoutes);
+        } catch (err) { alert("Erreur : Texte non valide. Copie TOUT le texte généré par l'IA, y compris les accolades { et }."); }
+    }
+    
+    function processImportData(data){
+        if(!data || typeof data !== 'object') { alert("Erreur de données."); return; }
+        const count = Object.keys(data).length;
+        if(count === 0){ alert("Aucun bloc trouvé."); return; }
+        localRoutes = { ...localRoutes, ...data }; 
+        localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
+        initRouteSelector();
+        alert(`Succès ! ${count} bloc(s) importé(s) et fusionné(s) dans ta liste.`);
     }
 
     // === NAVIGATION ===
@@ -487,8 +474,6 @@
       const encoder = new TextEncoder();
       rxCharacteristic.writeValue(encoder.encode(`l#${parts.join(',')}#`));
     }
-
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
   </script>
 </body>
 </html>
