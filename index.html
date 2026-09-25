@@ -12,47 +12,24 @@
   <meta name="apple-mobile-web-app-title" content="MoonBoard">
   <link rel="apple-touch-icon" href="icon-192.png">
 
-  <!-- Script Tesseract ramené pour l'OCR, mais utilisé en asynchrone pour ne pas planter l'appli -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
     * { box-sizing: border-box; touch-action: manipulation; }
     body { margin: 0; padding: 10px; background-color: #121212; color: #ffffff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; position: relative; }
     
-    .version-badge {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      font-size: 0.75rem;
-      color: #777;
-      background: #222;
-      padding: 3px 6px;
-      border-radius: 4px;
-      border: 1px solid #444;
-    }
+    .version-badge { position: absolute; top: 10px; right: 15px; font-size: 0.75rem; color: #777; background: #222; padding: 3px 6px; border-radius: 4px; border: 1px solid #444; }
 
     h1 { font-size: 1.1rem; margin: 5px 0 10px 0; text-align: center; color: #f39c12; min-height: 25px; transition: color 0.3s; }
 
     .controls-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; width: 100%; max-width: 420px; }
     
-    /* Ligne du haut compacte */
     .top-row { gap: 6px; }
     .top-row button { padding: 10px 4px; font-size: 13px; flex: 1; }
     
-    .overlay-controls {
-      display: none;
-      flex-direction: column;
-      gap: 5px;
-      margin-bottom: 10px;
-      width: 100%;
-      max-width: 420px;
-      background: #1e1e1e;
-      padding: 10px;
-      border-radius: 6px;
-      border: 1px solid #444;
-    }
+    .overlay-controls { display: none; flex-direction: column; gap: 5px; margin-bottom: 10px; width: 100%; max-width: 420px; background: #1e1e1e; padding: 10px; border-radius: 6px; border: 1px solid #444; }
 
-    .opacity-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.85rem; color: #aaa; }
+    .opacity-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.85rem; color: #aaa; margin-bottom: 4px; }
     .opacity-row input[type="range"] { flex: 1; }
     
     .btn-toggle { background: #555; color: white; border: 1px solid #777; font-size: 0.8rem; padding: 6px 8px; border-radius: 4px; cursor: pointer; white-space: nowrap; }
@@ -60,12 +37,14 @@
 
     .calibration-panel { display: none; flex-direction: column; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #444; }
 
-    /* Ligne de Navigation et Coche */
     .route-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; max-width: 420px; margin-bottom: 10px; }
     .btn-nav { background: #444; color: #fff; border: 1px solid #666; font-size: 16px; padding: 10px 14px; border-radius: 6px; cursor: pointer; flex-shrink: 0; }
     .btn-nav:active { background: #666; }
+    
     select { flex: 1; padding: 10px; background-color: #222; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 15px; font-weight: bold; appearance: none; text-align: center; min-width: 0; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
     
+    .filter-select { background-color: #1a1a1a; border-color: #f39c12; color: #f39c12; font-size: 14px; padding: 8px; margin-bottom: 5px;}
+
     .chk-completed { width: 26px; height: 26px; accent-color: #34c759; margin-left: 4px; cursor: pointer; flex-shrink: 0; visibility: hidden; }
 
     button { background: #333; color: #fff; border: 1px solid #555; padding: 10px 12px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; }
@@ -77,6 +56,10 @@
     .btn-save:active { background: #003f7a; }
     .btn-delete { background: #d9534f; border-color: #d43f3a; flex: 1;}
     .btn-delete:active { background: #c9302c; }
+    
+    /* Boutons de sauvegarde fichier */
+    .btn-export { background: #27ae60; border-color: #2ecc71; font-size: 0.8rem; padding: 8px; flex: 1;}
+    .btn-import { background: #8e44ad; border-color: #9b59b6; font-size: 0.8rem; padding: 8px; flex: 1;}
 
     .status-dot { width: 14px; height: 14px; border-radius: 50%; transition: background-color 0.3s, box-shadow 0.3s; flex-shrink: 0; }
     .status-dot.disconnected { background-color: #ff3b30; box-shadow: 0 0 8px rgba(255, 59, 48, 0.6); }
@@ -97,25 +80,50 @@
 </head>
 <body>
 
-  <div class="version-badge">V37</div>
+  <div class="version-badge">V40</div>
   <h1 id="pageTitle">Mini MoonBoard</h1>
 
-  <!-- 1ère Ligne 100% repensée (Bluetooth + Effacer + Charger) -->
   <div class="controls-row top-row">
     <button id="btnConnect" onclick="toggleBLE()">Se connecter</button>
     <div id="statusIndicator" class="status-dot disconnected"></div>
     <button onclick="clearBoard()">Effacer</button>
     <button class="btn-scan" onclick="document.getElementById('fileInput').click()">📷 Charger</button>
-    <input type="file" id="fileInput" accept="image/*" style="display:none">
+    <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
   </div>
 
-  <!-- Ligne d'enregistrement -->
   <div class="controls-row">
     <button class="btn-save" onclick="saveCurrentRoute()">💾 Enregistrer</button>
     <button class="btn-delete" onclick="clearSavedRoutes()">🗑️ Vider</button>
   </div>
+  
+  <!-- Nouvelle ligne pour importer/exporter le fichier de sauvegarde -->
+  <div class="controls-row" style="gap: 5px;">
+    <button class="btn-export" onclick="exportRoutes()">📤 Exporter (Sauvegarde)</button>
+    <button class="btn-import" onclick="document.getElementById('importInput').click()">📥 Importer</button>
+    <input type="file" id="importInput" accept=".json" style="display:none" onchange="importRoutes(event)">
+  </div>
 
-  <!-- Ligne de Navigation et Coche -->
+  <div class="controls-row" style="margin-bottom: 5px;">
+    <select id="gradeFilter" class="filter-select" onchange="initRouteSelector()">
+      <option value="">Toutes les cotations</option>
+      <option value="6A+">6A+</option>
+      <option value="6B">6B</option>
+      <option value="6B+">6B+</option>
+      <option value="6C">6C</option>
+      <option value="6C+">6C+</option>
+      <option value="7A">7A</option>
+      <option value="7A+">7A+</option>
+      <option value="7B">7B</option>
+      <option value="7B+">7B+</option>
+      <option value="7C">7C</option>
+      <option value="7C+">7C+</option>
+      <option value="8A">8A</option>
+      <option value="8A+">8A+</option>
+      <option value="8B">8B</option>
+      <option value="8B+">8B+</option>
+    </select>
+  </div>
+
   <div class="route-nav-row">
     <button class="btn-nav" onclick="prevRoute()">◄</button>
     <select id="routeSelect" onchange="loadSelectedRoute()"></select>
@@ -123,8 +131,13 @@
     <input type="checkbox" id="chkCompleted" class="chk-completed" onchange="toggleCompleted()" title="Marquer comme réalisé">
   </div>
 
-  <!-- Barre de calque et Calibration -->
   <div class="overlay-controls" id="overlayControls">
+    <div class="opacity-row" id="multiImageNav" style="display:none; justify-content: center; gap: 15px;">
+      <button class="btn-toggle" onclick="prevOverlayImage()">◄ Photo</button>
+      <span id="imageCounter" style="color:#f39c12; font-weight:bold;">1/1</span>
+      <button class="btn-toggle" onclick="nextOverlayImage()">Photo ►</button>
+    </div>
+
     <div class="opacity-row">
       <label>Opacité :</label>
       <input type="range" id="opacityRange" min="0" max="1" step="0.05" value="0.5" oninput="changeOpacity(this.value)">
@@ -157,6 +170,10 @@
     let isOverlayVisible = true;
     window.scannedRouteName = "";
 
+    let overlayImages = [];
+    let currentOverlayIndex = 0;
+    let currentOcrJob = 0; 
+
     const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
     const RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
     let bleDevice = null;
@@ -170,20 +187,58 @@
     document.getElementById('scaleYRange').value = savedScaleY;
     document.getElementById('offsetYRange').value = savedOffsetY;
 
+    // === GESTION DE LA LISTE ET IMPORT/EXPORT ===
+    function exportRoutes() {
+      if (Object.keys(localRoutes).length === 0) return alert("Aucun bloc à sauvegarder !");
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(localRoutes));
+      const dlAnchorElem = document.createElement('a');
+      dlAnchorElem.setAttribute("href", dataStr);
+      dlAnchorElem.setAttribute("download", "mes_blocs_moonboard.json");
+      dlAnchorElem.click();
+    }
+
+    function importRoutes(event) {
+      const file = event.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedRoutes = JSON.parse(e.target.result);
+          // Fusionne les blocs importés avec les blocs existants
+          localRoutes = { ...localRoutes, ...importedRoutes };
+          localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
+          initRouteSelector();
+          alert("Sauvegarde importée avec succès !");
+        } catch(err) {
+          alert("Erreur : Fichier invalide.");
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = ''; // Reset l'input
+    }
+
     function initRouteSelector() {
       const selector = document.getElementById('routeSelect');
+      const filterGrade = document.getElementById('gradeFilter').value;
       const currentVal = selector.value; 
       
       selector.innerHTML = '<option value="">-- Choisir un bloc --</option>';
+      let hasValidCurrent = false;
+
       Object.keys(localRoutes).forEach(routeName => {
-        const opt = document.createElement('option');
-        opt.value = routeName;
-        const prefix = localRoutes[routeName].completed ? "✅ " : "";
-        opt.innerText = prefix + routeName;
-        selector.appendChild(opt);
+        if (filterGrade === "" || routeName.includes(filterGrade)) {
+            const opt = document.createElement('option');
+            opt.value = routeName;
+            const prefix = localRoutes[routeName].completed ? "✅ " : "";
+            opt.innerText = prefix + routeName;
+            selector.appendChild(opt);
+            if (routeName === currentVal) hasValidCurrent = true;
+        }
       });
       
-      if (currentVal && localRoutes[currentVal]) selector.value = currentVal;
+      if (hasValidCurrent) selector.value = currentVal;
+      else selector.value = "";
+      
       updateCheckboxState();
     }
 
@@ -213,7 +268,7 @@
 
     function clearSavedRoutes() {
       if (Object.keys(localRoutes).length === 0) return alert("Liste déjà vide !");
-      if (confirm("Effacer tous les blocs enregistrés ?")) {
+      if (confirm("Effacer TOUS les blocs enregistrés ? Attention, action irréversible sans sauvegarde préalable !")) {
         localStorage.removeItem('moonboard_custom_routes');
         localRoutes = {};
         initRouteSelector();
@@ -243,24 +298,28 @@
     }
 
     function prevRoute() {
-      const keys = Object.keys(localRoutes);
-      if (keys.length === 0) return;
       const selector = document.getElementById('routeSelect');
-      let idx = keys.indexOf(selector.value);
-      if (idx <= 0) idx = keys.length - 1; 
+      const options = Array.from(selector.options).filter(opt => opt.value !== "");
+      if (options.length === 0) return;
+      
+      let idx = options.findIndex(opt => opt.value === selector.value);
+      if (idx <= 0) idx = options.length - 1; 
       else idx--;
-      selector.value = keys[idx];
+      
+      selector.value = options[idx].value;
       loadSelectedRoute();
     }
 
     function nextRoute() {
-      const keys = Object.keys(localRoutes);
-      if (keys.length === 0) return;
       const selector = document.getElementById('routeSelect');
-      let idx = keys.indexOf(selector.value);
-      if (idx === -1 || idx === keys.length - 1) idx = 0; 
+      const options = Array.from(selector.options).filter(opt => opt.value !== "");
+      if (options.length === 0) return;
+      
+      let idx = options.findIndex(opt => opt.value === selector.value);
+      if (idx === -1 || idx === options.length - 1) idx = 0; 
       else idx++;
-      selector.value = keys[idx];
+      
+      selector.value = options[idx].value;
       loadSelectedRoute();
     }
 
@@ -285,6 +344,7 @@
       }
     }
 
+    // === GRILLE INTERACTIVE ===
     const gridEl = document.getElementById('boardGrid');
     for (let r = rows; r >= 1; r--) {
       cols.forEach(c => {
@@ -314,13 +374,13 @@
 
     function clearBoard() {
       document.getElementById('routeSelect').value = ""; 
-      document.getElementById('pageTitle').innerText = "Mini MoonBoard";
-      window.scannedRouteName = "";
+      document.getElementById('pageTitle').innerText = window.scannedRouteName || "Mini MoonBoard";
       updateCheckboxState();
       Object.keys(holdStates).forEach(id => { if(holdStates[id] !== 0) { holdStates[id] = 0; updateUI(id); }});
       sendBLEFrame();
     }
 
+    // === GESTION DU CALQUE ET CALIBRATION ===
     function changeOpacity(val) { document.getElementById('overlayImage').style.opacity = val; }
 
     function toggleOverlay() {
@@ -354,19 +414,47 @@
       overlay.style.transform = `translateY(${savedOffsetY}%) scaleY(${savedScaleY})`;
     }
 
-    // === DECOUPAGE DE L'IMAGE + LECTURE OCR ASYNCHRONE ===
+    // === GESTION MULTI-IMAGES ET DECOUPAGE ===
     document.getElementById('fileInput').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if(!file) return;
+      if(!e.target.files || e.target.files.length === 0) return;
 
+      overlayImages = Array.from(e.target.files).map(file => URL.createObjectURL(file));
+      currentOverlayIndex = 0;
+
+      if (overlayImages.length > 1) {
+          document.getElementById('multiImageNav').style.display = "flex";
+      } else {
+          document.getElementById('multiImageNav').style.display = "none";
+      }
+
+      loadOverlayImage(overlayImages[currentOverlayIndex]);
+      e.target.value = ''; 
+    });
+
+    function prevOverlayImage() {
+      if (overlayImages.length === 0) return;
+      currentOverlayIndex = (currentOverlayIndex === 0) ? overlayImages.length - 1 : currentOverlayIndex - 1;
+      loadOverlayImage(overlayImages[currentOverlayIndex]);
+    }
+
+    function nextOverlayImage() {
+      if (overlayImages.length === 0) return;
+      currentOverlayIndex = (currentOverlayIndex + 1) % overlayImages.length;
+      loadOverlayImage(overlayImages[currentOverlayIndex]);
+    }
+
+    function loadOverlayImage(imageUrl) {
       const titleEl = document.getElementById('pageTitle');
       titleEl.innerText = "⏳ Découpage de l'image...";
       titleEl.style.color = "#f39c12";
+      document.getElementById('imageCounter').innerText = `${currentOverlayIndex + 1}/${overlayImages.length}`;
       
-      const imageUrl = URL.createObjectURL(file);
+      const jobId = ++currentOcrJob; 
       const img = new Image();
       
       img.onload = function() {
+        if (jobId !== currentOcrJob) return;
+
         const canvas = document.createElement('canvas');
         canvas.width = img.width;
         canvas.height = img.height;
@@ -397,18 +485,18 @@
         const overlay = document.getElementById('overlayImage');
         overlay.src = cropCanvas.toDataURL();
         overlay.style.display = "block";
-        overlay.style.opacity = "0.5";
+        overlay.style.opacity = document.getElementById('opacityRange').value;
         
         isOverlayVisible = true;
         document.getElementById('btnToggleOverlay').innerText = "Masquer";
-        document.getElementById('opacityRange').value = "0.5";
         document.getElementById('overlayControls').style.display = "flex";
         applyCalibration(); 
 
-        // Lancement de l'IA de lecture en tâche de fond pour ne pas geler les boutons
         if (typeof Tesseract !== 'undefined') {
             titleEl.innerText = "⏳ Lecture du titre...";
             setTimeout(async () => {
+                if (jobId !== currentOcrJob) return; 
+
                 try {
                     const headerCanvas = document.createElement('canvas');
                     headerCanvas.width = img.width;
@@ -417,6 +505,8 @@
                     hCtx.drawImage(img, 0, 0);
                     
                     const { data } = await Tesseract.recognize(headerCanvas.toDataURL(), 'eng');
+                    if (jobId !== currentOcrJob) return; 
+
                     let detectedName = "";
                     let detectedGrade = "";
                     
@@ -442,18 +532,19 @@
                     window.scannedRouteName = detectedName;
                     titleEl.innerText = detectedName;
                 } catch (err) {
+                    if (jobId !== currentOcrJob) return;
                     titleEl.innerText = "Mini MoonBoard";
                 }
-            }, 50); // Pause pour laisser l'interface respirer
+            }, 50);
         } else {
             titleEl.innerText = "Mini MoonBoard";
         }
       };
       
       img.src = imageUrl;
-      e.target.value = '';
-    });
+    }
 
+    // === GESTION DU BLUETOOTH ===
     async function toggleBLE() {
       if (bleDevice && bleDevice.gatt.connected) {
         bleDevice.gatt.disconnect();
