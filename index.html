@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mini MoonBoard DIY</title>
+    
+    <!-- Lien vers le manifest pour la PWA -->
+    <link rel="manifest" href="manifest.json">
+    
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -17,33 +21,37 @@
         }
         h1 {
             font-size: 1.2rem;
-            margin: 5px 0 15px 0;
+            margin: 5px 0 10px 0;
             color: #ffb700;
         }
-        .top-bar {
+        
+        /* Conteneurs pour forcer les lignes compactes */
+        .btn-row {
             display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
             justify-content: center;
-            margin-bottom: 8px;
-            max-width: 500px;
             align-items: center;
+            width: 100%;
+            max-width: 450px;
+            margin-bottom: 8px;
         }
+
         button {
             border: none;
-            padding: 10px 15px;
+            padding: 8px 10px;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: bold;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             color: white;
+            white-space: nowrap;
         }
         button:active { opacity: 0.8; }
         
-        /* Couleurs d'origine restaurées */
+        /* Couleurs d'origine */
         .btn-blue { background-color: #005bb5; }
         .btn-orange { background-color: #e67e22; }
         .btn-green { background-color: #27ae60; }
@@ -58,7 +66,7 @@
             height: 12px;
             background-color: #e74c3c;
             border-radius: 50%;
-            margin: 0 5px;
+            margin: 0 2px;
         }
 
         /* Style du bouton crayon quand il est ACTIF */
@@ -73,18 +81,18 @@
             display: flex;
             align-items: center;
             gap: 5px;
-            margin: 10px 0;
+            margin: 5px 0 10px 0;
             width: 100%;
             max-width: 450px;
         }
         .nav-container select {
             flex-grow: 1;
-            padding: 10px;
+            padding: 8px;
             background: #222;
             color: white;
             border: 1px solid #444;
             border-radius: 6px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             text-align: center;
         }
         .nav-container button {
@@ -92,23 +100,23 @@
             color: white;
         }
 
-        /* Nouvelle ligne de filtres */
+        /* Ligne de filtres (Masquer cochés + Total) */
         .footer-info {
             display: flex;
             justify-content: space-between;
             align-items: center;
             width: 100%;
             max-width: 450px;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: #ddd;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             padding: 0 5px;
             box-sizing: border-box;
         }
         .footer-info label {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             cursor: pointer;
         }
 
@@ -132,8 +140,8 @@
         .grid-overlay {
             position: absolute;
             top: 6.5%; 
-            left: 8%; 
-            width: 84%; 
+            left: 8.5%; 
+            width: 83.5%; 
             height: 84%;
             display: grid;
             grid-template-columns: repeat(11, 1fr);
@@ -162,8 +170,8 @@
 
     <h1>Mini MoonBoard</h1>
 
-    <!-- RESTAURATION DE TON INTERFACE D'ORIGINE -->
-    <div class="top-bar">
+    <!-- LIGNE 1 -->
+    <div class="btn-row">
         <button id="btnConnect" class="btn-blue">Se connecter</button>
         <div class="status-dot"></div>
         <button id="btnClear" class="btn-orange">Effacer</button>
@@ -171,25 +179,28 @@
         <button id="btnCotation" class="btn-outline">Cotation</button>
     </div>
     
-    <div class="top-bar">
+    <!-- LIGNE 2 -->
+    <div class="btn-row">
         <button id="btnExport" class="btn-green">📩 Exporter</button>
         <button id="btnImport" class="btn-purple">📥 Importer</button>
         <button id="btnPasteJson" class="btn-light-purple">📋 Coller JSON</button>
     </div>
     
-    <div class="top-bar">
+    <!-- LIGNE 3 -->
+    <div class="btn-row">
         <button id="btnSave" class="btn-blue">💾 Enregistrer</button>
         <button id="btnDelete" class="btn-red">❌ Supprimer</button>
         <button id="btnClearStorage" class="btn-yellow">⚠️ Vider</button>
     </div>
 
+    <!-- SELECTEUR -->
     <div class="nav-container">
         <button id="btnPrev">◀</button>
         <select id="blockSelect"></select>
         <button id="btnNext">▶</button>
     </div>
 
-    <!-- LIGNE DES FILTRES ET COMPTEUR -->
+    <!-- FILTRES ET COMPTEUR -->
     <div class="footer-info">
         <label>
             <input type="checkbox" id="excludeCompleted"> Masquer les blocs cochés
@@ -197,20 +208,34 @@
         <span id="blockCounter">Total : 0 blocs</span>
     </div>
 
+    <!-- PLATEAU -->
     <div class="board-container">
-        <!-- ATTENTION: Remplace 'image.png' par le nom exact de ton fichier image sur Github -->
-        <img src="image.png" alt="Mini MoonBoard" class="board-image" id="boardImage">
+        <!-- Image correctement ciblée d'après ton dépôt GitHub -->
+        <img src="mini_moonboard_bg.jpg" alt="Mini MoonBoard" class="board-image" id="boardImage">
         <div class="grid-overlay" id="gridOverlay"></div>
     </div>
 
     <script>
+        // Enregistrement du Service Worker pour fonctionner hors-ligne
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                .then(registration => {
+                    console.log('ServiceWorker enregistré avec succès:', registration.scope);
+                })
+                .catch(error => {
+                    console.log('Échec de l\'enregistrement du ServiceWorker:', error);
+                });
+            });
+        }
+
         const COLS = ['A','B','C','D','E','F','G','H','I','J','K'];
         const ROWS = [12,11,10,9,8,7,6,5,4,3,2,1];
         
         let blocks = JSON.parse(localStorage.getItem('minimoon_blocks') || '{}');
         let currentBlockName = "";
         
-        // Variables pour le mode Édition
+        // Mode Édition (Crayon)
         let isPencilActive = false; 
         let currentEditState = "depart"; 
 
@@ -235,14 +260,14 @@
             });
         }
 
-        // Toggle Crayon
+        // Activation / Désactivation du Crayon
         btnPencil.addEventListener('click', () => {
             isPencilActive = !isPencilActive;
             btnPencil.classList.toggle('active-pencil', isPencilActive);
             if (!isPencilActive) currentEditState = "depart"; 
         });
 
-        // Édition des prises
+        // Édition d'une prise au clic
         function handleHoldClick(holdId) {
             if (!isPencilActive) return; 
             if (!currentBlockName) return alert("Sélectionne ou crée un bloc avant d'éditer.");
@@ -250,10 +275,12 @@
             let block = blocks[currentBlockName];
             if (!block) return;
 
+            // Retirer la prise pour éviter les doublons dans les listes
             block.depart = block.depart.filter(h => h !== holdId);
             block.progression = block.progression.filter(h => h !== holdId);
             block.arrivee = block.arrivee.filter(h => h !== holdId);
 
+            // Cycle : Départ (Vert) -> Progression (Bleu) -> Arrivée (Rouge) -> Rien
             if (currentEditState === "depart") {
                 block.depart.push(holdId);
                 currentEditState = "progression";
@@ -267,12 +294,13 @@
             displayBlock(currentBlockName);
         }
 
+        // Affichage d'un bloc sur la grille
         function displayBlock(name) {
             currentBlockName = name;
             let block = blocks[name];
             document.querySelectorAll('.hold').forEach(div => {
                 let id = div.dataset.id;
-                div.className = 'hold';
+                div.className = 'hold'; // Reset visuel
                 if (block) {
                     if (block.depart.includes(id)) div.classList.add('depart');
                     else if (block.progression.includes(id)) div.classList.add('progression');
@@ -281,6 +309,7 @@
             });
         }
 
+        // Mise à jour de la liste déroulante et du compteur
         function updateBlockSelect() {
             let selected = blockSelect.value;
             blockSelect.innerHTML = '';
@@ -336,6 +365,7 @@
             }
         });
 
+        // Chargement initial
         excludeCompletedCheckbox.checked = localStorage.getItem('minimoon_exclude') === 'true';
         initGrid();
         updateBlockSelect();
