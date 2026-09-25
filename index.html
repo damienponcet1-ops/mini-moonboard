@@ -24,6 +24,25 @@
             color: #ffb700;
         }
         
+        /* BADGE NO KICKBOARD - TOUT EN HAUT À GAUCHE */
+        .no-kickboard-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background-color: #ff0055;
+            color: white;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1.2;
+            display: none; /* Masqué par défaut */
+            pointer-events: none; /* Non cliquable */
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        
         .btn-row {
             display: flex;
             gap: 6px;
@@ -82,27 +101,6 @@
             margin: 5px 0 10px 0;
             width: 100%;
             max-width: 450px;
-        }
-        
-        /* Bouton No Kickboard interactif */
-        .nk-toggle {
-            font-size: 0.65rem;
-            line-height: 1.1;
-            text-align: center;
-            padding: 4px 6px;
-            border: 1px solid #555;
-            border-radius: 4px;
-            cursor: pointer;
-            color: #888;
-            background: #222;
-            user-select: none;
-            transition: all 0.2s;
-        }
-        .nk-toggle.active {
-            background-color: #ff0055;
-            color: white;
-            border-color: #ff0055;
-            font-weight: bold;
         }
 
         .nav-container select.main-select {
@@ -214,7 +212,7 @@
             z-index: 1000; 
             width: 95%;
             max-width: 350px;
-            background: transparent; /* Suppression du fond noir bloquant */
+            background: transparent;
         }
         .modal-content {
             background: rgba(30, 30, 30, 0.95); 
@@ -234,6 +232,9 @@
     </style>
 </head>
 <body>
+
+    <!-- L'indicateur No Kickboard statique en haut à gauche -->
+    <div id="noKickboardBadge" class="no-kickboard-badge">NO<br>KICKBOARD</div>
 
     <h1>Mini MoonBoard</h1>
 
@@ -278,8 +279,6 @@
     </div>
 
     <div class="nav-container">
-        <!-- Bouton interactif No Kickboard -->
-        <div id="btnNoKickboard" class="nk-toggle" title="Activer/Désactiver No Kickboard">No<br>Kickboard</div>
         <button id="btnPrev">◀</button>
         <select id="blockSelect" class="main-select"></select>
         <input type="checkbox" id="chkCompleted" class="chk-completed" title="Marquer ce bloc comme réussi">
@@ -337,7 +336,7 @@
         const excludeCompletedCheckbox = document.getElementById('excludeCompleted');
         const blockCounter = document.getElementById('blockCounter');
         const chkCompleted = document.getElementById('chkCompleted');
-        const btnNoKickboard = document.getElementById('btnNoKickboard');
+        const noKickboardBadge = document.getElementById('noKickboardBadge');
 
         // ==========================================
         // BLUETOOTH (Connexion / Déconnexion)
@@ -482,21 +481,6 @@
             localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
         }
 
-        // ==========================================
-        // GESTION DU BOUTON "NO KICKBOARD"
-        // ==========================================
-        btnNoKickboard.addEventListener('click', () => {
-            if (!currentBlockName) return alert("Sélectionnez ou créez un bloc d'abord.");
-            blocks[currentBlockName].noKickboard = !blocks[currentBlockName].noKickboard;
-            localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-            
-            if (blocks[currentBlockName].noKickboard) {
-                btnNoKickboard.classList.add('active');
-            } else {
-                btnNoKickboard.classList.remove('active');
-            }
-        });
-
         function displayBlock(name) {
             currentBlockName = name;
             let block = blocks[name];
@@ -510,14 +494,15 @@
                 
                 chkCompleted.checked = block.completed || false;
                 
+                // Affichage du badge si le JSON le précise
                 if (block.noKickboard) {
-                    btnNoKickboard.classList.add('active');
+                    noKickboardBadge.style.display = 'block';
                 } else {
-                    btnNoKickboard.classList.remove('active');
+                    noKickboardBadge.style.display = 'none';
                 }
             } else {
                 chkCompleted.checked = false;
-                btnNoKickboard.classList.remove('active');
+                noKickboardBadge.style.display = 'none';
             }
         }
 
@@ -604,6 +589,7 @@
         document.getElementById('btnSave').addEventListener('click', () => {
             let name = currentBlockName || prompt("Nom de ce nouveau bloc ? (Pense à inclure la cotation, ex: Mon Bloc (6A+))");
             if (name) {
+                // Création d'un bloc par défaut sans noKickboard (seuls les imports JSON peuvent l'avoir maintenant)
                 if (!blocks[name]) blocks[name] = { depart: [], progression: [], arrivee: [], completed: false, noKickboard: false };
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 updateBlockSelect();
