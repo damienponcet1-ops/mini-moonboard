@@ -1,479 +1,353 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Mini MoonBoard DIY</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini MoonBoard DIY</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            font-size: 1.2rem;
+            margin: 5px 0;
+            color: #ffb700;
+        }
+        .top-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+            margin-bottom: 8px;
+            max-width: 500px;
+        }
+        button {
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        button:active { background-color: #555; }
+        .btn-blue { background-color: #0056b3; border-color: #007bff; }
+        .btn-green { background-color: #1e7e34; border-color: #28a745; }
+        .btn-purple { background-color: #563d7c; border-color: #6f42c1; }
+        .btn-red { background-color: #bd2130; border-color: #dc3545; }
+        .btn-orange { background-color: #d35400; border-color: #e67e22; }
+        
+        /* Style du bouton crayon quand il est ACTIF */
+        button.active-pencil {
+            background-color: #f39c12 !important;
+            border-color: #f1c40f !important;
+            color: #000 !important;
+            font-weight: bold;
+            box-shadow: 0 0 8px rgba(243, 156, 18, 0.8);
+        }
 
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#121212">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="MoonBoard">
-  <link rel="apple-touch-icon" href="icon-192.png">
+        .board-container {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            aspect-ratio: 11 / 12;
+            background-color: #f4d03f;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .board-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        /* AJUSTEMENT DE LA GRILLE POUR CENTRER SUR LES PRISES */
+        .grid-overlay {
+            position: absolute;
+            /* Ces valeurs sont ajustées pour ignorer les marges de l'image de fond */
+            top: 6.5%; 
+            left: 8%; 
+            width: 84%; 
+            height: 84%;
+            display: grid;
+            grid-template-columns: repeat(11, 1fr);
+            grid-template-rows: repeat(12, 1fr);
+        }
+        
+        /* Le cercle de la prise est maintenant plus petit et centré dans sa case de grille */
+        .hold {
+            width: 75%;
+            aspect-ratio: 1;
+            margin: auto; /* Centre le cercle exactement sur la prise */
+            border: 2px dashed rgba(0, 255, 0, 0.4);
+            border-radius: 50%;
+            cursor: pointer;
+            box-sizing: border-box;
+            background: transparent;
+            transition: all 0.2s ease;
+        }
+        
+        /* Couleurs strictes selon le type de prise */
+        .hold.depart { border: 3px solid #2ecc71; background: rgba(46, 204, 113, 0.4); }
+        .hold.progression { border: 3px solid #3498db; background: rgba(52, 152, 219, 0.4); }
+        .hold.arrivee { border: 3px solid #e74c3c; background: rgba(231, 76, 60, 0.4); }
 
-  <style>
-    * { box-sizing: border-box; touch-action: manipulation; }
-    body { margin: 0; padding: 10px; background-color: #121212; color: #ffffff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; position: relative; }
-    
-    .version-badge { position: absolute; top: 10px; right: 15px; font-size: 0.75rem; color: #777; background: #222; padding: 3px 6px; border-radius: 4px; border: 1px solid #444; }
-
-    /* LIGNE 1 : Le bandeau du titre avec le gros point rouge intégré */
-    .title-container { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; max-width: 420px; margin: 10px 0 15px 0; overflow: hidden; }
-    
-    /* Le point rouge No Kickboard (agrandi à 32px) */
-    .kickboard-dot { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; transition: all 0.3s; border: 2px solid #555; background-color: #333; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-    .kickboard-dot.active { background-color: #ff3b30; border-color: #ff3b30; box-shadow: 0 0 14px rgba(255, 59, 48, 0.9); }
-
-    h1 { font-size: 1.25rem; margin: 0; color: #f39c12; transition: color 0.3s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; max-width: 75%; }
-
-    /* Structure des contrôles */
-    .control-panel { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 420px; margin-bottom: 10px; }
-    .controls-row { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
-    .compact-row { gap: 6px; }
-    .compact-row button, .filter-select-mini { padding: 8px 4px; font-size: 13px; flex: 1; border-radius: 6px; }
-    
-    /* Style spécifique pour le sélecteur de cotation */
-    .filter-select-mini { background-color: #1a1a1a; color: #f39c12; border: 1px solid #f39c12; font-weight: bold; appearance: none; text-align: center; cursor: pointer; }
-
-    /* LIGNE 5 : Navigation */
-    .route-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; max-width: 420px; margin-bottom: 10px; }
-    .btn-nav { background: #444; color: #fff; border: 1px solid #666; font-size: 16px; padding: 8px 14px; border-radius: 6px; cursor: pointer; flex-shrink: 0; }
-    .btn-nav:active { background: #666; }
-    
-    select#routeSelect { flex: 1; padding: 8px; background-color: #222; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 15px; font-weight: bold; appearance: none; text-align: center; min-width: 0; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
-    
-    .chk-completed { width: 24px; height: 24px; accent-color: #34c759; margin-left: 4px; cursor: pointer; flex-shrink: 0; visibility: hidden; }
-
-    /* Styles Boutons Communs */
-    button { background: #333; color: #fff; border: 1px solid #555; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; }
-    button:active { background: #555; }
-    
-    /* Ligne 2 : Connecter, Effacer, Nouveau */
-    .btn-save { background: #005bb5; border-color: #0073e6; flex: 2;}
-    .btn-save:active { background: #003f7a; }
-    .btn-clear { background: #e67e22; border-color: #d35400; flex: 1.2;}
-    .btn-clear:active { background: #bf4a00; }
-    .btn-new { background: #d35400; border-color: #ba4a00; flex: 0.5; font-size: 16px;}
-    .btn-new:active { background: #a04000; }
-    
-    /* Ligne 3 : Imports/Exports */
-    .btn-export { background: #27ae60; border-color: #2ecc71; flex:1;}
-    .btn-export:active { background: #1e8449; }
-    .btn-import-file { background: #8e44ad; border-color: #9b59b6; flex:1; }
-    .btn-import-file:active { background: #6c3483; }
-    .btn-import-paste { background: #c39bd3; color: #333; border: 1px solid #9b59b6; flex:1.2; padding: 8px 2px; font-size: 13px;}
-    .btn-import-paste:active { background: #a569bd; color: white; }
-    
-    /* Ligne 4 : Suppression */
-    .btn-remove { background: #d9534f; border-color: #d43f3a; flex: 1.5; padding: 8px 4px; }
-    .btn-remove:active { background: #c9302c; }
-    .btn-delete { background: #555; border-color: #444; flex: 1; padding: 8px 4px; }
-    .btn-delete:active { background: #333; }
-
-    /* Indicateur d'état BLE */
-    .status-dot { width: 14px; height: 14px; border-radius: 50%; transition: background-color 0.3s, box-shadow 0.3s; flex-shrink: 0; }
-    .status-dot.disconnected { background-color: #ff3b30; box-shadow: 0 0 8px rgba(255, 59, 48, 0.6); }
-    .status-dot.connected { background-color: #34c759; box-shadow: 0 0 8px rgba(52, 199, 89, 0.8); }
-
-    /* Grille */
-    .board-container { position: relative; width: 100%; max-width: 420px; aspect-ratio: 11 / 12; background: url('mini_moonboard_bg.jpg') no-repeat center/cover; border: 2px solid #444; border-radius: 8px; overflow: hidden; }
-    .grid { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(11, 1fr); grid-template-rows: repeat(12, 1fr); width: 100%; height: 100%; padding: 7% 1% 6% 7%; }
-    .hold { width: 85%; height: 85%; margin: 7.5%; border-radius: 50%; transition: all 0.15s ease-out; cursor: pointer; }
-    .hold.state-0 { background-color: transparent; }
-    .hold.state-1 { border: 3px solid #00ff00; background-color: rgba(0, 255, 0, 0.4); box-shadow: 0 0 10px #00ff00; }
-    .hold.state-2 { border: 3px solid #0088ff; background-color: rgba(0, 136, 255, 0.4); box-shadow: 0 0 10px #0088ff; }
-    .hold.state-3 { border: 3px solid #ff0000; background-color: rgba(255, 0, 0, 0.4); box-shadow: 0 0 10px #ff0000; }
-  </style>
+        .nav-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin: 8px 0;
+            width: 100%;
+            max-width: 450px;
+        }
+        .nav-container select {
+            flex-grow: 1;
+            padding: 8px;
+            background: #222;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        /* NOUVELLE LIGNE : Filtre et Compteur */
+        .footer-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 450px;
+            font-size: 0.9rem;
+            color: #ddd;
+            margin-bottom: 10px;
+            padding: 0 5px;
+            box-sizing: border-box;
+        }
+        .footer-info label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .footer-info input[type="checkbox"] {
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
 
-  <div class="version-badge">V52</div>
-  
-  <!-- LIGNE 1 : Titre et Point Rouge -->
-  <div class="title-container">
-    <div id="kickboardDot" class="kickboard-dot" onclick="toggleKickboard()" title="No Kickboard (Clique pour activer/désactiver)"></div>
-    <h1 id="pageTitle">Mini MoonBoard</h1>
-  </div>
+    <h1>Mini MoonBoard</h1>
 
-  <div class="control-panel">
-    <!-- Ligne 2 : Connexion, Effacer, Nouveau(Crayon), Filtrage -->
-    <div class="controls-row compact-row">
-        <button id="btnConnect" class="btn-save" onclick="toggleBLE()">Se connecter</button>
-        <div id="statusIndicator" class="status-dot disconnected"></div>
-        <button class="btn-clear" onclick="clearHolds()">Effacer</button>
-        <button class="btn-new" onclick="createNewRoute()" title="Créer un nouveau bloc">✏️</button>
-        <select id="gradeFilter" class="filter-select-mini" onchange="initRouteSelector()">
-          <option value="">Cotation</option>
-          <option value="6A+">6A+</option>
-          <option value="6B">6B</option>
-          <option value="6B+">6B+</option>
-          <option value="6C">6C</option>
-          <option value="6C+">6C+</option>
-          <option value="7A">7A</option>
-          <option value="7A+">7A+</option>
-          <option value="7B">7B</option>
-          <option value="7B+">7B+</option>
-          <option value="7C">7C</option>
-          <option value="7C+">7C+</option>
-          <option value="8A">8A</option>
-          <option value="8A+">8A+</option>
-          <option value="8B">8B</option>
-          <option value="8B+">8B+</option>
-        </select>
+    <div class="top-bar">
+        <button id="btnConnect" class="btn-blue">Se connecter</button>
+        <button id="btnClear" class="btn-orange">Effacer</button>
+        <button id="btnPencil" title="Activer/Désactiver l'édition">✏️</button>
+        <button id="btnNoKickboard" class="btn-purple">No-Kickboard</button>
+        <button id="btnExport" class="btn-green">Exporter</button>
+        <button id="btnImport" class="btn-purple">Importer</button>
+        <button id="btnPasteJson" class="btn-purple">Coller JSON</button>
+        <button id="btnSave" class="btn-blue">Enregistrer</button>
+        <button id="btnDelete" class="btn-red">Supprimer</button>
+        <button id="btnClearStorage" class="btn-red">Vider</button>
     </div>
 
-    <!-- Ligne 3 : Fichiers et Imports -->
-    <div class="controls-row compact-row">
-        <button class="btn-export" onclick="exportRoutes()">📤 Exporter</button>
-        <button class="btn-import-file" onclick="document.getElementById('importInput').click()">📥 Importer</button>
-        <button class="btn-import-paste" onclick="importFromPaste()">📋 Coller JSON</button>
-        <input type="file" id="importInput" accept=".json" style="display:none" onchange="importRoutes(event)">
+    <div class="nav-container">
+        <button id="btnPrev">◀</button>
+        <select id="blockSelect"></select>
+        <button id="btnNext">▶</button>
     </div>
 
-    <!-- Ligne 4 : Sauvegarde et Suppression -->
-    <div class="controls-row">
-        <button class="btn-save" onclick="saveCurrentRoute()">💾 Enregistrer</button>
-        <button class="btn-remove" onclick="deleteCurrentRoute()">❌ Supprimer</button>
-        <button class="btn-delete" onclick="clearSavedRoutes()">⚠️ Vider</button>
+    <!-- LIGNE AJOUTÉE : Case à cocher et Compteur total -->
+    <div class="footer-info">
+        <label>
+            <input type="checkbox" id="excludeCompleted"> Masquer les blocs cochés
+        </label>
+        <span id="blockCounter">Total : 0 blocs</span>
     </div>
-  </div>
 
-  <!-- Ligne 5 : Navigation et Coche -->
-  <div class="route-nav-row">
-    <button class="btn-nav" onclick="prevRoute()">◄</button>
-    <select id="routeSelect" onchange="loadSelectedRoute()"></select>
-    <button class="btn-nav" onclick="nextRoute()">►</button>
-    <input type="checkbox" id="chkCompleted" class="chk-completed" onchange="toggleCompleted()" title="Marquer comme réalisé">
-  </div>
+    <div class="board-container">
+        <!-- Remplacer 'mini-moon.jpg' par le chemin exact de ton image locale si besoin -->
+        <img src="mini-moon.jpg" alt="Mini MoonBoard" class="board-image" id="boardImage">
+        <div class="grid-overlay" id="gridOverlay"></div>
+    </div>
 
-  <!-- Ligne 6 : La Grille -->
-  <div class="board-container">
-    <div class="grid" id="boardGrid"></div>
-  </div>
-
-  <script>
-    const cols = ['A','B','C','D','E','F','G','H','I','J','K'];
-    const rows = 12;
-    let holdStates = {};
-    
-    let isNoKickboard = false;
-    let localRoutes = JSON.parse(localStorage.getItem('moonboard_custom_routes')) || {};
-
-    const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-    const RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
-    let bleDevice = null;
-    let rxCharacteristic = null;
-
-    // === GESTION DU POINT ROUGE NO KICKBOARD ===
-    function toggleKickboard() {
-      isNoKickboard = !isNoKickboard;
-      updateKickboardUI();
-      document.getElementById('routeSelect').value = "";
-      updateCheckboxState();
-    }
-
-    function updateKickboardUI() {
-      const dot = document.getElementById('kickboardDot');
-      if (isNoKickboard) { dot.classList.add('active'); }
-      else { dot.classList.remove('active'); }
-    }
-
-    // === GESTION DE LA SAUVEGARDE ET DE L'ÉDITION MANUELLE ===
-    function initRouteSelector() {
-      const selector = document.getElementById('routeSelect');
-      const filterGrade = document.getElementById('gradeFilter').value;
-      const currentVal = selector.value; 
-      
-      selector.innerHTML = '<option value="">-- Charger un bloc --</option>';
-      let hasValidCurrent = false;
-
-      Object.keys(localRoutes).forEach(routeName => {
-        if (filterGrade === "" || routeName.includes(filterGrade)) {
-            const opt = document.createElement('option');
-            opt.value = routeName;
-            const prefix = localRoutes[routeName].completed ? "✅ " : "";
-            opt.innerText = prefix + routeName;
-            selector.appendChild(opt);
-            if (routeName === currentVal) hasValidCurrent = true;
-        }
-      });
-      
-      if (hasValidCurrent) selector.value = currentVal;
-      else selector.value = "";
-      
-      updateCheckboxState();
-    }
-
-    function saveCurrentRoute() {
-      let title = document.getElementById('pageTitle').innerText;
-      
-      if (title === "Mini MoonBoard" || title.trim() === "") {
-          title = prompt("Nom et cotation du bloc :", "Nouveau Bloc");
-          if (!title || title.trim() === "") return; // Annulation
-      }
-      
-      let route = { depart: [], progression: [], arrivee: [], completed: false, noKickboard: false };
-      let hasHolds = false;
-      Object.keys(holdStates).forEach(id => {
-        if (holdStates[id] === 1) { route.depart.push(id); hasHolds = true; }
-        if (holdStates[id] === 2) { route.progression.push(id); hasHolds = true; }
-        if (holdStates[id] === 3) { route.arrivee.push(id); hasHolds = true; }
-      });
-      
-      if (!hasHolds) { alert("Erreur : Le panneau est vide ! Clique sur des prises d'abord."); return; }
-
-      if (localRoutes[title]) { route.completed = localRoutes[title].completed; }
-      
-      route.noKickboard = isNoKickboard;
-      localRoutes[title] = route;
-      localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
-      
-      document.getElementById('pageTitle').innerText = title;
-      initRouteSelector();
-      document.getElementById('routeSelect').value = title;
-      updateCheckboxState();
-      alert(`Le bloc "${title}" a bien été enregistré !`);
-    }
-
-    function loadSelectedRoute() {
-      const selector = document.getElementById('routeSelect');
-      if (!selector) return;
-      const routeName = selector.value;
-      
-      clearHoldsOnly(); 
-      
-      if (routeName && localRoutes[routeName]) {
-        const route = localRoutes[routeName];
-        if (route.depart) route.depart.forEach(id => { holdStates[id] = 1; updateUI(id); });
-        if (route.progression) route.progression.forEach(id => { holdStates[id] = 2; updateUI(id); });
-        if (route.arrivee) route.arrivee.forEach(id => { holdStates[id] = 3; updateUI(id); });
+    <script>
+        const COLS = ['A','B','C','D','E','F','G','H','I','J','K'];
+        const ROWS = [12,11,10,9,8,7,6,5,4,3,2,1];
         
-        document.getElementById('pageTitle').innerText = routeName;
-        isNoKickboard = !!route.noKickboard;
-      } else {
-        document.getElementById('pageTitle').innerText = "Mini MoonBoard";
-        isNoKickboard = false;
-      }
-      
-      updateKickboardUI();
-      updateCheckboxState();
-      sendBLEFrame();
-    }
+        let blocks = JSON.parse(localStorage.getItem('minimoon_blocks') || '{}');
+        let currentBlockName = "";
+        
+        // Variables pour le mode Édition
+        let isPencilActive = false; 
+        let currentEditState = "depart"; // Cycle : depart -> progression -> arrivee
 
-    function clearHolds() {
-      clearHoldsOnly();
-      sendBLEFrame();
-    }
+        const gridOverlay = document.getElementById('gridOverlay');
+        const blockSelect = document.getElementById('blockSelect');
+        const btnPencil = document.getElementById('btnPencil');
+        const excludeCompletedCheckbox = document.getElementById('excludeCompleted');
+        const blockCounter = document.getElementById('blockCounter');
 
-    function clearHoldsOnly() {
-      Object.keys(holdStates).forEach(id => {
-        if(holdStates[id] !== 0) {
-          holdStates[id] = 0;
-          updateUI(id);
+        // 1. Initialisation de la grille
+        function initGrid() {
+            gridOverlay.innerHTML = '';
+            ROWS.forEach(r => {
+                COLS.forEach(c => {
+                    let holdId = c + r;
+                    let div = document.createElement('div');
+                    div.className = 'hold';
+                    div.dataset.id = holdId;
+                    div.title = holdId; // Affiche les coordonnées au survol pour t'aider
+                    div.addEventListener('click', () => handleHoldClick(holdId));
+                    gridOverlay.appendChild(div);
+                });
+            });
         }
-      });
-    }
 
-    function createNewRoute() {
-      document.getElementById('routeSelect').value = ""; 
-      document.getElementById('pageTitle').innerText = "Mini MoonBoard";
-      isNoKickboard = false;
-      updateKickboardUI();
-      updateCheckboxState();
-      clearHoldsOnly();
-      sendBLEFrame();
-    }
+        // 2. Gestion du mode Édition (Le bouton Crayon)
+        btnPencil.addEventListener('click', () => {
+            isPencilActive = !isPencilActive;
+            btnPencil.classList.toggle('active-pencil', isPencilActive);
+            
+            // Indication visuelle globale optionnelle
+            if (isPencilActive) {
+                gridOverlay.style.cursor = 'crosshair';
+            } else {
+                gridOverlay.style.cursor = 'default';
+                currentEditState = "depart"; // Réinitialise le cycle d'édition
+            }
+        });
 
-    // === GESTION DE LA SUPPRESSION ===
-    function deleteCurrentRoute() {
-      const selector = document.getElementById('routeSelect');
-      const routeName = selector.value;
-      
-      if (!routeName || !localRoutes[routeName]) {
-        alert("Erreur : Charge un bloc sauvegardé dans la liste pour pouvoir le supprimer.");
-        return;
-      }
-      
-      if (confirm(`Es-tu sûr de vouloir supprimer définitivement le bloc "${routeName}" ?`)) {
-        delete localRoutes[routeName];
-        localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
-        initRouteSelector();
-        createNewRoute();
-      }
-    }
+        function handleHoldClick(holdId) {
+            // Sécurité : On ne peut cliquer/modifier que si le crayon est activé et qu'un bloc est sélectionné
+            if (!isPencilActive) return; 
+            if (!currentBlockName) {
+                alert("Veuillez sélectionner ou créer un bloc (Nouveau) avant d'éditer.");
+                return;
+            }
 
-    function clearSavedRoutes() {
-      if (Object.keys(localRoutes).length === 0) return alert("La liste est déjà vide.");
-      if (confirm("⚠️ ATTENTION DANGER ⚠️\n\nEs-tu sûr de vouloir effacer TOUS les blocs enregistrés ? Action irréversible !")) {
-        localStorage.removeItem('moonboard_custom_routes');
-        localRoutes = {};
-        initRouteSelector();
-        createNewRoute();
-      }
-    }
+            let block = blocks[currentBlockName];
+            if (!block) return;
 
-    // === IMPORTATION / EXPORTATION ===
-    async function exportRoutes() {
-      if (Object.keys(localRoutes).length === 0) return alert("La liste est vide, rien à exporter.");
-      const jsonStr = JSON.stringify(localRoutes, null, 2);
-      const blob = new Blob([jsonStr], { type: 'application/json' });
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            // Retirer la prise de toutes les listes pour éviter les doublons
+            block.depart = block.depart.filter(h => h !== holdId);
+            block.progression = block.progression.filter(h => h !== holdId);
+            block.arrivee = block.arrivee.filter(h => h !== holdId);
 
-      if (isIOS && navigator.canShare) {
-        const file = new File([blob], "mes_blocs_moonboard.json", { type: 'application/json' });
-        try {
-          await navigator.share({ files: [file], title: 'Sauvegarde MoonBoard' });
-          return;
-        } catch (error) { console.log('Partage annulé ou erreur :', error); }
-      }
+            // Cycle de clic pour attribuer une couleur
+            if (currentEditState === "depart") {
+                block.depart.push(holdId);
+                currentEditState = "progression";
+            } else if (currentEditState === "progression") {
+                block.progression.push(holdId);
+                currentEditState = "arrivee";
+            } else if (currentEditState === "arrivee") {
+                block.arrivee.push(holdId);
+                currentEditState = "depart"; // On boucle pour le prochain clic
+            }
+            
+            displayBlock(currentBlockName);
+        }
 
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = "mes_blocs_moonboard.json";
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 0);
-    }
+        // 3. Affichage visuel d'un bloc sur la grille
+        function displayBlock(name) {
+            currentBlockName = name;
+            let block = blocks[name];
+            document.querySelectorAll('.hold').forEach(div => {
+                let id = div.dataset.id;
+                div.className = 'hold'; // Reset CSS
+                if (block) {
+                    if (block.depart.includes(id)) div.classList.add('depart');
+                    else if (block.progression.includes(id)) div.classList.add('progression');
+                    else if (block.arrivee.includes(id)) div.classList.add('arrivee');
+                }
+            });
+        }
 
-    function importRoutes(event) {
-      const file = event.target.files[0];
-      if(!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const importedRoutes = JSON.parse(e.target.result);
-          processImportData(importedRoutes);
-        } catch(err) { alert("Erreur : Le fichier n'est pas un JSON valide."); }
-      };
-      reader.readAsText(file);
-      event.target.value = ''; 
-    }
+        // 4. Logique de filtrage et mise à jour de la liste
+        function updateBlockSelect() {
+            let selected = blockSelect.value;
+            blockSelect.innerHTML = '';
+            
+            let allKeys = Object.keys(blocks);
+            let excludeChecked = excludeCompletedCheckbox.checked;
 
-    function importFromPaste() {
-        try {
-            const text = prompt("Collez le code JSON généré par l'IA ici :");
-            if (!text || text.trim() === "") return;
-            const importedRoutes = JSON.parse(text);
-            processImportData(importedRoutes);
-        } catch (err) { alert("Erreur : Texte non valide. Copie TOUT le texte généré par l'IA, y compris les accolades { et }."); }
-    }
-    
-    function processImportData(data){
-        if(!data || typeof data !== 'object') { alert("Erreur de données."); return; }
-        const count = Object.keys(data).length;
-        if(count === 0){ alert("Aucun bloc trouvé."); return; }
-        localRoutes = { ...localRoutes, ...data }; 
-        localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
-        initRouteSelector();
-        alert(`Succès ! ${count} bloc(s) importé(s) et fusionné(s) dans ta liste.`);
-    }
+            // Filtrage : si la case est cochée, on exclut les blocs marqués 'completed'
+            let filteredKeys = allKeys.filter(k => {
+                if (excludeChecked && blocks[k].completed) {
+                    return false;
+                }
+                return true;
+            });
 
-    // === NAVIGATION ===
-    function prevRoute() {
-      const selector = document.getElementById('routeSelect');
-      const options = Array.from(selector.options).filter(opt => opt.value !== "");
-      if (options.length === 0) return;
-      let idx = options.findIndex(opt => opt.value === selector.value);
-      if (idx <= 0) idx = options.length - 1; else idx--;
-      selector.value = options[idx].value;
-      loadSelectedRoute();
-    }
+            // Peupler le <select>
+            filteredKeys.forEach(k => {
+                let opt = document.createElement('option');
+                opt.value = k;
+                opt.textContent = (blocks[k].completed ? "✅ " : "") + k;
+                blockSelect.appendChild(opt);
+            });
 
-    function nextRoute() {
-      const selector = document.getElementById('routeSelect');
-      const options = Array.from(selector.options).filter(opt => opt.value !== "");
-      if (options.length === 0) return;
-      let idx = options.findIndex(opt => opt.value === selector.value);
-      if (idx === -1 || idx === options.length - 1) idx = 0; else idx++;
-      selector.value = options[idx].value;
-      loadSelectedRoute();
-    }
+            // Mise à jour du compteur (affichés / total absolu)
+            blockCounter.textContent = `Affichés : ${filteredKeys.length} / Total : ${allKeys.length}`;
 
-    function toggleCompleted() {
-      const routeName = document.getElementById('routeSelect').value;
-      if (routeName && localRoutes[routeName]) {
-        localRoutes[routeName].completed = document.getElementById('chkCompleted').checked;
-        localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
-        initRouteSelector(); 
-      }
-    }
+            // Gérer la sélection active après rafraîchissement
+            if (filteredKeys.includes(selected)) {
+                blockSelect.value = selected;
+            } else if (filteredKeys.length > 0) {
+                blockSelect.value = filteredKeys[0];
+                displayBlock(filteredKeys[0]);
+            } else {
+                currentBlockName = "";
+                document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
+            }
+        }
 
-    function updateCheckboxState() {
-      const routeName = document.getElementById('routeSelect').value;
-      const chk = document.getElementById('chkCompleted');
-      if (routeName && localRoutes[routeName]) {
-        chk.style.visibility = "visible";
-        chk.checked = !!localRoutes[routeName].completed;
-      } else {
-        chk.style.visibility = "hidden";
-        chk.checked = false;
-      }
-    }
+        // Écouteurs d'événements
+        blockSelect.addEventListener('change', (e) => displayBlock(e.target.value));
+        
+        excludeCompletedCheckbox.addEventListener('change', () => {
+            // Sauvegarder l'état de la checkbox dans le localStorage pour le garder en mémoire (optionnel mais pratique)
+            localStorage.setItem('minimoon_exclude', excludeCompletedCheckbox.checked);
+            updateBlockSelect();
+        });
 
-    // === GRILLE INTERACTIVE ===
-    const gridEl = document.getElementById('boardGrid');
-    for (let r = rows; r >= 1; r--) {
-      cols.forEach(c => {
-        const holdId = `${c}${r}`;
-        holdStates[holdId] = 0;
-        const div = document.createElement('div');
-        div.className = 'hold state-0';
-        div.id = `hold-${holdId}`;
-        div.onclick = () => toggleHold(holdId);
-        gridEl.appendChild(div);
-      });
-    }
-    initRouteSelector();
+        // 5. Fonction d'Import JSON
+        document.getElementById('btnPasteJson').addEventListener('click', () => {
+            let jsonStr = prompt("Colle ton JSON de blocs ici :");
+            if (!jsonStr) return;
+            try {
+                let imported = JSON.parse(jsonStr);
+                let count = 0;
+                for (let key in imported) {
+                    blocks[key] = imported[key];
+                    count++;
+                }
+                localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+                updateBlockSelect();
+                alert(`${count} blocs importés avec succès !`);
+            } catch(err) {
+                alert("Erreur de format JSON : Veuillez vérifier votre syntaxe.");
+            }
+        });
 
-    function toggleHold(holdId) {
-      holdStates[holdId] = (holdStates[holdId] + 1) % 4;
-      updateUI(holdId);
-      document.getElementById('routeSelect').value = ""; 
-      updateCheckboxState();
-      sendBLEFrame();
-    }
-
-    function updateUI(holdId) {
-      const el = document.getElementById(`hold-${holdId}`);
-      if(el) el.className = `hold state-${holdStates[holdId]}`;
-    }
-
-    // === BLUETOOTH BLE ===
-    async function toggleBLE() {
-      if (bleDevice && bleDevice.gatt.connected) {
-        bleDevice.gatt.disconnect();
-        return; 
-      }
-      try {
-        bleDevice = await navigator.bluetooth.requestDevice({ filters: [{ name: 'MoonBoard' }], optionalServices: [SERVICE_UUID] });
-        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
-        const server = await bleDevice.gatt.connect();
-        const service = await server.getPrimaryService(SERVICE_UUID);
-        rxCharacteristic = await service.getCharacteristic(RX_UUID);
-        document.getElementById('btnConnect').innerText = "Se déconnecter";
-        document.getElementById('statusIndicator').className = "status-dot connected";
-      } catch (err) { alert("Erreur BLE : " + err); onDisconnected(); }
-    }
-
-    function onDisconnected() {
-      rxCharacteristic = null;
-      document.getElementById('btnConnect').innerText = "Se connecter";
-      document.getElementById('statusIndicator').className = "status-dot disconnected";
-    }
-
-    function sendBLEFrame() {
-      if (!rxCharacteristic) return;
-      let parts = [];
-      Object.keys(holdStates).forEach(id => {
-        if (holdStates[id] === 1) parts.push(`S${id}`);
-        else if (holdStates[id] === 2) parts.push(`P${id}`);
-        else if (holdStates[id] === 3) parts.push(`F${id}`);
-      });
-      const encoder = new TextEncoder();
-      rxCharacteristic.writeValue(encoder.encode(`l#${parts.join(',')}#`));
-    }
-  </script>
+        // Initialisation de la page
+        // Récupérer l'état de la checkbox s'il avait été sauvegardé
+        excludeCompletedCheckbox.checked = localStorage.getItem('minimoon_exclude') === 'true';
+        initGrid();
+        updateBlockSelect();
+    </script>
 </body>
 </html>
