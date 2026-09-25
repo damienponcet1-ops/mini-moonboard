@@ -34,7 +34,7 @@
             margin-bottom: 8px;
         }
 
-        button {
+        button, select.btn-outline {
             border: none;
             padding: 8px 10px;
             border-radius: 6px;
@@ -56,7 +56,15 @@
         .btn-light-purple { background-color: #b388ff; color: #000; }
         .btn-red { background-color: #dc3545; }
         .btn-yellow { background-color: #f1c40f; color: #000; }
-        .btn-outline { background-color: #1e1e1e; border: 1px solid #e67e22; color: #e67e22; }
+        
+        /* Filtre cotation */
+        select.btn-outline { 
+            background-color: #1e1e1e; 
+            border: 1px solid #e67e22; 
+            color: #e67e22; 
+            appearance: none;
+            text-align: center;
+        }
         
         .btn-discreet { background-color: #333; color: #aaa; padding: 8px; }
 
@@ -70,12 +78,34 @@
         .nav-container {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             margin: 5px 0 10px 0;
             width: 100%;
             max-width: 450px;
         }
-        .nav-container select {
+        
+        /* Bouton No Kickboard interactif */
+        .nk-toggle {
+            font-size: 0.65rem;
+            line-height: 1.1;
+            text-align: center;
+            padding: 4px 6px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #888;
+            background: #222;
+            user-select: none;
+            transition: all 0.2s;
+        }
+        .nk-toggle.active {
+            background-color: #ff0055;
+            color: white;
+            border-color: #ff0055;
+            font-weight: bold;
+        }
+
+        .nav-container select.main-select {
             flex-grow: 1;
             padding: 8px;
             background: #222;
@@ -96,13 +126,14 @@
             cursor: pointer;
         }
 
+        /* LIGNE DE FILTRES ET STATS (Compacte) */
         .footer-info {
             display: flex;
             justify-content: space-between;
             align-items: center;
             width: 100%;
             max-width: 450px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #ddd;
             margin-bottom: 8px;
             padding: 0 5px;
@@ -111,13 +142,15 @@
         .footer-info label {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             cursor: pointer;
+            white-space: nowrap;
         }
         .footer-info span {
             font-weight: bold;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: #ffb700;
+            text-align: right;
         }
 
         .board-container {
@@ -136,20 +169,6 @@
             object-fit: cover;
         }
         
-        .no-kickboard-dot {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            width: 18px;
-            height: 18px;
-            background-color: #e74c3c;
-            border-radius: 50%;
-            display: none;
-            z-index: 20;
-            box-shadow: 0 0 5px rgba(0,0,0,0.8);
-            border: 2px solid white;
-        }
-
         .grid-overlay {
             position: absolute;
             display: grid;
@@ -185,32 +204,33 @@
             background: rgba(255, 255, 255, 0.2) !important;
         }
 
+        /* MODALE D'AJUSTEMENT FLOTTANTE EN HAUT (Ne cache pas l'image) */
         .modal {
             display: none; 
             position: fixed; 
-            top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.8); 
-            z-index: 100; 
-            justify-content: center; 
-            align-items: center;
+            top: 5px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            z-index: 1000; 
+            width: 95%;
+            max-width: 350px;
+            background: transparent; /* Suppression du fond noir bloquant */
         }
         .modal-content {
-            background: #222; 
-            padding: 20px; 
+            background: rgba(30, 30, 30, 0.95); 
+            padding: 10px 15px; 
             border-radius: 8px; 
-            width: 90%; 
-            max-width: 350px; 
             display: flex; 
             flex-direction: column; 
-            gap: 15px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            gap: 6px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.8);
+            border: 1px solid #444;
         }
-        .modal-content h3 { margin: 0; color: #ffb700; text-align: center; }
-        .modal-content label { display: flex; flex-direction: column; font-size: 0.9rem; color: #ccc; }
-        .modal-content input[type="range"] { margin-top: 5px; }
-        .modal-buttons { display: flex; gap: 10px; margin-top: 10px; }
-        .modal-buttons button { flex: 1; justify-content: center; }
-
+        .modal-content h3 { margin: 0; font-size: 0.95rem; color: #ffb700; text-align: center; }
+        .modal-content label { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #ccc; }
+        .modal-content input[type="range"] { max-width: 65%; }
+        .modal-buttons { display: flex; gap: 10px; margin-top: 5px; }
+        .modal-buttons button { flex: 1; justify-content: center; padding: 6px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -218,10 +238,30 @@
     <h1>Mini MoonBoard</h1>
 
     <div class="btn-row">
+        <!-- Bouton Connecter / Déconnecter (Interrupteur) -->
         <button id="btnConnect" class="btn-blue">Se connecter</button>
+        
         <button id="btnClear" class="btn-orange">Effacer</button>
         <button id="btnPencil" class="btn-orange" title="Activer/Désactiver l'édition">✏️</button>
-        <button id="btnCotation" class="btn-outline">Cotation</button>
+        
+        <!-- Sélecteur pour filtrer par cotation -->
+        <select id="filterCotation" class="btn-outline" title="Filtrer par cotation">
+            <option value="">Filtre (Tous)</option>
+            <option value="6A+">6A+</option>
+            <option value="6B">6B</option>
+            <option value="6B+">6B+</option>
+            <option value="7A">7A</option>
+            <option value="7A+">7A+</option>
+            <option value="7B">7B</option>
+            <option value="7B+">7B+</option>
+            <option value="7C">7C</option>
+            <option value="7C+">7C+</option>
+            <option value="8A">8A</option>
+            <option value="8A+">8A+</option>
+            <option value="8B">8B</option>
+            <option value="8B+">8B+</option>
+        </select>
+        
         <button id="btnAdjustGrid" class="btn-discreet" title="Ajuster la grille">⚙️</button>
     </div>
     
@@ -238,21 +278,23 @@
     </div>
 
     <div class="nav-container">
+        <!-- Bouton interactif No Kickboard -->
+        <div id="btnNoKickboard" class="nk-toggle" title="Activer/Désactiver No Kickboard">No<br>Kickboard</div>
         <button id="btnPrev">◀</button>
-        <select id="blockSelect"></select>
+        <select id="blockSelect" class="main-select"></select>
         <input type="checkbox" id="chkCompleted" class="chk-completed" title="Marquer ce bloc comme réussi">
         <button id="btnNext">▶</button>
     </div>
 
+    <!-- LIGNE DE STATISTIQUES GLOBALES -->
     <div class="footer-info">
         <label>
-            <input type="checkbox" id="excludeCompleted"> Masquer les blocs cochés
+            <input type="checkbox" id="excludeCompleted"> Masquer cochés
         </label>
-        <span id="blockCounter">Réalisés : 0 | À faire : 0</span>
+        <span id="blockCounter">Fait : 0 | À faire : 0 | Total : 0</span>
     </div>
 
     <div class="board-container">
-        <div id="noKickboardIndicator" class="no-kickboard-dot" title="No Kickboard"></div>
         <img src="mini_moonboard_bg.jpg" alt="Mini MoonBoard" class="board-image" id="boardImage">
         <div class="grid-overlay" id="gridOverlay"></div>
     </div>
@@ -261,10 +303,10 @@
     <div id="adjustModal" class="modal">
         <div class="modal-content">
             <h3>Ajuster la grille</h3>
-            <label>Décalage Haut (Top) : <input type="range" id="adjTop" min="0" max="20" step="0.1"></label>
-            <label>Décalage Gauche (Left) : <input type="range" id="adjLeft" min="0" max="20" step="0.1"></label>
-            <label>Largeur (Width) : <input type="range" id="adjWidth" min="50" max="100" step="0.1"></label>
-            <label>Hauteur (Height) : <input type="range" id="adjHeight" min="50" max="100" step="0.1"></label>
+            <label>Haut (Top) <input type="range" id="adjTop" min="0" max="20" step="0.1"></label>
+            <label>Gauche (Left) <input type="range" id="adjLeft" min="0" max="20" step="0.1"></label>
+            <label>Largeur <input type="range" id="adjWidth" min="50" max="100" step="0.1"></label>
+            <label>Hauteur <input type="range" id="adjHeight" min="50" max="100" step="0.1"></label>
             <div class="modal-buttons">
                 <button id="btnResetAdjust" class="btn-orange">Par défaut</button>
                 <button id="btnCloseAdjust" class="btn-green">Terminer</button>
@@ -290,14 +332,15 @@
 
         const gridOverlay = document.getElementById('gridOverlay');
         const blockSelect = document.getElementById('blockSelect');
+        const filterCotation = document.getElementById('filterCotation');
         const btnPencil = document.getElementById('btnPencil');
         const excludeCompletedCheckbox = document.getElementById('excludeCompleted');
         const blockCounter = document.getElementById('blockCounter');
         const chkCompleted = document.getElementById('chkCompleted');
-        const nkIndicator = document.getElementById('noKickboardIndicator');
+        const btnNoKickboard = document.getElementById('btnNoKickboard');
 
         // ==========================================
-        // BLUETOOTH (Interrupteur Connecter/Déconnecter)
+        // BLUETOOTH (Connexion / Déconnexion)
         // ==========================================
         let bluetoothDevice = null;
         const btnConnect = document.getElementById('btnConnect');
@@ -356,7 +399,7 @@
         }
 
         document.getElementById('btnAdjustGrid').addEventListener('click', () => {
-            adjustModal.style.display = 'flex';
+            adjustModal.style.display = 'block'; 
             gridOverlay.classList.add('grid-adjusting');
         });
 
@@ -379,7 +422,7 @@
         });
 
         // ==========================================
-        // GÉNÉRATION DE LA GRILLE
+        // GÉNÉRATION ET GESTION DES CLICS SUR GRILLE
         // ==========================================
         function initGrid() {
             gridOverlay.innerHTML = '';
@@ -410,7 +453,7 @@
             if (!isPencilActive) return; 
             
             if (!currentBlockName) {
-                let newName = prompt("Création d'un nouveau bloc. Quel est son nom ?");
+                let newName = prompt("Création d'un nouveau bloc. Nom (ex: Mon Bloc (6A+)) :");
                 if (!newName) return; 
                 
                 currentBlockName = newName;
@@ -439,6 +482,21 @@
             localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
         }
 
+        // ==========================================
+        // GESTION DU BOUTON "NO KICKBOARD"
+        // ==========================================
+        btnNoKickboard.addEventListener('click', () => {
+            if (!currentBlockName) return alert("Sélectionnez ou créez un bloc d'abord.");
+            blocks[currentBlockName].noKickboard = !blocks[currentBlockName].noKickboard;
+            localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+            
+            if (blocks[currentBlockName].noKickboard) {
+                btnNoKickboard.classList.add('active');
+            } else {
+                btnNoKickboard.classList.remove('active');
+            }
+        });
+
         function displayBlock(name) {
             currentBlockName = name;
             let block = blocks[name];
@@ -451,27 +509,39 @@
                 block.arrivee.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('arrivee'); });
                 
                 chkCompleted.checked = block.completed || false;
-                nkIndicator.style.display = block.noKickboard ? 'block' : 'none';
+                
+                if (block.noKickboard) {
+                    btnNoKickboard.classList.add('active');
+                } else {
+                    btnNoKickboard.classList.remove('active');
+                }
             } else {
                 chkCompleted.checked = false;
-                nkIndicator.style.display = 'none';
+                btnNoKickboard.classList.remove('active');
             }
         }
 
+        // ==========================================
+        // GESTION DU FILTRE, COMPTEUR ABSOLU ET LISTE
+        // ==========================================
         function updateBlockSelect() {
             let selected = blockSelect.value;
             blockSelect.innerHTML = '';
             
             let allKeys = Object.keys(blocks);
             let excludeChecked = excludeCompletedCheckbox.checked;
+            let currentGradeFilter = filterCotation.value;
 
-            // --- MISE A JOUR DU COMPTEUR REVISE ---
+            // Compteur global absolu
+            let totalBlocks = allKeys.length;
             let totalCompleted = allKeys.filter(k => blocks[k].completed).length;
-            let totalNotCompleted = allKeys.length - totalCompleted;
-            blockCounter.textContent = `Réalisés : ${totalCompleted} | À faire : ${totalNotCompleted}`;
+            let totalNotCompleted = totalBlocks - totalCompleted;
+            blockCounter.textContent = `Fait : ${totalCompleted} | À faire : ${totalNotCompleted} | Total : ${totalBlocks}`;
 
+            // Application des filtres pour le sélecteur
             let filteredKeys = allKeys.filter(k => {
                 if (excludeChecked && blocks[k].completed) return false;
+                if (currentGradeFilter && !k.includes(currentGradeFilter)) return false;
                 return true;
             });
 
@@ -493,7 +563,11 @@
             }
         }
 
+        // ==========================================
+        // ÉCOUTEURS D'ÉVÉNEMENTS GÉNÉRAUX
+        // ==========================================
         blockSelect.addEventListener('change', (e) => displayBlock(e.target.value));
+        filterCotation.addEventListener('change', updateBlockSelect);
         
         document.getElementById('btnPrev').addEventListener('click', () => {
             if(blockSelect.selectedIndex > 0) {
@@ -514,23 +588,6 @@
             blockSelect.value = "";
         });
 
-        // ==========================================
-        // BOUTON COTATION (Renommer le bloc)
-        // ==========================================
-        document.getElementById('btnCotation').addEventListener('click', () => {
-            if (!currentBlockName) return alert("Sélectionne un bloc d'abord !");
-            let newName = prompt("Modifier le nom ou la cotation de ce bloc :", currentBlockName);
-            
-            if (newName && newName !== currentBlockName) {
-                blocks[newName] = blocks[currentBlockName]; // Copie les données vers la nouvelle clé
-                delete blocks[currentBlockName]; // Supprime l'ancienne clé
-                localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-                currentBlockName = newName;
-                updateBlockSelect();
-                blockSelect.value = newName;
-            }
-        });
-
         chkCompleted.addEventListener('change', (e) => {
             if (currentBlockName && blocks[currentBlockName]) {
                 blocks[currentBlockName].completed = e.target.checked;
@@ -545,7 +602,7 @@
         });
 
         document.getElementById('btnSave').addEventListener('click', () => {
-            let name = currentBlockName || prompt("Nom de ce nouveau bloc ?");
+            let name = currentBlockName || prompt("Nom de ce nouveau bloc ? (Pense à inclure la cotation, ex: Mon Bloc (6A+))");
             if (name) {
                 if (!blocks[name]) blocks[name] = { depart: [], progression: [], arrivee: [], completed: false, noKickboard: false };
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
@@ -572,22 +629,32 @@
         });
 
         // ==========================================
-        // EXPORT JSON (ROBUSTE POUR SMARTPHONES)
+        // EXPORT / IMPORT JSON
         // ==========================================
-        document.getElementById('btnExport').addEventListener('click', () => {
-            const dataStr = JSON.stringify(blocks, null, 2);
-            const blob = new Blob([dataStr], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            
-            const dlAnchorElem = document.createElement('a');
-            dlAnchorElem.href = url;
-            dlAnchorElem.download = "moonboard_blocks.json";
-            document.body.appendChild(dlAnchorElem);
-            dlAnchorElem.click();
-            
-            // Nettoyage après le téléchargement
-            document.body.removeChild(dlAnchorElem);
-            URL.revokeObjectURL(url);
+        document.getElementById('btnExport').addEventListener('click', async () => {
+            try {
+                const dataStr = JSON.stringify(blocks, null, 2);
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const file = new File([blob], "moonboard_blocks.json", { type: "application/json" });
+
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Mini MoonBoard Blocs',
+                    });
+                } else {
+                    const url = URL.createObjectURL(blob);
+                    const dlAnchorElem = document.createElement('a');
+                    dlAnchorElem.href = url;
+                    dlAnchorElem.download = "moonboard_blocks.json";
+                    document.body.appendChild(dlAnchorElem);
+                    dlAnchorElem.click();
+                    document.body.removeChild(dlAnchorElem);
+                    setTimeout(() => URL.revokeObjectURL(url), 2000);
+                }
+            } catch (err) {
+                alert("Erreur lors de l'export : " + err.message);
+            }
         });
 
         document.getElementById('btnImport').addEventListener('click', () => {
@@ -623,7 +690,9 @@
             } catch(err) { alert("Erreur de format JSON."); }
         });
 
+        // ==========================================
         // INITIALISATION
+        // ==========================================
         excludeCompletedCheckbox.checked = localStorage.getItem('minimoon_exclude') === 'true';
         applyGridConfig(); 
         initGrid();
