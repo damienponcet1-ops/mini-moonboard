@@ -61,14 +61,6 @@
         /* Bouton Ajuster très discret */
         .btn-discreet { background-color: #333; color: #aaa; padding: 8px; }
 
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            background-color: #e74c3c;
-            border-radius: 50%;
-            margin: 0 2px;
-        }
-
         button.active-pencil {
             background-color: #f1c40f !important;
             color: #000 !important;
@@ -159,7 +151,6 @@
             border: 2px solid white;
         }
 
-        /* La grille (les positions initiales sont gérées par le JS maintenant) */
         .grid-overlay {
             position: absolute;
             display: grid;
@@ -190,13 +181,11 @@
         .hold.progression { border: 4px solid #3498db; background: rgba(52, 152, 219, 0.4); }
         .hold.arrivee { border: 4px solid #e74c3c; background: rgba(231, 76, 60, 0.4); }
 
-        /* Style temporaire quand on ajuste la grille */
         .grid-adjusting .hold {
             border: 1px dashed rgba(255, 255, 255, 0.6) !important;
             background: rgba(255, 255, 255, 0.2) !important;
         }
 
-        /* Menu d'ajustement de la grille (Modale) */
         .modal {
             display: none; 
             position: fixed; 
@@ -230,8 +219,9 @@
     <h1>Mini MoonBoard</h1>
 
     <div class="btn-row">
+        <!-- Bouton Bluetooth transformé en interrupteur -->
         <button id="btnConnect" class="btn-blue">Se connecter</button>
-        <div class="status-dot" id="bleStatusDot"></div>
+        
         <button id="btnClear" class="btn-orange">Effacer</button>
         <button id="btnPencil" class="btn-orange" title="Activer/Désactiver l'édition">✏️</button>
         <button id="btnCotation" class="btn-outline">Cotation</button>
@@ -308,7 +298,46 @@
         const blockCounter = document.getElementById('blockCounter');
         const chkCompleted = document.getElementById('chkCompleted');
         const nkIndicator = document.getElementById('noKickboardIndicator');
-        const bleStatusDot = document.getElementById('bleStatusDot');
+
+        // ==========================================
+        // BLUETOOTH (Interrupteur Connecter/Déconnecter)
+        // ==========================================
+        let bluetoothDevice = null;
+        const btnConnect = document.getElementById('btnConnect');
+
+        btnConnect.addEventListener('click', async () => {
+            // Si l'appareil est déjà connecté, on le déconnecte
+            if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+                bluetoothDevice.gatt.disconnect();
+                return; // La suite est gérée par l'événement 'gattserverdisconnected'
+            }
+
+            // Sinon, on lance la procédure de connexion
+            try {
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['generic_access'] 
+                });
+                
+                // Événement déclenché quand on se déconnecte (manuellement ou si la carte s'éteint)
+                bluetoothDevice.addEventListener('gattserverdisconnected', () => {
+                    btnConnect.textContent = "Se connecter";
+                    btnConnect.classList.replace('btn-red', 'btn-blue');
+                });
+
+                // Connexion au serveur GATT
+                await bluetoothDevice.gatt.connect();
+
+                // Changement d'état du bouton
+                btnConnect.textContent = "Se déconnecter";
+                btnConnect.classList.replace('btn-blue', 'btn-red');
+                alert("Connecté à " + bluetoothDevice.name + " !");
+
+            } catch (error) {
+                console.error(error);
+                alert("Erreur Bluetooth ou action annulée.");
+            }
+        });
 
         // ==========================================
         // GESTION DU RECADRAGE DE LA GRILLE
@@ -319,7 +348,6 @@
         const adjWidth = document.getElementById('adjWidth');
         const adjHeight = document.getElementById('adjHeight');
 
-        // Paramètres par défaut de la grille
         const defaultGridConfig = { top: 9, left: 7.5, width: 85, height: 75.5 };
         let gridConfig = JSON.parse(localStorage.getItem('minimoon_grid')) || defaultGridConfig;
 
@@ -329,7 +357,6 @@
             gridOverlay.style.width = gridConfig.width + '%';
             gridOverlay.style.height = gridConfig.height + '%';
             
-            // Mise à jour des sliders
             adjTop.value = gridConfig.top;
             adjLeft.value = gridConfig.left;
             adjWidth.value = gridConfig.width;
@@ -338,7 +365,7 @@
 
         document.getElementById('btnAdjustGrid').addEventListener('click', () => {
             adjustModal.style.display = 'flex';
-            gridOverlay.classList.add('grid-adjusting'); // Rend les cercles visibles
+            gridOverlay.classList.add('grid-adjusting');
         });
 
         document.getElementById('btnCloseAdjust').addEventListener('click', () => {
@@ -352,28 +379,11 @@
             applyGridConfig();
         });
 
-        // Écouteurs sur les sliders pour mise à jour en temps réel
         [adjTop, adjLeft, adjWidth, adjHeight].forEach(slider => {
             slider.addEventListener('input', (e) => {
                 gridConfig[e.target.id.replace('adj', '').toLowerCase()] = parseFloat(e.target.value);
                 applyGridConfig();
             });
-        });
-
-        // ==========================================
-        // BLUETOOTH
-        // ==========================================
-        document.getElementById('btnConnect').addEventListener('click', async () => {
-            try {
-                const device = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true,
-                    optionalServices: ['generic_access'] 
-                });
-                bleStatusDot.style.backgroundColor = '#2ecc71'; 
-                alert("Connecté à " + device.name + " !");
-            } catch (error) {
-                alert("Erreur Bluetooth ou annulé.");
-            }
         });
 
         // ==========================================
@@ -592,7 +602,7 @@
 
         // INITIALISATION
         excludeCompletedCheckbox.checked = localStorage.getItem('minimoon_exclude') === 'true';
-        applyGridConfig(); // Applique les paramètres de la grille sauvegardés
+        applyGridConfig(); 
         initGrid();
         updateBlockSelect();
     </script>
