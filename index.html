@@ -58,7 +58,6 @@
         .btn-yellow { background-color: #f1c40f; color: #000; }
         .btn-outline { background-color: #1e1e1e; border: 1px solid #e67e22; color: #e67e22; }
         
-        /* Bouton Ajuster très discret */
         .btn-discreet { background-color: #333; color: #aaa; padding: 8px; }
 
         button.active-pencil {
@@ -117,7 +116,7 @@
         }
         .footer-info span {
             font-weight: bold;
-            font-size: 1rem;
+            font-size: 0.9rem;
             color: #ffb700;
         }
 
@@ -219,9 +218,7 @@
     <h1>Mini MoonBoard</h1>
 
     <div class="btn-row">
-        <!-- Bouton Bluetooth transformé en interrupteur -->
         <button id="btnConnect" class="btn-blue">Se connecter</button>
-        
         <button id="btnClear" class="btn-orange">Effacer</button>
         <button id="btnPencil" class="btn-orange" title="Activer/Désactiver l'édition">✏️</button>
         <button id="btnCotation" class="btn-outline">Cotation</button>
@@ -251,7 +248,7 @@
         <label>
             <input type="checkbox" id="excludeCompleted"> Masquer les blocs cochés
         </label>
-        <span id="blockCounter">0</span>
+        <span id="blockCounter">Réalisés : 0 | À faire : 0</span>
     </div>
 
     <div class="board-container">
@@ -306,29 +303,24 @@
         const btnConnect = document.getElementById('btnConnect');
 
         btnConnect.addEventListener('click', async () => {
-            // Si l'appareil est déjà connecté, on le déconnecte
             if (bluetoothDevice && bluetoothDevice.gatt.connected) {
                 bluetoothDevice.gatt.disconnect();
-                return; // La suite est gérée par l'événement 'gattserverdisconnected'
+                return; 
             }
 
-            // Sinon, on lance la procédure de connexion
             try {
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
                     acceptAllDevices: true,
                     optionalServices: ['generic_access'] 
                 });
                 
-                // Événement déclenché quand on se déconnecte (manuellement ou si la carte s'éteint)
                 bluetoothDevice.addEventListener('gattserverdisconnected', () => {
                     btnConnect.textContent = "Se connecter";
                     btnConnect.classList.replace('btn-red', 'btn-blue');
                 });
 
-                // Connexion au serveur GATT
                 await bluetoothDevice.gatt.connect();
 
-                // Changement d'état du bouton
                 btnConnect.textContent = "Se déconnecter";
                 btnConnect.classList.replace('btn-blue', 'btn-red');
                 alert("Connecté à " + bluetoothDevice.name + " !");
@@ -473,6 +465,11 @@
             let allKeys = Object.keys(blocks);
             let excludeChecked = excludeCompletedCheckbox.checked;
 
+            // --- MISE A JOUR DU COMPTEUR REVISE ---
+            let totalCompleted = allKeys.filter(k => blocks[k].completed).length;
+            let totalNotCompleted = allKeys.length - totalCompleted;
+            blockCounter.textContent = `Réalisés : ${totalCompleted} | À faire : ${totalNotCompleted}`;
+
             let filteredKeys = allKeys.filter(k => {
                 if (excludeChecked && blocks[k].completed) return false;
                 return true;
@@ -484,8 +481,6 @@
                 opt.textContent = k;
                 blockSelect.appendChild(opt);
             });
-
-            blockCounter.textContent = filteredKeys.length;
 
             if (filteredKeys.includes(selected)) {
                 blockSelect.value = selected;
@@ -517,6 +512,23 @@
         document.getElementById('btnClear').addEventListener('click', () => {
             displayBlock(""); 
             blockSelect.value = "";
+        });
+
+        // ==========================================
+        // BOUTON COTATION (Renommer le bloc)
+        // ==========================================
+        document.getElementById('btnCotation').addEventListener('click', () => {
+            if (!currentBlockName) return alert("Sélectionne un bloc d'abord !");
+            let newName = prompt("Modifier le nom ou la cotation de ce bloc :", currentBlockName);
+            
+            if (newName && newName !== currentBlockName) {
+                blocks[newName] = blocks[currentBlockName]; // Copie les données vers la nouvelle clé
+                delete blocks[currentBlockName]; // Supprime l'ancienne clé
+                localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+                currentBlockName = newName;
+                updateBlockSelect();
+                blockSelect.value = newName;
+            }
         });
 
         chkCompleted.addEventListener('change', (e) => {
@@ -559,12 +571,23 @@
             }
         });
 
+        // ==========================================
+        // EXPORT JSON (ROBUSTE POUR SMARTPHONES)
+        // ==========================================
         document.getElementById('btnExport').addEventListener('click', () => {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(blocks, null, 2));
+            const dataStr = JSON.stringify(blocks, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
             const dlAnchorElem = document.createElement('a');
-            dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", "moonboard_blocks.json");
+            dlAnchorElem.href = url;
+            dlAnchorElem.download = "moonboard_blocks.json";
+            document.body.appendChild(dlAnchorElem);
             dlAnchorElem.click();
+            
+            // Nettoyage après le téléchargement
+            document.body.removeChild(dlAnchorElem);
+            URL.revokeObjectURL(url);
         });
 
         document.getElementById('btnImport').addEventListener('click', () => {
