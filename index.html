@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mini MoonBoard DIY</title>
     
-    <!-- Lien vers le manifest pour la PWA -->
     <link rel="manifest" href="manifest.json">
     
     <style>
@@ -25,7 +24,6 @@
             color: #ffb700;
         }
         
-        /* Conteneurs pour forcer les lignes compactes */
         .btn-row {
             display: flex;
             gap: 6px;
@@ -51,7 +49,6 @@
         }
         button:active { opacity: 0.8; }
         
-        /* Couleurs d'origine */
         .btn-blue { background-color: #005bb5; }
         .btn-orange { background-color: #e67e22; }
         .btn-green { background-color: #27ae60; }
@@ -69,7 +66,6 @@
             margin: 0 2px;
         }
 
-        /* Style du bouton crayon quand il est ACTIF */
         button.active-pencil {
             background-color: #f1c40f !important;
             color: #000 !important;
@@ -80,7 +76,7 @@
         .nav-container {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
             margin: 5px 0 10px 0;
             width: 100%;
             max-width: 450px;
@@ -99,8 +95,14 @@
             background-color: #333;
             color: white;
         }
+        
+        /* La petite coche de réussite à côté de la liste */
+        .chk-completed {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+        }
 
-        /* Ligne de filtres (Masquer cochés + Total) */
         .footer-info {
             display: flex;
             justify-content: space-between;
@@ -119,6 +121,11 @@
             gap: 6px;
             cursor: pointer;
         }
+        .footer-info span {
+            font-weight: bold;
+            font-size: 1rem;
+            color: #ffb700;
+        }
 
         .board-container {
             position: relative;
@@ -136,106 +143,109 @@
             object-fit: contain;
         }
         
-        /* Ajustement de la grille pour centrer sur les prises */
+        /* Le point rouge No-Kickboard en haut à gauche */
+        .no-kickboard-dot {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 18px;
+            height: 18px;
+            background-color: #e74c3c;
+            border-radius: 50%;
+            display: none;
+            z-index: 10;
+            box-shadow: 0 0 5px rgba(0,0,0,0.8);
+            border: 2px solid white;
+        }
+
         .grid-overlay {
             position: absolute;
             top: 6.5%; 
             left: 8.5%; 
-            width: 83.5%; 
-            height: 84%;
+            width: 83%; 
+            height: 84.5%;
             display: grid;
             grid-template-columns: repeat(11, 1fr);
             grid-template-rows: repeat(12, 1fr);
         }
         
-        /* Cercles plus petits et parfaitement centrés */
+        /* CERCLES INVISIBLES PAR DÉFAUT ET CENTRÉS */
         .hold {
-            width: 75%;
+            width: 70%;
             aspect-ratio: 1;
-            margin: auto; 
-            border: 2px dashed rgba(0, 255, 0, 0.4);
+            justify-self: center;
+            align-self: center;
             border-radius: 50%;
             cursor: pointer;
             box-sizing: border-box;
-            background: transparent;
-            transition: all 0.2s ease;
+            background: transparent; /* Invisible par défaut, plus de pointillés */
+            border: none;
+            transition: transform 0.1s;
         }
+        .hold:active { transform: scale(0.9); }
         
-        .hold.depart { border: 3px solid #2ecc71; background: rgba(46, 204, 113, 0.4); }
-        .hold.progression { border: 3px solid #3498db; background: rgba(52, 152, 219, 0.4); }
-        .hold.arrivee { border: 3px solid #e74c3c; background: rgba(231, 76, 60, 0.4); }
+        /* Apparence quand la prise est sélectionnée */
+        .hold.depart { border: 4px solid #2ecc71; background: rgba(46, 204, 113, 0.4); }
+        .hold.progression { border: 4px solid #3498db; background: rgba(52, 152, 219, 0.4); }
+        .hold.arrivee { border: 4px solid #e74c3c; background: rgba(231, 76, 60, 0.4); }
     </style>
 </head>
 <body>
 
     <h1>Mini MoonBoard</h1>
 
-    <!-- LIGNE 1 -->
     <div class="btn-row">
         <button id="btnConnect" class="btn-blue">Se connecter</button>
-        <div class="status-dot"></div>
+        <div class="status-dot" id="bleStatusDot"></div>
         <button id="btnClear" class="btn-orange">Effacer</button>
         <button id="btnPencil" class="btn-orange" title="Activer/Désactiver l'édition">✏️</button>
         <button id="btnCotation" class="btn-outline">Cotation</button>
     </div>
     
-    <!-- LIGNE 2 -->
     <div class="btn-row">
         <button id="btnExport" class="btn-green">📩 Exporter</button>
         <button id="btnImport" class="btn-purple">📥 Importer</button>
         <button id="btnPasteJson" class="btn-light-purple">📋 Coller JSON</button>
     </div>
     
-    <!-- LIGNE 3 -->
     <div class="btn-row">
         <button id="btnSave" class="btn-blue">💾 Enregistrer</button>
         <button id="btnDelete" class="btn-red">❌ Supprimer</button>
         <button id="btnClearStorage" class="btn-yellow">⚠️ Vider</button>
     </div>
 
-    <!-- SELECTEUR -->
+    <!-- SÉLECTEUR AVEC COCHE DE RÉUSSITE -->
     <div class="nav-container">
         <button id="btnPrev">◀</button>
         <select id="blockSelect"></select>
+        <input type="checkbox" id="chkCompleted" class="chk-completed" title="Marquer ce bloc comme réussi">
         <button id="btnNext">▶</button>
     </div>
 
-    <!-- FILTRES ET COMPTEUR -->
+    <!-- LIGNE DES FILTRES ET COMPTEUR PUR -->
     <div class="footer-info">
         <label>
             <input type="checkbox" id="excludeCompleted"> Masquer les blocs cochés
         </label>
-        <span id="blockCounter">Total : 0 blocs</span>
+        <span id="blockCounter">0</span>
     </div>
 
     <!-- PLATEAU -->
     <div class="board-container">
-        <!-- Image correctement ciblée d'après ton dépôt GitHub -->
+        <!-- LE POINT ROUGE NO KICKBOARD -->
+        <div id="noKickboardIndicator" class="no-kickboard-dot" title="No Kickboard"></div>
+        
         <img src="mini_moonboard_bg.jpg" alt="Mini MoonBoard" class="board-image" id="boardImage">
         <div class="grid-overlay" id="gridOverlay"></div>
     </div>
 
     <script>
-        // Enregistrement du Service Worker pour fonctionner hors-ligne
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                .then(registration => {
-                    console.log('ServiceWorker enregistré avec succès:', registration.scope);
-                })
-                .catch(error => {
-                    console.log('Échec de l\'enregistrement du ServiceWorker:', error);
-                });
-            });
-        }
-
         const COLS = ['A','B','C','D','E','F','G','H','I','J','K'];
         const ROWS = [12,11,10,9,8,7,6,5,4,3,2,1];
         
         let blocks = JSON.parse(localStorage.getItem('minimoon_blocks') || '{}');
         let currentBlockName = "";
         
-        // Mode Édition (Crayon)
         let isPencilActive = false; 
         let currentEditState = "depart"; 
 
@@ -244,8 +254,31 @@
         const btnPencil = document.getElementById('btnPencil');
         const excludeCompletedCheckbox = document.getElementById('excludeCompleted');
         const blockCounter = document.getElementById('blockCounter');
+        const chkCompleted = document.getElementById('chkCompleted');
+        const nkIndicator = document.getElementById('noKickboardIndicator');
+        const bleStatusDot = document.getElementById('bleStatusDot');
 
-        // Initialisation de la grille
+        // ==========================================
+        // 1. BLUETOOTH (Web Bluetooth API)
+        // ==========================================
+        document.getElementById('btnConnect').addEventListener('click', async () => {
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['generic_access'] 
+                });
+                // Une fois la connexion réussie, le point passe au vert
+                bleStatusDot.style.backgroundColor = '#2ecc71'; 
+                alert("Connecté à " + device.name + " !");
+            } catch (error) {
+                console.error(error);
+                alert("Erreur Bluetooth : Assure-toi que le Bluetooth est activé et l'ESP32 allumé.");
+            }
+        });
+
+        // ==========================================
+        // 2. GÉNÉRATION DE LA GRILLE ET ÉDITION
+        // ==========================================
         function initGrid() {
             gridOverlay.innerHTML = '';
             ROWS.forEach(r => {
@@ -260,27 +293,25 @@
             });
         }
 
-        // Activation / Désactivation du Crayon
         btnPencil.addEventListener('click', () => {
             isPencilActive = !isPencilActive;
             btnPencil.classList.toggle('active-pencil', isPencilActive);
             if (!isPencilActive) currentEditState = "depart"; 
         });
 
-        // Édition d'une prise au clic
         function handleHoldClick(holdId) {
             if (!isPencilActive) return; 
-            if (!currentBlockName) return alert("Sélectionne ou crée un bloc avant d'éditer.");
+            if (!currentBlockName) return alert("Sélectionne ou crée un bloc avant de cliquer.");
 
             let block = blocks[currentBlockName];
             if (!block) return;
 
-            // Retirer la prise pour éviter les doublons dans les listes
+            // Retrait de la prise si elle existe
             block.depart = block.depart.filter(h => h !== holdId);
             block.progression = block.progression.filter(h => h !== holdId);
             block.arrivee = block.arrivee.filter(h => h !== holdId);
 
-            // Cycle : Départ (Vert) -> Progression (Bleu) -> Arrivée (Rouge) -> Rien
+            // Cycle d'attribution
             if (currentEditState === "depart") {
                 block.depart.push(holdId);
                 currentEditState = "progression";
@@ -294,22 +325,31 @@
             displayBlock(currentBlockName);
         }
 
-        // Affichage d'un bloc sur la grille
+        // ==========================================
+        // 3. AFFICHAGE ET GESTION DES DONNÉES
+        // ==========================================
         function displayBlock(name) {
             currentBlockName = name;
             let block = blocks[name];
-            document.querySelectorAll('.hold').forEach(div => {
-                let id = div.dataset.id;
-                div.className = 'hold'; // Reset visuel
-                if (block) {
-                    if (block.depart.includes(id)) div.classList.add('depart');
-                    else if (block.progression.includes(id)) div.classList.add('progression');
-                    else if (block.arrivee.includes(id)) div.classList.add('arrivee');
-                }
-            });
+            
+            // Réinitialise toutes les prises
+            document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
+            
+            if (block) {
+                block.depart.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('depart'); });
+                block.progression.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('progression'); });
+                block.arrivee.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('arrivee'); });
+                
+                chkCompleted.checked = block.completed || false;
+                
+                // Affichage du point rouge No-Kickboard
+                nkIndicator.style.display = block.noKickboard ? 'block' : 'none';
+            } else {
+                chkCompleted.checked = false;
+                nkIndicator.style.display = 'none';
+            }
         }
 
-        // Mise à jour de la liste déroulante et du compteur
         function updateBlockSelect() {
             let selected = blockSelect.value;
             blockSelect.innerHTML = '';
@@ -325,47 +365,136 @@
             filteredKeys.forEach(k => {
                 let opt = document.createElement('option');
                 opt.value = k;
-                opt.textContent = (blocks[k].completed ? "✅ " : "") + k;
+                opt.textContent = k;
                 blockSelect.appendChild(opt);
             });
 
-            blockCounter.textContent = `Affichés : ${filteredKeys.length} / Total : ${allKeys.length}`;
+            // Affichage JUSTE du chiffre
+            blockCounter.textContent = filteredKeys.length;
 
             if (filteredKeys.includes(selected)) {
                 blockSelect.value = selected;
+                displayBlock(selected);
             } else if (filteredKeys.length > 0) {
                 blockSelect.value = filteredKeys[0];
                 displayBlock(filteredKeys[0]);
             } else {
-                currentBlockName = "";
-                document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
+                displayBlock(""); 
             }
         }
 
+        // ==========================================
+        // 4. TOUS LES BOUTONS RESTAURÉS
+        // ==========================================
         blockSelect.addEventListener('change', (e) => displayBlock(e.target.value));
         
+        document.getElementById('btnPrev').addEventListener('click', () => {
+            if(blockSelect.selectedIndex > 0) {
+                blockSelect.selectedIndex--;
+                displayBlock(blockSelect.value);
+            }
+        });
+
+        document.getElementById('btnNext').addEventListener('click', () => {
+            if(blockSelect.selectedIndex < blockSelect.options.length - 1) {
+                blockSelect.selectedIndex++;
+                displayBlock(blockSelect.value);
+            }
+        });
+
+        document.getElementById('btnClear').addEventListener('click', () => {
+            displayBlock(""); // Vide l'écran
+            blockSelect.value = "";
+        });
+
+        // La coche pour marquer comme réussi
+        chkCompleted.addEventListener('change', (e) => {
+            if (currentBlockName && blocks[currentBlockName]) {
+                blocks[currentBlockName].completed = e.target.checked;
+                localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+                updateBlockSelect(); // Met à jour la liste si le filtre est actif
+            }
+        });
+
         excludeCompletedCheckbox.addEventListener('change', () => {
             localStorage.setItem('minimoon_exclude', excludeCompletedCheckbox.checked);
             updateBlockSelect();
         });
 
+        document.getElementById('btnSave').addEventListener('click', () => {
+            let name = currentBlockName || prompt("Nom de ce nouveau bloc ?");
+            if (name) {
+                if (!blocks[name]) blocks[name] = { depart: [], progression: [], arrivee: [], completed: false, noKickboard: false };
+                localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+                updateBlockSelect();
+                blockSelect.value = name;
+                alert("Bloc sauvegardé !");
+            }
+        });
+
+        document.getElementById('btnDelete').addEventListener('click', () => {
+            if(currentBlockName && confirm(`Supprimer le bloc "${currentBlockName}" ?`)) {
+                delete blocks[currentBlockName];
+                localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+                updateBlockSelect();
+            }
+        });
+
+        document.getElementById('btnClearStorage').addEventListener('click', () => {
+            if(confirm("⚠️ ATTENTION : Voulez-vous vraiment effacer TOUS les blocs de l'application ?")) {
+                blocks = {};
+                localStorage.removeItem('minimoon_blocks');
+                updateBlockSelect();
+            }
+        });
+
+        // EXPORT JSON
+        document.getElementById('btnExport').addEventListener('click', () => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(blocks, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", "moonboard_blocks.json");
+            dlAnchorElem.click();
+        });
+
+        // IMPORT JSON (Fichier)
+        document.getElementById('btnImport').addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = event => {
+                    try {
+                        const imported = JSON.parse(event.target.result);
+                        blocks = {...blocks, ...imported};
+                        localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+                        updateBlockSelect();
+                        alert("Fichier importé avec succès !");
+                    } catch(err) { alert("Erreur de lecture du fichier."); }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        });
+
+        // COLLER JSON (Texte)
         document.getElementById('btnPasteJson').addEventListener('click', () => {
             let jsonStr = prompt("Colle ton JSON de blocs ici :");
             if (!jsonStr) return;
             try {
                 let imported = JSON.parse(jsonStr);
-                for (let key in imported) {
-                    blocks[key] = imported[key];
-                }
+                for (let key in imported) { blocks[key] = imported[key]; }
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 updateBlockSelect();
                 alert("Importation réussie !");
-            } catch(err) {
-                alert("Erreur de format JSON.");
-            }
+            } catch(err) { alert("Erreur de format JSON."); }
         });
 
-        // Chargement initial
+        // ==========================================
+        // INITIALISATION
+        // ==========================================
         excludeCompletedCheckbox.checked = localStorage.getItem('minimoon_exclude') === 'true';
         initGrid();
         updateBlockSelect();
