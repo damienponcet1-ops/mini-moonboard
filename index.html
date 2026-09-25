@@ -24,7 +24,6 @@
 
     .controls-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; width: 100%; max-width: 420px; }
     
-    /* Lignes optimisées pour gagner de la place */
     .compact-row { gap: 6px; }
     .compact-row button, .filter-select-mini { padding: 8px 4px; font-size: 13px; flex: 1; border-radius: 6px; }
     
@@ -34,6 +33,7 @@
 
     .opacity-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.85rem; color: #aaa; margin-bottom: 4px; }
     .opacity-row input[type="range"] { flex: 1; }
+    .opacity-row label { width: 65px; text-align: right; } /* Alignement des labels d'ajustement */
     
     .btn-toggle { background: #555; color: white; border: 1px solid #777; font-size: 0.8rem; padding: 6px 8px; border-radius: 4px; cursor: pointer; white-space: nowrap; }
     .btn-toggle:active { background: #777; }
@@ -80,10 +80,10 @@
 </head>
 <body>
 
-  <div class="version-badge">V41</div>
+  <div class="version-badge">V42</div>
   <h1 id="pageTitle">Mini MoonBoard</h1>
 
-  <!-- Ligne 1 : Connexion, Effacer, Cotations -->
+  <!-- Ligne 1 -->
   <div class="controls-row compact-row">
     <button id="btnConnect" onclick="toggleBLE()">Se connecter</button>
     <div id="statusIndicator" class="status-dot disconnected"></div>
@@ -108,7 +108,7 @@
     </select>
   </div>
 
-  <!-- Ligne 2 : Fichiers (Exporter, Importer, Charger) -->
+  <!-- Ligne 2 : Fichiers -->
   <div class="controls-row compact-row">
     <button class="btn-export" onclick="exportRoutes()">📤 Exporter</button>
     <button class="btn-import" onclick="document.getElementById('importInput').click()">📥 Importer</button>
@@ -139,22 +139,31 @@
     </div>
 
     <div class="opacity-row">
-      <label>Opacité :</label>
+      <label style="text-align:left; width:auto;">Opacité :</label>
       <input type="range" id="opacityRange" min="0" max="1" step="0.05" value="0.5" oninput="changeOpacity(this.value)">
       <button class="btn-toggle" id="btnToggleOverlay" onclick="toggleOverlay()">Masquer</button>
       <button class="btn-toggle" onclick="toggleCalibration()">⚙️ Ajuster</button>
     </div>
     
+    <!-- Panneau de calibration COMPLET avec largeur et hauteur -->
     <div class="calibration-panel" id="calibrationPanel">
       <div class="opacity-row">
         <label>Hauteur :</label>
-        <input type="range" id="scaleYRange" min="0.85" max="1.15" step="0.005" value="1" oninput="updateCalibration()">
+        <input type="range" id="scaleYRange" min="0.80" max="1.20" step="0.005" value="1" oninput="updateCalibration()">
+      </div>
+      <div class="opacity-row">
+        <label>Largeur :</label>
+        <input type="range" id="scaleXRange" min="0.80" max="1.20" step="0.005" value="1" oninput="updateCalibration()">
       </div>
       <div class="opacity-row">
         <label>Haut/Bas :</label>
-        <input type="range" id="offsetYRange" min="-10" max="10" step="0.1" value="0" oninput="updateCalibration()">
+        <input type="range" id="offsetYRange" min="-15" max="15" step="0.1" value="0" oninput="updateCalibration()">
       </div>
-      <div style="font-size: 0.7rem; color: #888; text-align: center;">Réglage mémorisé</div>
+      <div class="opacity-row">
+        <label>G/D :</label>
+        <input type="range" id="offsetXRange" min="-15" max="15" step="0.1" value="0" oninput="updateCalibration()">
+      </div>
+      <div style="font-size: 0.7rem; color: #888; text-align: center;">Ces 4 réglages sont mémorisés pour tes prochaines captures</div>
     </div>
   </div>
 
@@ -181,27 +190,49 @@
 
     let localRoutes = JSON.parse(localStorage.getItem('moonboard_custom_routes')) || {};
     
+    // Chargement des 4 variables de calibration
     let savedScaleY = localStorage.getItem('mb_calib_scaleY') || 1;
+    let savedScaleX = localStorage.getItem('mb_calib_scaleX') || 1;
     let savedOffsetY = localStorage.getItem('mb_calib_offsetY') || 0;
+    let savedOffsetX = localStorage.getItem('mb_calib_offsetX') || 0;
 
     document.getElementById('scaleYRange').value = savedScaleY;
+    document.getElementById('scaleXRange').value = savedScaleX;
     document.getElementById('offsetYRange').value = savedOffsetY;
+    document.getElementById('offsetXRange').value = savedOffsetX;
 
-    // === EXPORT CORRIGÉ POUR IPHONE (Via Blob) ===
-    function exportRoutes() {
+    // === EXPORT CORRIGÉ POUR IPHONE (API Share Native) ===
+    async function exportRoutes() {
       if (Object.keys(localRoutes).length === 0) return alert("Aucun bloc à sauvegarder !");
       
-      const blob = new Blob([JSON.stringify(localRoutes)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = "mes_blocs_moonboard.json";
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-      }, 0);
+      const jsonStr = JSON.stringify(localRoutes, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const file = new File([blob], "mes_blocs_moonboard.json", { type: 'application/json' });
+
+      // Si l'iPhone supporte le partage de fichier natif (AirDrop, Fichiers, etc.)
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Sauvegarde MoonBoard',
+            text: 'Voici ma sauvegarde de blocs.'
+          });
+        } catch (error) {
+          console.log('Partage annulé ou erreur :', error);
+        }
+      } else {
+        // Méthode de secours classique
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "mes_blocs_moonboard.json";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        }, 0);
+      }
     }
 
     // === IMPORT ===
@@ -308,11 +339,8 @@
       const selector = document.getElementById('routeSelect');
       const options = Array.from(selector.options).filter(opt => opt.value !== "");
       if (options.length === 0) return;
-      
       let idx = options.findIndex(opt => opt.value === selector.value);
-      if (idx <= 0) idx = options.length - 1; 
-      else idx--;
-      
+      if (idx <= 0) idx = options.length - 1; else idx--;
       selector.value = options[idx].value;
       loadSelectedRoute();
     }
@@ -321,11 +349,8 @@
       const selector = document.getElementById('routeSelect');
       const options = Array.from(selector.options).filter(opt => opt.value !== "");
       if (options.length === 0) return;
-      
       let idx = options.findIndex(opt => opt.value === selector.value);
-      if (idx === -1 || idx === options.length - 1) idx = 0; 
-      else idx++;
-      
+      if (idx === -1 || idx === options.length - 1) idx = 0; else idx++;
       selector.value = options[idx].value;
       loadSelectedRoute();
     }
@@ -387,7 +412,7 @@
       sendBLEFrame();
     }
 
-    // === GESTION DU CALQUE ET CALIBRATION ===
+    // === GESTION DU CALQUE ET CALIBRATION 4 AXES ===
     function changeOpacity(val) { document.getElementById('overlayImage').style.opacity = val; }
 
     function toggleOverlay() {
@@ -410,29 +435,30 @@
 
     function updateCalibration() {
       savedScaleY = document.getElementById('scaleYRange').value;
+      savedScaleX = document.getElementById('scaleXRange').value;
       savedOffsetY = document.getElementById('offsetYRange').value;
+      savedOffsetX = document.getElementById('offsetXRange').value;
+      
       localStorage.setItem('mb_calib_scaleY', savedScaleY);
+      localStorage.setItem('mb_calib_scaleX', savedScaleX);
       localStorage.setItem('mb_calib_offsetY', savedOffsetY);
+      localStorage.setItem('mb_calib_offsetX', savedOffsetX);
+      
       applyCalibration();
     }
 
     function applyCalibration() {
       const overlay = document.getElementById('overlayImage');
-      overlay.style.transform = `translateY(${savedOffsetY}%) scaleY(${savedScaleY})`;
+      overlay.style.transform = `translate(${savedOffsetX}%, ${savedOffsetY}%) scale(${savedScaleX}, ${savedScaleY})`;
     }
 
     // === GESTION MULTI-IMAGES ET DECOUPAGE ===
     document.getElementById('fileInput').addEventListener('change', function(e) {
       if(!e.target.files || e.target.files.length === 0) return;
-
       overlayImages = Array.from(e.target.files).map(file => URL.createObjectURL(file));
       currentOverlayIndex = 0;
-
-      if (overlayImages.length > 1) {
-          document.getElementById('multiImageNav').style.display = "flex";
-      } else {
-          document.getElementById('multiImageNav').style.display = "none";
-      }
+      if (overlayImages.length > 1) document.getElementById('multiImageNav').style.display = "flex";
+      else document.getElementById('multiImageNav').style.display = "none";
 
       loadOverlayImage(overlayImages[currentOverlayIndex]);
       e.target.value = ''; 
@@ -547,7 +573,6 @@
             titleEl.innerText = "Mini MoonBoard";
         }
       };
-      
       img.src = imageUrl;
     }
 
