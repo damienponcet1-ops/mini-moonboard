@@ -24,23 +24,20 @@
             color: #ffb700;
         }
         
-        /* BADGE NO KICKBOARD - TOUT EN HAUT À GAUCHE */
+        /* BADGE NO KICKBOARD - TEXTE ROUGE VIF SANS ENCANDRÉ */
         .no-kickboard-badge {
             position: absolute;
             top: 15px;
             left: 15px;
-            background-color: #ff0055;
-            color: white;
-            padding: 4px 6px;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: bold;
-            text-align: center;
+            color: #ff0000;
+            font-size: 0.85rem;
+            font-weight: 900;
+            text-align: left;
             line-height: 1.2;
-            display: none; /* Masqué par défaut */
-            pointer-events: none; /* Non cliquable */
+            display: none; 
+            pointer-events: none; 
             z-index: 1000;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8); /* Ombre pour la lisibilité */
         }
         
         .btn-row {
@@ -124,7 +121,7 @@
             cursor: pointer;
         }
 
-        /* LIGNE DE FILTRES ET STATS (Compacte) */
+        /* LIGNE DE FILTRES ET STATS */
         .footer-info {
             display: flex;
             justify-content: space-between;
@@ -202,7 +199,7 @@
             background: rgba(255, 255, 255, 0.2) !important;
         }
 
-        /* MODALE D'AJUSTEMENT FLOTTANTE EN HAUT (Ne cache pas l'image) */
+        /* MODALE D'AJUSTEMENT FLOTTANTE */
         .modal {
             display: none; 
             position: fixed; 
@@ -245,12 +242,15 @@
         <button id="btnClear" class="btn-orange">Effacer</button>
         <button id="btnPencil" class="btn-orange" title="Activer/Désactiver l'édition">✏️</button>
         
-        <!-- Sélecteur pour filtrer par cotation -->
+        <!-- Sélecteur pour filtrer par cotation COMPLET -->
         <select id="filterCotation" class="btn-outline" title="Filtrer par cotation">
             <option value="">Filtre (Tous)</option>
+            <option value="6A">6A</option>
             <option value="6A+">6A+</option>
             <option value="6B">6B</option>
             <option value="6B+">6B+</option>
+            <option value="6C">6C</option>
+            <option value="6C+">6C+</option>
             <option value="7A">7A</option>
             <option value="7A+">7A+</option>
             <option value="7B">7B</option>
@@ -494,7 +494,7 @@
                 
                 chkCompleted.checked = block.completed || false;
                 
-                // Affichage du badge si le JSON le précise
+                // Affichage du badge texte statique si le JSON le précise
                 if (block.noKickboard) {
                     noKickboardBadge.style.display = 'block';
                 } else {
@@ -589,7 +589,7 @@
         document.getElementById('btnSave').addEventListener('click', () => {
             let name = currentBlockName || prompt("Nom de ce nouveau bloc ? (Pense à inclure la cotation, ex: Mon Bloc (6A+))");
             if (name) {
-                // Création d'un bloc par défaut sans noKickboard (seuls les imports JSON peuvent l'avoir maintenant)
+                // Création d'un bloc par défaut sans noKickboard
                 if (!blocks[name]) blocks[name] = { depart: [], progression: [], arrivee: [], completed: false, noKickboard: false };
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 updateBlockSelect();
