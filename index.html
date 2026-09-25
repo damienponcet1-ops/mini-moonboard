@@ -17,111 +17,82 @@
         }
         h1 {
             font-size: 1.2rem;
-            margin: 5px 0;
+            margin: 5px 0 15px 0;
             color: #ffb700;
         }
         .top-bar {
             display: flex;
             flex-wrap: wrap;
-            gap: 5px;
+            gap: 8px;
             justify-content: center;
             margin-bottom: 8px;
             max-width: 500px;
+            align-items: center;
         }
         button {
-            background-color: #333;
-            color: white;
-            border: 1px solid #555;
-            padding: 8px 12px;
+            border: none;
+            padding: 10px 15px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.9rem;
+            font-weight: bold;
             display: flex;
             align-items: center;
             gap: 5px;
+            color: white;
         }
-        button:active { background-color: #555; }
-        .btn-blue { background-color: #0056b3; border-color: #007bff; }
-        .btn-green { background-color: #1e7e34; border-color: #28a745; }
-        .btn-purple { background-color: #563d7c; border-color: #6f42c1; }
-        .btn-red { background-color: #bd2130; border-color: #dc3545; }
-        .btn-orange { background-color: #d35400; border-color: #e67e22; }
+        button:active { opacity: 0.8; }
         
-        /* Style du bouton crayon quand il est ACTIF */
-        button.active-pencil {
-            background-color: #f39c12 !important;
-            border-color: #f1c40f !important;
-            color: #000 !important;
-            font-weight: bold;
-            box-shadow: 0 0 8px rgba(243, 156, 18, 0.8);
+        /* Couleurs d'origine restaurées */
+        .btn-blue { background-color: #005bb5; }
+        .btn-orange { background-color: #e67e22; }
+        .btn-green { background-color: #27ae60; }
+        .btn-purple { background-color: #673ab7; }
+        .btn-light-purple { background-color: #b388ff; color: #000; }
+        .btn-red { background-color: #dc3545; }
+        .btn-yellow { background-color: #f1c40f; color: #000; }
+        .btn-outline { background-color: #1e1e1e; border: 1px solid #e67e22; color: #e67e22; }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background-color: #e74c3c;
+            border-radius: 50%;
+            margin: 0 5px;
         }
 
-        .board-container {
-            position: relative;
-            width: 100%;
-            max-width: 450px;
-            aspect-ratio: 11 / 12;
-            background-color: #f4d03f;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        /* Style du bouton crayon quand il est ACTIF */
+        button.active-pencil {
+            background-color: #f1c40f !important;
+            color: #000 !important;
+            box-shadow: 0 0 10px rgba(241, 196, 15, 0.8);
+            transform: scale(1.05);
         }
-        .board-image {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-        
-        /* AJUSTEMENT DE LA GRILLE POUR CENTRER SUR LES PRISES */
-        .grid-overlay {
-            position: absolute;
-            /* Ces valeurs sont ajustées pour ignorer les marges de l'image de fond */
-            top: 6.5%; 
-            left: 8%; 
-            width: 84%; 
-            height: 84%;
-            display: grid;
-            grid-template-columns: repeat(11, 1fr);
-            grid-template-rows: repeat(12, 1fr);
-        }
-        
-        /* Le cercle de la prise est maintenant plus petit et centré dans sa case de grille */
-        .hold {
-            width: 75%;
-            aspect-ratio: 1;
-            margin: auto; /* Centre le cercle exactement sur la prise */
-            border: 2px dashed rgba(0, 255, 0, 0.4);
-            border-radius: 50%;
-            cursor: pointer;
-            box-sizing: border-box;
-            background: transparent;
-            transition: all 0.2s ease;
-        }
-        
-        /* Couleurs strictes selon le type de prise */
-        .hold.depart { border: 3px solid #2ecc71; background: rgba(46, 204, 113, 0.4); }
-        .hold.progression { border: 3px solid #3498db; background: rgba(52, 152, 219, 0.4); }
-        .hold.arrivee { border: 3px solid #e74c3c; background: rgba(231, 76, 60, 0.4); }
 
         .nav-container {
             display: flex;
             align-items: center;
             gap: 5px;
-            margin: 8px 0;
+            margin: 10px 0;
             width: 100%;
             max-width: 450px;
         }
         .nav-container select {
             flex-grow: 1;
-            padding: 8px;
+            padding: 10px;
             background: #222;
             color: white;
             border: 1px solid #444;
             border-radius: 6px;
-            font-size: 0.9rem;
+            font-size: 1rem;
+            text-align: center;
         }
-        
-        /* NOUVELLE LIGNE : Filtre et Compteur */
+        .nav-container button {
+            background-color: #333;
+            color: white;
+        }
+
+        /* Nouvelle ligne de filtres */
         .footer-info {
             display: flex;
             justify-content: space-between;
@@ -140,27 +111,76 @@
             gap: 8px;
             cursor: pointer;
         }
-        .footer-info input[type="checkbox"] {
-            transform: scale(1.2);
-            cursor: pointer;
+
+        .board-container {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            aspect-ratio: 11 / 12;
+            background-color: #f4d03f;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
+        .board-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        /* Ajustement de la grille pour centrer sur les prises */
+        .grid-overlay {
+            position: absolute;
+            top: 6.5%; 
+            left: 8%; 
+            width: 84%; 
+            height: 84%;
+            display: grid;
+            grid-template-columns: repeat(11, 1fr);
+            grid-template-rows: repeat(12, 1fr);
+        }
+        
+        /* Cercles plus petits et parfaitement centrés */
+        .hold {
+            width: 75%;
+            aspect-ratio: 1;
+            margin: auto; 
+            border: 2px dashed rgba(0, 255, 0, 0.4);
+            border-radius: 50%;
+            cursor: pointer;
+            box-sizing: border-box;
+            background: transparent;
+            transition: all 0.2s ease;
+        }
+        
+        .hold.depart { border: 3px solid #2ecc71; background: rgba(46, 204, 113, 0.4); }
+        .hold.progression { border: 3px solid #3498db; background: rgba(52, 152, 219, 0.4); }
+        .hold.arrivee { border: 3px solid #e74c3c; background: rgba(231, 76, 60, 0.4); }
     </style>
 </head>
 <body>
 
     <h1>Mini MoonBoard</h1>
 
+    <!-- RESTAURATION DE TON INTERFACE D'ORIGINE -->
     <div class="top-bar">
         <button id="btnConnect" class="btn-blue">Se connecter</button>
+        <div class="status-dot"></div>
         <button id="btnClear" class="btn-orange">Effacer</button>
-        <button id="btnPencil" title="Activer/Désactiver l'édition">✏️</button>
-        <button id="btnNoKickboard" class="btn-purple">No-Kickboard</button>
-        <button id="btnExport" class="btn-green">Exporter</button>
-        <button id="btnImport" class="btn-purple">Importer</button>
-        <button id="btnPasteJson" class="btn-purple">Coller JSON</button>
-        <button id="btnSave" class="btn-blue">Enregistrer</button>
-        <button id="btnDelete" class="btn-red">Supprimer</button>
-        <button id="btnClearStorage" class="btn-red">Vider</button>
+        <button id="btnPencil" class="btn-orange" title="Activer/Désactiver l'édition">✏️</button>
+        <button id="btnCotation" class="btn-outline">Cotation</button>
+    </div>
+    
+    <div class="top-bar">
+        <button id="btnExport" class="btn-green">📩 Exporter</button>
+        <button id="btnImport" class="btn-purple">📥 Importer</button>
+        <button id="btnPasteJson" class="btn-light-purple">📋 Coller JSON</button>
+    </div>
+    
+    <div class="top-bar">
+        <button id="btnSave" class="btn-blue">💾 Enregistrer</button>
+        <button id="btnDelete" class="btn-red">❌ Supprimer</button>
+        <button id="btnClearStorage" class="btn-yellow">⚠️ Vider</button>
     </div>
 
     <div class="nav-container">
@@ -169,7 +189,7 @@
         <button id="btnNext">▶</button>
     </div>
 
-    <!-- LIGNE AJOUTÉE : Case à cocher et Compteur total -->
+    <!-- LIGNE DES FILTRES ET COMPTEUR -->
     <div class="footer-info">
         <label>
             <input type="checkbox" id="excludeCompleted"> Masquer les blocs cochés
@@ -178,8 +198,8 @@
     </div>
 
     <div class="board-container">
-        <!-- Remplacer 'mini-moon.jpg' par le chemin exact de ton image locale si besoin -->
-        <img src="mini-moon.jpg" alt="Mini MoonBoard" class="board-image" id="boardImage">
+        <!-- ATTENTION: Remplace 'image.png' par le nom exact de ton fichier image sur Github -->
+        <img src="image.png" alt="Mini MoonBoard" class="board-image" id="boardImage">
         <div class="grid-overlay" id="gridOverlay"></div>
     </div>
 
@@ -192,7 +212,7 @@
         
         // Variables pour le mode Édition
         let isPencilActive = false; 
-        let currentEditState = "depart"; // Cycle : depart -> progression -> arrivee
+        let currentEditState = "depart"; 
 
         const gridOverlay = document.getElementById('gridOverlay');
         const blockSelect = document.getElementById('blockSelect');
@@ -200,7 +220,7 @@
         const excludeCompletedCheckbox = document.getElementById('excludeCompleted');
         const blockCounter = document.getElementById('blockCounter');
 
-        // 1. Initialisation de la grille
+        // Initialisation de la grille
         function initGrid() {
             gridOverlay.innerHTML = '';
             ROWS.forEach(r => {
@@ -209,44 +229,31 @@
                     let div = document.createElement('div');
                     div.className = 'hold';
                     div.dataset.id = holdId;
-                    div.title = holdId; // Affiche les coordonnées au survol pour t'aider
                     div.addEventListener('click', () => handleHoldClick(holdId));
                     gridOverlay.appendChild(div);
                 });
             });
         }
 
-        // 2. Gestion du mode Édition (Le bouton Crayon)
+        // Toggle Crayon
         btnPencil.addEventListener('click', () => {
             isPencilActive = !isPencilActive;
             btnPencil.classList.toggle('active-pencil', isPencilActive);
-            
-            // Indication visuelle globale optionnelle
-            if (isPencilActive) {
-                gridOverlay.style.cursor = 'crosshair';
-            } else {
-                gridOverlay.style.cursor = 'default';
-                currentEditState = "depart"; // Réinitialise le cycle d'édition
-            }
+            if (!isPencilActive) currentEditState = "depart"; 
         });
 
+        // Édition des prises
         function handleHoldClick(holdId) {
-            // Sécurité : On ne peut cliquer/modifier que si le crayon est activé et qu'un bloc est sélectionné
             if (!isPencilActive) return; 
-            if (!currentBlockName) {
-                alert("Veuillez sélectionner ou créer un bloc (Nouveau) avant d'éditer.");
-                return;
-            }
+            if (!currentBlockName) return alert("Sélectionne ou crée un bloc avant d'éditer.");
 
             let block = blocks[currentBlockName];
             if (!block) return;
 
-            // Retirer la prise de toutes les listes pour éviter les doublons
             block.depart = block.depart.filter(h => h !== holdId);
             block.progression = block.progression.filter(h => h !== holdId);
             block.arrivee = block.arrivee.filter(h => h !== holdId);
 
-            // Cycle de clic pour attribuer une couleur
             if (currentEditState === "depart") {
                 block.depart.push(holdId);
                 currentEditState = "progression";
@@ -255,19 +262,17 @@
                 currentEditState = "arrivee";
             } else if (currentEditState === "arrivee") {
                 block.arrivee.push(holdId);
-                currentEditState = "depart"; // On boucle pour le prochain clic
+                currentEditState = "depart"; 
             }
-            
             displayBlock(currentBlockName);
         }
 
-        // 3. Affichage visuel d'un bloc sur la grille
         function displayBlock(name) {
             currentBlockName = name;
             let block = blocks[name];
             document.querySelectorAll('.hold').forEach(div => {
                 let id = div.dataset.id;
-                div.className = 'hold'; // Reset CSS
+                div.className = 'hold';
                 if (block) {
                     if (block.depart.includes(id)) div.classList.add('depart');
                     else if (block.progression.includes(id)) div.classList.add('progression');
@@ -276,7 +281,6 @@
             });
         }
 
-        // 4. Logique de filtrage et mise à jour de la liste
         function updateBlockSelect() {
             let selected = blockSelect.value;
             blockSelect.innerHTML = '';
@@ -284,15 +288,11 @@
             let allKeys = Object.keys(blocks);
             let excludeChecked = excludeCompletedCheckbox.checked;
 
-            // Filtrage : si la case est cochée, on exclut les blocs marqués 'completed'
             let filteredKeys = allKeys.filter(k => {
-                if (excludeChecked && blocks[k].completed) {
-                    return false;
-                }
+                if (excludeChecked && blocks[k].completed) return false;
                 return true;
             });
 
-            // Peupler le <select>
             filteredKeys.forEach(k => {
                 let opt = document.createElement('option');
                 opt.value = k;
@@ -300,10 +300,8 @@
                 blockSelect.appendChild(opt);
             });
 
-            // Mise à jour du compteur (affichés / total absolu)
             blockCounter.textContent = `Affichés : ${filteredKeys.length} / Total : ${allKeys.length}`;
 
-            // Gérer la sélection active après rafraîchissement
             if (filteredKeys.includes(selected)) {
                 blockSelect.value = selected;
             } else if (filteredKeys.length > 0) {
@@ -315,36 +313,29 @@
             }
         }
 
-        // Écouteurs d'événements
         blockSelect.addEventListener('change', (e) => displayBlock(e.target.value));
         
         excludeCompletedCheckbox.addEventListener('change', () => {
-            // Sauvegarder l'état de la checkbox dans le localStorage pour le garder en mémoire (optionnel mais pratique)
             localStorage.setItem('minimoon_exclude', excludeCompletedCheckbox.checked);
             updateBlockSelect();
         });
 
-        // 5. Fonction d'Import JSON
         document.getElementById('btnPasteJson').addEventListener('click', () => {
             let jsonStr = prompt("Colle ton JSON de blocs ici :");
             if (!jsonStr) return;
             try {
                 let imported = JSON.parse(jsonStr);
-                let count = 0;
                 for (let key in imported) {
                     blocks[key] = imported[key];
-                    count++;
                 }
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 updateBlockSelect();
-                alert(`${count} blocs importés avec succès !`);
+                alert("Importation réussie !");
             } catch(err) {
-                alert("Erreur de format JSON : Veuillez vérifier votre syntaxe.");
+                alert("Erreur de format JSON.");
             }
         });
 
-        // Initialisation de la page
-        // Récupérer l'état de la checkbox s'il avait été sauvegardé
         excludeCompletedCheckbox.checked = localStorage.getItem('minimoon_exclude') === 'true';
         initGrid();
         updateBlockSelect();
