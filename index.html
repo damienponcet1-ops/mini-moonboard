@@ -57,6 +57,9 @@
         .btn-red { background-color: #dc3545; }
         .btn-yellow { background-color: #f1c40f; color: #000; }
         .btn-outline { background-color: #1e1e1e; border: 1px solid #e67e22; color: #e67e22; }
+        
+        /* Bouton Ajuster très discret */
+        .btn-discreet { background-color: #333; color: #aaa; padding: 8px; }
 
         .status-dot {
             width: 12px;
@@ -96,7 +99,6 @@
             color: white;
         }
         
-        /* La petite coche de réussite à côté de la liste */
         .chk-completed {
             width: 22px;
             height: 22px;
@@ -140,10 +142,9 @@
         .board-image {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: cover;
         }
         
-        /* Le point rouge No-Kickboard en haut à gauche */
         .no-kickboard-dot {
             position: absolute;
             top: 15px;
@@ -153,41 +154,75 @@
             background-color: #e74c3c;
             border-radius: 50%;
             display: none;
-            z-index: 10;
+            z-index: 20;
             box-shadow: 0 0 5px rgba(0,0,0,0.8);
             border: 2px solid white;
         }
 
+        /* La grille (les positions initiales sont gérées par le JS maintenant) */
         .grid-overlay {
             position: absolute;
-            top: 6.5%; 
-            left: 8.5%; 
-            width: 83%; 
-            height: 84.5%;
             display: grid;
             grid-template-columns: repeat(11, 1fr);
             grid-template-rows: repeat(12, 1fr);
+            z-index: 10;
         }
         
-        /* CERCLES INVISIBLES PAR DÉFAUT ET CENTRÉS */
-        .hold {
-            width: 70%;
-            aspect-ratio: 1;
-            justify-self: center;
-            align-self: center;
-            border-radius: 50%;
+        .grid-cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
             cursor: pointer;
+        }
+
+        .hold {
+            width: 80%; 
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: transparent;
             box-sizing: border-box;
-            background: transparent; /* Invisible par défaut, plus de pointillés */
             border: none;
+            pointer-events: none; 
             transition: transform 0.1s;
         }
-        .hold:active { transform: scale(0.9); }
         
-        /* Apparence quand la prise est sélectionnée */
         .hold.depart { border: 4px solid #2ecc71; background: rgba(46, 204, 113, 0.4); }
         .hold.progression { border: 4px solid #3498db; background: rgba(52, 152, 219, 0.4); }
         .hold.arrivee { border: 4px solid #e74c3c; background: rgba(231, 76, 60, 0.4); }
+
+        /* Style temporaire quand on ajuste la grille */
+        .grid-adjusting .hold {
+            border: 1px dashed rgba(255, 255, 255, 0.6) !important;
+            background: rgba(255, 255, 255, 0.2) !important;
+        }
+
+        /* Menu d'ajustement de la grille (Modale) */
+        .modal {
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.8); 
+            z-index: 100; 
+            justify-content: center; 
+            align-items: center;
+        }
+        .modal-content {
+            background: #222; 
+            padding: 20px; 
+            border-radius: 8px; 
+            width: 90%; 
+            max-width: 350px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+        .modal-content h3 { margin: 0; color: #ffb700; text-align: center; }
+        .modal-content label { display: flex; flex-direction: column; font-size: 0.9rem; color: #ccc; }
+        .modal-content input[type="range"] { margin-top: 5px; }
+        .modal-buttons { display: flex; gap: 10px; margin-top: 10px; }
+        .modal-buttons button { flex: 1; justify-content: center; }
+
     </style>
 </head>
 <body>
@@ -200,6 +235,7 @@
         <button id="btnClear" class="btn-orange">Effacer</button>
         <button id="btnPencil" class="btn-orange" title="Activer/Désactiver l'édition">✏️</button>
         <button id="btnCotation" class="btn-outline">Cotation</button>
+        <button id="btnAdjustGrid" class="btn-discreet" title="Ajuster la grille">⚙️</button>
     </div>
     
     <div class="btn-row">
@@ -214,7 +250,6 @@
         <button id="btnClearStorage" class="btn-yellow">⚠️ Vider</button>
     </div>
 
-    <!-- SÉLECTEUR AVEC COCHE DE RÉUSSITE -->
     <div class="nav-container">
         <button id="btnPrev">◀</button>
         <select id="blockSelect"></select>
@@ -222,7 +257,6 @@
         <button id="btnNext">▶</button>
     </div>
 
-    <!-- LIGNE DES FILTRES ET COMPTEUR PUR -->
     <div class="footer-info">
         <label>
             <input type="checkbox" id="excludeCompleted"> Masquer les blocs cochés
@@ -230,16 +264,34 @@
         <span id="blockCounter">0</span>
     </div>
 
-    <!-- PLATEAU -->
     <div class="board-container">
-        <!-- LE POINT ROUGE NO KICKBOARD -->
         <div id="noKickboardIndicator" class="no-kickboard-dot" title="No Kickboard"></div>
-        
         <img src="mini_moonboard_bg.jpg" alt="Mini MoonBoard" class="board-image" id="boardImage">
         <div class="grid-overlay" id="gridOverlay"></div>
     </div>
 
+    <!-- MODALE D'AJUSTEMENT DE LA GRILLE -->
+    <div id="adjustModal" class="modal">
+        <div class="modal-content">
+            <h3>Ajuster la grille</h3>
+            <label>Décalage Haut (Top) : <input type="range" id="adjTop" min="0" max="20" step="0.1"></label>
+            <label>Décalage Gauche (Left) : <input type="range" id="adjLeft" min="0" max="20" step="0.1"></label>
+            <label>Largeur (Width) : <input type="range" id="adjWidth" min="50" max="100" step="0.1"></label>
+            <label>Hauteur (Height) : <input type="range" id="adjHeight" min="50" max="100" step="0.1"></label>
+            <div class="modal-buttons">
+                <button id="btnResetAdjust" class="btn-orange">Par défaut</button>
+                <button id="btnCloseAdjust" class="btn-green">Terminer</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW:', err));
+            });
+        }
+
         const COLS = ['A','B','C','D','E','F','G','H','I','J','K'];
         const ROWS = [12,11,10,9,8,7,6,5,4,3,2,1];
         
@@ -259,7 +311,57 @@
         const bleStatusDot = document.getElementById('bleStatusDot');
 
         // ==========================================
-        // 1. BLUETOOTH (Web Bluetooth API)
+        // GESTION DU RECADRAGE DE LA GRILLE
+        // ==========================================
+        const adjustModal = document.getElementById('adjustModal');
+        const adjTop = document.getElementById('adjTop');
+        const adjLeft = document.getElementById('adjLeft');
+        const adjWidth = document.getElementById('adjWidth');
+        const adjHeight = document.getElementById('adjHeight');
+
+        // Paramètres par défaut de la grille
+        const defaultGridConfig = { top: 9, left: 7.5, width: 85, height: 75.5 };
+        let gridConfig = JSON.parse(localStorage.getItem('minimoon_grid')) || defaultGridConfig;
+
+        function applyGridConfig() {
+            gridOverlay.style.top = gridConfig.top + '%';
+            gridOverlay.style.left = gridConfig.left + '%';
+            gridOverlay.style.width = gridConfig.width + '%';
+            gridOverlay.style.height = gridConfig.height + '%';
+            
+            // Mise à jour des sliders
+            adjTop.value = gridConfig.top;
+            adjLeft.value = gridConfig.left;
+            adjWidth.value = gridConfig.width;
+            adjHeight.value = gridConfig.height;
+        }
+
+        document.getElementById('btnAdjustGrid').addEventListener('click', () => {
+            adjustModal.style.display = 'flex';
+            gridOverlay.classList.add('grid-adjusting'); // Rend les cercles visibles
+        });
+
+        document.getElementById('btnCloseAdjust').addEventListener('click', () => {
+            adjustModal.style.display = 'none';
+            gridOverlay.classList.remove('grid-adjusting');
+            localStorage.setItem('minimoon_grid', JSON.stringify(gridConfig));
+        });
+
+        document.getElementById('btnResetAdjust').addEventListener('click', () => {
+            gridConfig = {...defaultGridConfig};
+            applyGridConfig();
+        });
+
+        // Écouteurs sur les sliders pour mise à jour en temps réel
+        [adjTop, adjLeft, adjWidth, adjHeight].forEach(slider => {
+            slider.addEventListener('input', (e) => {
+                gridConfig[e.target.id.replace('adj', '').toLowerCase()] = parseFloat(e.target.value);
+                applyGridConfig();
+            });
+        });
+
+        // ==========================================
+        // BLUETOOTH
         // ==========================================
         document.getElementById('btnConnect').addEventListener('click', async () => {
             try {
@@ -267,28 +369,31 @@
                     acceptAllDevices: true,
                     optionalServices: ['generic_access'] 
                 });
-                // Une fois la connexion réussie, le point passe au vert
                 bleStatusDot.style.backgroundColor = '#2ecc71'; 
                 alert("Connecté à " + device.name + " !");
             } catch (error) {
-                console.error(error);
-                alert("Erreur Bluetooth : Assure-toi que le Bluetooth est activé et l'ESP32 allumé.");
+                alert("Erreur Bluetooth ou annulé.");
             }
         });
 
         // ==========================================
-        // 2. GÉNÉRATION DE LA GRILLE ET ÉDITION
+        // GÉNÉRATION DE LA GRILLE
         // ==========================================
         function initGrid() {
             gridOverlay.innerHTML = '';
             ROWS.forEach(r => {
                 COLS.forEach(c => {
                     let holdId = c + r;
+                    let cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.addEventListener('click', () => handleHoldClick(holdId));
+                    
                     let div = document.createElement('div');
                     div.className = 'hold';
                     div.dataset.id = holdId;
-                    div.addEventListener('click', () => handleHoldClick(holdId));
-                    gridOverlay.appendChild(div);
+                    
+                    cell.appendChild(div);
+                    gridOverlay.appendChild(cell);
                 });
             });
         }
@@ -301,17 +406,23 @@
 
         function handleHoldClick(holdId) {
             if (!isPencilActive) return; 
-            if (!currentBlockName) return alert("Sélectionne ou crée un bloc avant de cliquer.");
+            
+            if (!currentBlockName) {
+                let newName = prompt("Création d'un nouveau bloc. Quel est son nom ?");
+                if (!newName) return; 
+                
+                currentBlockName = newName;
+                blocks[currentBlockName] = { depart: [], progression: [], arrivee: [], completed: false, noKickboard: false };
+                updateBlockSelect();
+                blockSelect.value = currentBlockName;
+            }
 
             let block = blocks[currentBlockName];
-            if (!block) return;
-
-            // Retrait de la prise si elle existe
+            
             block.depart = block.depart.filter(h => h !== holdId);
             block.progression = block.progression.filter(h => h !== holdId);
             block.arrivee = block.arrivee.filter(h => h !== holdId);
 
-            // Cycle d'attribution
             if (currentEditState === "depart") {
                 block.depart.push(holdId);
                 currentEditState = "progression";
@@ -323,16 +434,13 @@
                 currentEditState = "depart"; 
             }
             displayBlock(currentBlockName);
+            localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
         }
 
-        // ==========================================
-        // 3. AFFICHAGE ET GESTION DES DONNÉES
-        // ==========================================
         function displayBlock(name) {
             currentBlockName = name;
             let block = blocks[name];
             
-            // Réinitialise toutes les prises
             document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
             
             if (block) {
@@ -341,8 +449,6 @@
                 block.arrivee.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('arrivee'); });
                 
                 chkCompleted.checked = block.completed || false;
-                
-                // Affichage du point rouge No-Kickboard
                 nkIndicator.style.display = block.noKickboard ? 'block' : 'none';
             } else {
                 chkCompleted.checked = false;
@@ -369,7 +475,6 @@
                 blockSelect.appendChild(opt);
             });
 
-            // Affichage JUSTE du chiffre
             blockCounter.textContent = filteredKeys.length;
 
             if (filteredKeys.includes(selected)) {
@@ -383,9 +488,6 @@
             }
         }
 
-        // ==========================================
-        // 4. TOUS LES BOUTONS RESTAURÉS
-        // ==========================================
         blockSelect.addEventListener('change', (e) => displayBlock(e.target.value));
         
         document.getElementById('btnPrev').addEventListener('click', () => {
@@ -403,16 +505,15 @@
         });
 
         document.getElementById('btnClear').addEventListener('click', () => {
-            displayBlock(""); // Vide l'écran
+            displayBlock(""); 
             blockSelect.value = "";
         });
 
-        // La coche pour marquer comme réussi
         chkCompleted.addEventListener('change', (e) => {
             if (currentBlockName && blocks[currentBlockName]) {
                 blocks[currentBlockName].completed = e.target.checked;
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-                updateBlockSelect(); // Met à jour la liste si le filtre est actif
+                updateBlockSelect();
             }
         });
 
@@ -441,14 +542,13 @@
         });
 
         document.getElementById('btnClearStorage').addEventListener('click', () => {
-            if(confirm("⚠️ ATTENTION : Voulez-vous vraiment effacer TOUS les blocs de l'application ?")) {
+            if(confirm("⚠️ Voulez-vous vraiment effacer TOUS les blocs ?")) {
                 blocks = {};
                 localStorage.removeItem('minimoon_blocks');
                 updateBlockSelect();
             }
         });
 
-        // EXPORT JSON
         document.getElementById('btnExport').addEventListener('click', () => {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(blocks, null, 2));
             const dlAnchorElem = document.createElement('a');
@@ -457,7 +557,6 @@
             dlAnchorElem.click();
         });
 
-        // IMPORT JSON (Fichier)
         document.getElementById('btnImport').addEventListener('click', () => {
             const input = document.createElement('input');
             input.type = 'file';
@@ -472,16 +571,15 @@
                         localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                         updateBlockSelect();
                         alert("Fichier importé avec succès !");
-                    } catch(err) { alert("Erreur de lecture du fichier."); }
+                    } catch(err) { alert("Erreur de lecture."); }
                 };
                 reader.readAsText(file);
             };
             input.click();
         });
 
-        // COLLER JSON (Texte)
         document.getElementById('btnPasteJson').addEventListener('click', () => {
-            let jsonStr = prompt("Colle ton JSON de blocs ici :");
+            let jsonStr = prompt("Colle ton JSON ici :");
             if (!jsonStr) return;
             try {
                 let imported = JSON.parse(jsonStr);
@@ -492,10 +590,9 @@
             } catch(err) { alert("Erreur de format JSON."); }
         });
 
-        // ==========================================
         // INITIALISATION
-        // ==========================================
         excludeCompletedCheckbox.checked = localStorage.getItem('minimoon_exclude') === 'true';
+        applyGridConfig(); // Applique les paramètres de la grille sauvegardés
         initGrid();
         updateBlockSelect();
     </script>
