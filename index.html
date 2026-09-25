@@ -20,7 +20,14 @@
     
     .version-badge { position: absolute; top: 10px; right: 15px; font-size: 0.75rem; color: #777; background: #222; padding: 3px 6px; border-radius: 4px; border: 1px solid #444; }
 
-    h1 { font-size: 1.1rem; margin: 5px 0 8px 0; text-align: center; color: #f39c12; min-height: 25px; transition: color 0.3s; }
+    /* Nouveau conteneur pour le titre et le bouton copier */
+    .title-container { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; max-width: 420px; margin: 5px 0 8px 0; }
+    
+    h1 { font-size: 1.1rem; margin: 0; text-align: center; color: #f39c12; transition: color 0.3s; display: flex; align-items: center; }
+    
+    /* Le bouton copier */
+    .btn-copy { background: transparent; border: 1px solid #555; color: #aaa; border-radius: 6px; padding: 4px 8px; font-size: 14px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; height: 28px; }
+    .btn-copy:active { background: #333; color: #fff; }
 
     .controls-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; width: 100%; max-width: 420px; }
     
@@ -33,7 +40,7 @@
 
     .opacity-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.85rem; color: #aaa; margin-bottom: 4px; }
     .opacity-row input[type="range"] { flex: 1; }
-    .opacity-row label { width: 65px; text-align: right; } /* Alignement des labels d'ajustement */
+    .opacity-row label { width: 65px; text-align: right; }
     
     .btn-toggle { background: #555; color: white; border: 1px solid #777; font-size: 0.8rem; padding: 6px 8px; border-radius: 4px; cursor: pointer; white-space: nowrap; }
     .btn-toggle:active { background: #777; }
@@ -80,8 +87,12 @@
 </head>
 <body>
 
-  <div class="version-badge">V42</div>
-  <h1 id="pageTitle">Mini MoonBoard</h1>
+  <div class="version-badge">V43</div>
+  
+  <div class="title-container">
+    <button class="btn-copy" id="btnCopyTitle" onclick="copyTitle()" title="Copier le nom du bloc">📋</button>
+    <h1 id="pageTitle">Mini MoonBoard</h1>
+  </div>
 
   <!-- Ligne 1 -->
   <div class="controls-row compact-row">
@@ -131,6 +142,7 @@
     <input type="checkbox" id="chkCompleted" class="chk-completed" onchange="toggleCompleted()" title="Marquer comme réalisé">
   </div>
 
+  <!-- Barre de calque et ajustement (masquée par défaut) -->
   <div class="overlay-controls" id="overlayControls">
     <div class="opacity-row" id="multiImageNav" style="display:none; justify-content: center; gap: 15px;">
       <button class="btn-toggle" onclick="prevOverlayImage()">◄ Photo</button>
@@ -145,7 +157,6 @@
       <button class="btn-toggle" onclick="toggleCalibration()">⚙️ Ajuster</button>
     </div>
     
-    <!-- Panneau de calibration COMPLET avec largeur et hauteur -->
     <div class="calibration-panel" id="calibrationPanel">
       <div class="opacity-row">
         <label>Hauteur :</label>
@@ -190,7 +201,6 @@
 
     let localRoutes = JSON.parse(localStorage.getItem('moonboard_custom_routes')) || {};
     
-    // Chargement des 4 variables de calibration
     let savedScaleY = localStorage.getItem('mb_calib_scaleY') || 1;
     let savedScaleX = localStorage.getItem('mb_calib_scaleX') || 1;
     let savedOffsetY = localStorage.getItem('mb_calib_offsetY') || 0;
@@ -201,38 +211,54 @@
     document.getElementById('offsetYRange').value = savedOffsetY;
     document.getElementById('offsetXRange').value = savedOffsetX;
 
-    // === EXPORT CORRIGÉ POUR IPHONE (API Share Native) ===
+    // === FONCTION COPIER ===
+    function copyTitle() {
+      const title = document.getElementById('pageTitle').innerText;
+      // On évite de copier le texte de chargement
+      if (title && !title.includes("⏳")) {
+        navigator.clipboard.writeText(title).then(() => {
+          const btn = document.getElementById('btnCopyTitle');
+          btn.innerText = "✅";
+          setTimeout(() => { btn.innerText = "📋"; }, 1500);
+        }).catch(() => {
+          alert("Copie impossible sur ce navigateur.");
+        });
+      }
+    }
+
+    // === EXPORT (API Share Native) ===
     async function exportRoutes() {
       if (Object.keys(localRoutes).length === 0) return alert("Aucun bloc à sauvegarder !");
       
       const jsonStr = JSON.stringify(localRoutes, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
-      const file = new File([blob], "mes_blocs_moonboard.json", { type: 'application/json' });
+      
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-      // Si l'iPhone supporte le partage de fichier natif (AirDrop, Fichiers, etc.)
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      if (isIOS && navigator.canShare) {
+        const file = new File([blob], "mes_blocs_moonboard.json", { type: 'application/json' });
         try {
           await navigator.share({
             files: [file],
             title: 'Sauvegarde MoonBoard',
-            text: 'Voici ma sauvegarde de blocs.'
+            text: 'Sauvegarde de mes blocs DIY.'
           });
+          return;
         } catch (error) {
           console.log('Partage annulé ou erreur :', error);
         }
-      } else {
-        // Méthode de secours classique
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "mes_blocs_moonboard.json";
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-        }, 0);
       }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "mes_blocs_moonboard.json";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 0);
     }
 
     // === IMPORT ===
@@ -306,7 +332,7 @@
 
     function clearSavedRoutes() {
       if (Object.keys(localRoutes).length === 0) return alert("Liste déjà vide !");
-      if (confirm("Effacer TOUS les blocs enregistrés ? Attention, action irréversible sans sauvegarde préalable !")) {
+      if (confirm("Effacer TOUS les blocs enregistrés ? Action irréversible !")) {
         localStorage.removeItem('moonboard_custom_routes');
         localRoutes = {};
         initRouteSelector();
