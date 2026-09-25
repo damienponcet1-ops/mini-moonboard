@@ -20,12 +20,12 @@
     
     .version-badge { position: absolute; top: 10px; right: 15px; font-size: 0.75rem; color: #777; background: #222; padding: 3px 6px; border-radius: 4px; border: 1px solid #444; }
 
-    /* Nouveau conteneur pour le titre et le bouton copier */
-    .title-container { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; max-width: 420px; margin: 5px 0 8px 0; }
+    /* Conteneur du titre avec icône pied */
+    .title-container { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 420px; margin: 5px 0 8px 0; }
     
-    h1 { font-size: 1.1rem; margin: 0; text-align: center; color: #f39c12; transition: color 0.3s; display: flex; align-items: center; }
+    h1 { font-size: 1.1rem; margin: 0; text-align: center; color: #f39c12; transition: color 0.3s; }
+    #footRuleIcon { font-size: 1.2rem; margin-left: 2px; }
     
-    /* Le bouton copier */
     .btn-copy { background: transparent; border: 1px solid #555; color: #aaa; border-radius: 6px; padding: 4px 8px; font-size: 14px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; height: 28px; }
     .btn-copy:active { background: #333; color: #fff; }
 
@@ -87,11 +87,12 @@
 </head>
 <body>
 
-  <div class="version-badge">V43</div>
+  <div class="version-badge">V44</div>
   
   <div class="title-container">
     <button class="btn-copy" id="btnCopyTitle" onclick="copyTitle()" title="Copier le nom du bloc">📋</button>
     <h1 id="pageTitle">Mini MoonBoard</h1>
+    <span id="footRuleIcon"></span>
   </div>
 
   <!-- Ligne 1 -->
@@ -142,7 +143,6 @@
     <input type="checkbox" id="chkCompleted" class="chk-completed" onchange="toggleCompleted()" title="Marquer comme réalisé">
   </div>
 
-  <!-- Barre de calque et ajustement (masquée par défaut) -->
   <div class="overlay-controls" id="overlayControls">
     <div class="opacity-row" id="multiImageNav" style="display:none; justify-content: center; gap: 15px;">
       <button class="btn-toggle" onclick="prevOverlayImage()">◄ Photo</button>
@@ -189,6 +189,7 @@
     let holdStates = {};
     let isOverlayVisible = true;
     window.scannedRouteName = "";
+    window.scannedFootRule = "";
 
     let overlayImages = [];
     let currentOverlayIndex = 0;
@@ -211,28 +212,22 @@
     document.getElementById('offsetYRange').value = savedOffsetY;
     document.getElementById('offsetXRange').value = savedOffsetX;
 
-    // === FONCTION COPIER ===
     function copyTitle() {
       const title = document.getElementById('pageTitle').innerText;
-      // On évite de copier le texte de chargement
       if (title && !title.includes("⏳")) {
         navigator.clipboard.writeText(title).then(() => {
           const btn = document.getElementById('btnCopyTitle');
           btn.innerText = "✅";
           setTimeout(() => { btn.innerText = "📋"; }, 1500);
-        }).catch(() => {
-          alert("Copie impossible sur ce navigateur.");
-        });
+        }).catch(() => { alert("Copie impossible sur ce navigateur."); });
       }
     }
 
-    // === EXPORT (API Share Native) ===
     async function exportRoutes() {
       if (Object.keys(localRoutes).length === 0) return alert("Aucun bloc à sauvegarder !");
       
       const jsonStr = JSON.stringify(localRoutes, null, 2);
       const blob = new Blob([jsonStr], { type: 'application/json' });
-      
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
       if (isIOS && navigator.canShare) {
@@ -244,9 +239,7 @@
             text: 'Sauvegarde de mes blocs DIY.'
           });
           return;
-        } catch (error) {
-          console.log('Partage annulé ou erreur :', error);
-        }
+        } catch (error) { console.log('Partage annulé ou erreur :', error); }
       }
 
       const url = URL.createObjectURL(blob);
@@ -255,13 +248,9 @@
       a.download = "mes_blocs_moonboard.json";
       document.body.appendChild(a);
       a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-      }, 0);
+      setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 0);
     }
 
-    // === IMPORT ===
     function importRoutes(event) {
       const file = event.target.files[0];
       if(!file) return;
@@ -273,9 +262,7 @@
           localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
           initRouteSelector();
           alert("Sauvegarde importée avec succès !");
-        } catch(err) {
-          alert("Erreur : Fichier invalide.");
-        }
+        } catch(err) { alert("Erreur : Fichier invalide."); }
       };
       reader.readAsText(file);
       event.target.value = ''; 
@@ -307,7 +294,7 @@
     }
 
     function saveCurrentRoute() {
-      let route = { depart: [], progression: [], arrivee: [], completed: false };
+      let route = { depart: [], progression: [], arrivee: [], completed: false, footRule: "" };
       let hasHolds = false;
       Object.keys(holdStates).forEach(id => {
         if (holdStates[id] === 1) { route.depart.push(id); hasHolds = true; }
@@ -321,7 +308,12 @@
       let routeName = prompt("Nom et cotation du bloc :", defaultName);
       if (!routeName || routeName.trim() === "") return;
 
-      if (localRoutes[routeName]) route.completed = localRoutes[routeName].completed;
+      if (localRoutes[routeName]) {
+          route.completed = localRoutes[routeName].completed;
+      }
+      
+      // On sauvegarde l'icône de la règle des pieds
+      route.footRule = document.getElementById('footRuleIcon').innerText || "";
 
       localRoutes[routeName] = route;
       localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
@@ -337,6 +329,7 @@
         localRoutes = {};
         initRouteSelector();
         document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+        document.getElementById('footRuleIcon').innerText = "";
       }
     }
 
@@ -354,8 +347,10 @@
         if (route.arrivee) route.arrivee.forEach(id => { holdStates[id] = 3; updateUI(id); });
         
         document.getElementById('pageTitle').innerText = routeName;
+        document.getElementById('footRuleIcon').innerText = route.footRule || "";
       } else {
         document.getElementById('pageTitle').innerText = window.scannedRouteName || "Mini MoonBoard";
+        document.getElementById('footRuleIcon').innerText = window.scannedFootRule || "";
       }
       updateCheckboxState();
       sendBLEFrame();
@@ -433,6 +428,7 @@
     function clearBoard() {
       document.getElementById('routeSelect').value = ""; 
       document.getElementById('pageTitle').innerText = window.scannedRouteName || "Mini MoonBoard";
+      document.getElementById('footRuleIcon').innerText = window.scannedFootRule || "";
       updateCheckboxState();
       Object.keys(holdStates).forEach(id => { if(holdStates[id] !== 0) { holdStates[id] = 0; updateUI(id); }});
       sendBLEFrame();
@@ -506,6 +502,9 @@
       const titleEl = document.getElementById('pageTitle');
       titleEl.innerText = "⏳ Découpage de l'image...";
       titleEl.style.color = "#f39c12";
+      document.getElementById('footRuleIcon').innerText = "";
+      window.scannedFootRule = "";
+      
       document.getElementById('imageCounter').innerText = `${currentOverlayIndex + 1}/${overlayImages.length}`;
       
       const jobId = ++currentOcrJob; 
@@ -559,7 +558,7 @@
                 try {
                     const headerCanvas = document.createElement('canvas');
                     headerCanvas.width = img.width;
-                    headerCanvas.height = img.height * 0.25; 
+                    headerCanvas.height = img.height * 0.30; 
                     const hCtx = headerCanvas.getContext('2d');
                     hCtx.drawImage(img, 0, 0);
                     
@@ -568,7 +567,21 @@
 
                     let detectedName = "";
                     let detectedGrade = "";
+                    let detectedFootRule = "";
                     
+                    const rawText = data.text.toLowerCase();
+                    
+                    // Détection des règles de pieds
+                    if (rawText.includes('kickboard')) {
+                        detectedFootRule = "🦶🚫";
+                    } else if (rawText.includes('maker') || rawText.includes('any maker')) {
+                        detectedFootRule = "🦶";
+                    } else if (rawText.includes('screw')) {
+                        detectedFootRule = "🦶🔩";
+                    } else if (rawText.includes('footless')) {
+                        detectedFootRule = "🚫";
+                    }
+
                     const lines = data.lines.map(l => l.text.trim());
                     let setByIndex = lines.findIndex(l => l.toLowerCase().includes('set by'));
                     
@@ -589,7 +602,10 @@
                     if(detectedGrade && !detectedName.includes(detectedGrade)) detectedName = `${detectedName} (${detectedGrade})`;
 
                     window.scannedRouteName = detectedName;
+                    window.scannedFootRule = detectedFootRule;
+                    
                     titleEl.innerText = detectedName;
+                    document.getElementById('footRuleIcon').innerText = detectedFootRule;
                 } catch (err) {
                     if (jobId !== currentOcrJob) return;
                     titleEl.innerText = "Mini MoonBoard";
