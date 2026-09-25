@@ -12,8 +12,6 @@
   <meta name="apple-mobile-web-app-title" content="MoonBoard">
   <link rel="apple-touch-icon" href="icon-192.png">
 
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
   <style>
     * { box-sizing: border-box; touch-action: manipulation; }
     body { margin: 0; padding: 10px; background-color: #121212; color: #ffffff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; position: relative; }
@@ -24,74 +22,68 @@
     .kickboard-dot { position: absolute; top: 12px; left: 15px; width: 14px; height: 14px; border-radius: 50%; cursor: pointer; transition: all 0.3s; border: 1px solid #555; background-color: #333; }
     .kickboard-dot.active { background-color: #ff3b30; border-color: #ff3b30; box-shadow: 0 0 8px rgba(255, 59, 48, 0.8); }
 
-    .title-container { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 420px; margin: 5px 0 8px 0; overflow: hidden; }
+    .title-container { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; max-width: 420px; margin: 5px 0 10px 0; overflow: hidden; }
     
-    .btn-copy { background: transparent; border: 1px solid #555; color: #aaa; border-radius: 6px; padding: 4px 8px; font-size: 14px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; height: 28px; flex-shrink: 0; }
-    .btn-copy:active { background: #333; color: #fff; }
-
-    h1 { font-size: 1.1rem; margin: 0; color: #f39c12; transition: color 0.3s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
-
-    .controls-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; width: 100%; max-width: 420px; }
+    h1 { font-size: 1.1rem; margin: 0; color: #f39c12; transition: color 0.3s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; max-width: 75%; }
     
+    /* Boutons de titre */
+    .btn-title { background: transparent; border: 1px solid #555; color: #aaa; border-radius: 6px; padding: 4px 6px; font-size: 13px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; height: 26px; flex-shrink: 0; }
+    .btn-title:active { background: #333; color: #fff; }
+
+    /* Structure des contrôles minimaliste */
+    .control-panel { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 420px; margin-bottom: 10px; }
+    .controls-row { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
     .compact-row { gap: 6px; }
     .compact-row button, .filter-select-mini { padding: 8px 4px; font-size: 13px; flex: 1; border-radius: 6px; }
     
+    /* Style spécifique pour le sélecteur de cotation */
     .filter-select-mini { background-color: #1a1a1a; color: #f39c12; border: 1px solid #f39c12; font-weight: bold; appearance: none; text-align: center; cursor: pointer; }
 
-    .overlay-controls { display: none; flex-direction: column; gap: 5px; margin-bottom: 8px; width: 100%; max-width: 420px; background: #1e1e1e; padding: 8px; border-radius: 6px; border: 1px solid #444; }
-
-    .opacity-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.85rem; color: #aaa; margin-bottom: 4px; }
-    .opacity-row input[type="range"] { flex: 1; }
-    .opacity-row label { width: 65px; text-align: right; }
-    
-    .btn-toggle { background: #555; color: white; border: 1px solid #777; font-size: 0.8rem; padding: 6px 8px; border-radius: 4px; cursor: pointer; white-space: nowrap; }
-    .btn-toggle:active { background: #777; }
-
-    .calibration-panel { display: none; flex-direction: column; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #444; }
-
-    .route-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; max-width: 420px; margin-bottom: 8px; }
+    /* Navigation */
+    .route-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; margin-bottom: 8px; }
     .btn-nav { background: #444; color: #fff; border: 1px solid #666; font-size: 16px; padding: 8px 14px; border-radius: 6px; cursor: pointer; flex-shrink: 0; }
     .btn-nav:active { background: #666; }
     
-    select { flex: 1; padding: 8px; background-color: #222; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 15px; font-weight: bold; appearance: none; text-align: center; min-width: 0; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
+    select#routeSelect { flex: 1; padding: 8px; background-color: #222; color: #fff; border: 1px solid #555; border-radius: 6px; font-size: 15px; font-weight: bold; appearance: none; text-align: center; min-width: 0; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
     
     .chk-completed { width: 24px; height: 24px; accent-color: #34c759; margin-left: 4px; cursor: pointer; flex-shrink: 0; visibility: hidden; }
 
+    /* Styles Boutons */
     button { background: #333; color: #fff; border: 1px solid #555; padding: 8px 12px; border-radius: 6px; font-weight: bold; font-size: 14px; cursor: pointer; }
     button:active { background: #555; }
     
-    .btn-scan { background: #e67e22; border-color: #d35400; }
-    .btn-scan:active { background: #bf4a00; }
-    
-    /* Boutons Ligne 3 (Enregistrer, Supprimer, Vider) */
+    /* Bouton Bleu (Connecter, Sauvegarder) */
     .btn-save { background: #005bb5; border-color: #0073e6; flex: 2;}
     .btn-save:active { background: #003f7a; }
+    
+    /* NOUVEAU bouton Nouveau/Effacer (Orange) */
+    .btn-new { background: #e67e22; border-color: #d35400; flex:1;}
+    .btn-new:active { background: #bf4a00; }
+    
+    /* Boutons de suppression (Rouge) */
     .btn-remove { background: #d9534f; border-color: #d43f3a; flex: 1.5; padding: 8px 4px; }
     .btn-remove:active { background: #c9302c; }
     .btn-delete { background: #555; border-color: #444; flex: 1; padding: 8px 4px; }
     .btn-delete:active { background: #333; }
     
-    .btn-export { background: #27ae60; border-color: #2ecc71; flex:1; padding: 8px 4px;}
+    /* Boutons Verts (Exporter) */
+    .btn-export { background: #27ae60; border-color: #2ecc71; flex:1.2; padding: 8px 4px;}
     .btn-export:active { background: #1e8449; }
     
-    /* Boutons d'importation (Fichier et Coller) */
+    /* Boutons Mauves (Importation) */
     .btn-import-file { background: #8e44ad; border-color: #9b59b6; flex:1; padding: 8px 4px; }
     .btn-import-file:active { background: #6c3483; }
-    
-    /* NOUVEAU bouton pour coller directement le JSON */
-    .btn-import-paste { background: #c39bd3; color: #333; border: 1px solid #9b59b6; flex:1.5; padding: 8px 2px; font-size: 12px;}
+    .btn-import-paste { background: #c39bd3; color: #333; border: 1px solid #9b59b6; flex:1.8; padding: 8px 2px; font-size: 12px;}
     .btn-import-paste:active { background: #a569bd; color: white; }
 
+    /* Indicateur d'état BLE */
     .status-dot { width: 14px; height: 14px; border-radius: 50%; transition: background-color 0.3s, box-shadow 0.3s; flex-shrink: 0; }
     .status-dot.disconnected { background-color: #ff3b30; box-shadow: 0 0 8px rgba(255, 59, 48, 0.6); }
     .status-dot.connected { background-color: #34c759; box-shadow: 0 0 8px rgba(52, 199, 89, 0.8); }
 
+    /* Grille */
     .board-container { position: relative; width: 100%; max-width: 420px; aspect-ratio: 11 / 12; background: url('mini_moonboard_bg.jpg') no-repeat center/cover; border: 2px solid #444; border-radius: 8px; overflow: hidden; }
-
-    #overlayImage { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; opacity: 0.5; z-index: 1; transform-origin: center center; }
-
     .grid { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(11, 1fr); grid-template-rows: repeat(12, 1fr); width: 100%; height: 100%; padding: 7% 1% 6% 7%; }
-
     .hold { width: 85%; height: 85%; margin: 7.5%; border-radius: 50%; transition: all 0.15s ease-out; cursor: pointer; }
     .hold.state-0 { background-color: transparent; }
     .hold.state-1 { border: 3px solid #00ff00; background-color: rgba(0, 255, 0, 0.4); box-shadow: 0 0 10px #00ff00; }
@@ -101,105 +93,68 @@
 </head>
 <body>
 
-  <div class="version-badge">V49</div>
+  <div class="version-badge">V50</div>
   
   <!-- Point rouge No Kickboard (en haut à gauche) -->
   <div id="kickboardDot" class="kickboard-dot" onclick="toggleKickboard()" title="No Kickboard (Clique pour activer/désactiver)"></div>
   
   <div class="title-container">
-    <button class="btn-copy" id="btnCopyTitle" onclick="copyTitle()" title="Copier le nom du bloc">📋</button>
+    <button class="btn-title" onclick="editCurrentTitle()" title="Renommer / Éditer le nom du bloc">✏️</button>
     <h1 id="pageTitle">Mini MoonBoard</h1>
+    <button class="btn-title" id="btnCopyTitle" onclick="copyTitle()" title="Copier le nom du bloc">📋</button>
   </div>
 
-  <!-- Ligne 1 -->
-  <div class="controls-row compact-row">
-    <button id="btnConnect" onclick="toggleBLE()">Se connecter</button>
-    <div id="statusIndicator" class="status-dot disconnected"></div>
-    <button onclick="clearBoard()">Effacer</button>
-    <select id="gradeFilter" class="filter-select-mini" onchange="initRouteSelector()">
-      <option value="">Cotation</option>
-      <option value="6A+">6A+</option>
-      <option value="6B">6B</option>
-      <option value="6B+">6B+</option>
-      <option value="6C">6C</option>
-      <option value="6C+">6C+</option>
-      <option value="7A">7A</option>
-      <option value="7A+">7A+</option>
-      <option value="7B">7B</option>
-      <option value="7B+">7B+</option>
-      <option value="7C">7C</option>
-      <option value="7C+">7C+</option>
-      <option value="8A">8A</option>
-      <option value="8A+">8A+</option>
-      <option value="8B">8B</option>
-      <option value="8B+">8B+</option>
-    </select>
-  </div>
+  <div class="control-panel">
+    <!-- Ligne 1 : Connexion, Filtrage -->
+    <div class="controls-row compact-row">
+        <button id="btnConnect" class="btn-save" onclick="toggleBLE()">Se connecter</button>
+        <div id="statusIndicator" class="status-dot disconnected"></div>
+        <button class="btn-new" onclick="clearBoard()">🆕 Nouveau</button>
+        <select id="gradeFilter" class="filter-select-mini" onchange="initRouteSelector()">
+          <option value="">Cotation</option>
+          <option value="6A+">6A+</option>
+          <option value="6B">6B</option>
+          <option value="6B+">6B+</option>
+          <option value="6C">6C</option>
+          <option value="6C+">6C+</option>
+          <option value="7A">7A</option>
+          <option value="7A+">7A+</option>
+          <option value="7B">7B</option>
+          <option value="7B+">7B+</option>
+          <option value="7C">7C</option>
+          <option value="7C+">7C+</option>
+          <option value="8A">8A</option>
+          <option value="8A+">8A+</option>
+          <option value="8B">8B</option>
+          <option value="8B+">8B+</option>
+        </select>
+    </div>
 
-  <!-- Ligne 2 : Fichiers et Imports -->
-  <div class="controls-row compact-row">
-    <button class="btn-export" onclick="exportRoutes()">📤 Exporter</button>
-    <!-- Boutons d'import réorganisés -->
-    <button class="btn-import-file" onclick="document.getElementById('importInput').click()">📥 Fichier</button>
-    <button class="btn-import-paste" onclick="importFromPaste()">📋 Coller JSON</button>
-    
-    <button class="btn-scan" onclick="document.getElementById('fileInput').click()">📷 Charger</button>
-    <input type="file" id="importInput" accept=".json" style="display:none" onchange="importRoutes(event)">
-    <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
-  </div>
+    <!-- Ligne 2 : Fichiers et Imports -->
+    <div class="controls-row compact-row">
+        <button class="btn-export" onclick="exportRoutes()">📤 Exporter</button>
+        <button class="btn-import-file" onclick="document.getElementById('importInput').click()">📥 Fichier</button>
+        <button class="btn-import-paste" onclick="importFromPaste()">📋 Coller JSON</button>
+        <input type="file" id="importInput" accept=".json" style="display:none" onchange="importRoutes(event)">
+    </div>
 
-  <!-- Ligne 3 : Sauvegarde et Suppression -->
-  <div class="controls-row">
-    <button class="btn-save" onclick="saveCurrentRoute()">💾 Enregistrer</button>
-    <button class="btn-remove" onclick="deleteCurrentRoute()">❌ Supprimer</button>
-    <button class="btn-delete" onclick="clearSavedRoutes()">⚠️ Vider</button>
+    <!-- Ligne 3 : Sauvegarde et Suppression -->
+    <div class="controls-row">
+        <button class="btn-save" onclick="saveCurrentRoute()">💾 Enregistrer</button>
+        <button class="btn-remove" onclick="deleteCurrentRoute()">❌ Supprimer</button>
+        <button class="btn-delete" onclick="clearSavedRoutes()">⚠️ Vider</button>
+    </div>
   </div>
 
   <!-- Ligne 4 : Navigation et Coche -->
-  <div class="route-nav-row">
+  <div class="route-nav-row max-width: 420px;">
     <button class="btn-nav" onclick="prevRoute()">◄</button>
     <select id="routeSelect" onchange="loadSelectedRoute()"></select>
     <button class="btn-nav" onclick="nextRoute()">►</button>
     <input type="checkbox" id="chkCompleted" class="chk-completed" onchange="toggleCompleted()" title="Marquer comme réalisé">
   </div>
 
-  <div class="overlay-controls" id="overlayControls">
-    <div class="opacity-row" id="multiImageNav" style="display:none; justify-content: center; gap: 15px;">
-      <button class="btn-toggle" onclick="prevOverlayImage()">◄ Photo</button>
-      <span id="imageCounter" style="color:#f39c12; font-weight:bold;">1/1</span>
-      <button class="btn-toggle" onclick="nextOverlayImage()">Photo ►</button>
-    </div>
-
-    <div class="opacity-row">
-      <label style="text-align:left; width:auto;">Opacité :</label>
-      <input type="range" id="opacityRange" min="0" max="1" step="0.05" value="0.5" oninput="changeOpacity(this.value)">
-      <button class="btn-toggle" id="btnToggleOverlay" onclick="toggleOverlay()">Masquer</button>
-      <button class="btn-toggle" onclick="toggleCalibration()">⚙️ Ajuster</button>
-    </div>
-    
-    <div class="calibration-panel" id="calibrationPanel">
-      <div class="opacity-row">
-        <label>Hauteur :</label>
-        <input type="range" id="scaleYRange" min="0.80" max="1.20" step="0.005" value="1" oninput="updateCalibration()">
-      </div>
-      <div class="opacity-row">
-        <label>Largeur :</label>
-        <input type="range" id="scaleXRange" min="0.80" max="1.20" step="0.005" value="1" oninput="updateCalibration()">
-      </div>
-      <div class="opacity-row">
-        <label>Haut/Bas :</label>
-        <input type="range" id="offsetYRange" min="-15" max="15" step="0.1" value="0" oninput="updateCalibration()">
-      </div>
-      <div class="opacity-row">
-        <label>G/D :</label>
-        <input type="range" id="offsetXRange" min="-15" max="15" step="0.1" value="0" oninput="updateCalibration()">
-      </div>
-      <div style="font-size: 0.7rem; color: #888; text-align: center;">Ces 4 réglages sont mémorisés pour tes prochaines captures</div>
-    </div>
-  </div>
-
   <div class="board-container">
-    <img id="overlayImage" alt="Capture superposée" style="display:none;">
     <div class="grid" id="boardGrid"></div>
   </div>
 
@@ -207,152 +162,62 @@
     const cols = ['A','B','C','D','E','F','G','H','I','J','K'];
     const rows = 12;
     let holdStates = {};
-    let isOverlayVisible = true;
-    window.scannedRouteName = "";
     
     // Variables pour l'état No Kickboard
     let isNoKickboard = false;
-    window.scannedNoKickboard = false;
-
-    let overlayImages = [];
-    let currentOverlayIndex = 0;
-    let currentOcrJob = 0; 
+    let localRoutes = JSON.parse(localStorage.getItem('moonboard_custom_routes')) || {};
 
     const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
     const RX_UUID      = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
     let bleDevice = null;
     let rxCharacteristic = null;
 
-    let localRoutes = JSON.parse(localStorage.getItem('moonboard_custom_routes')) || {};
-    
-    let savedScaleY = localStorage.getItem('mb_calib_scaleY') || 1;
-    let savedScaleX = localStorage.getItem('mb_calib_scaleX') || 1;
-    let savedOffsetY = localStorage.getItem('mb_calib_offsetY') || 0;
-    let savedOffsetX = localStorage.getItem('mb_calib_offsetX') || 0;
+    // === GESTION DU TITRE ===
+    function editCurrentTitle() {
+        const titleEl = document.getElementById('pageTitle');
+        const oldTitle = titleEl.innerText === "Mini MoonBoard" ? "" : titleEl.innerText;
+        const newTitle = prompt("Éditer le nom et la cotation du bloc :", oldTitle);
+        if (newTitle !== null && newTitle.trim() !== "") {
+            titleEl.innerText = newTitle;
+            // Si on édite une route chargée, on deselectionne pour forcer à re-sauvegarder
+            document.getElementById('routeSelect').value = "";
+            updateCheckboxState();
+        }
+    }
 
-    document.getElementById('scaleYRange').value = savedScaleY;
-    document.getElementById('scaleXRange').value = savedScaleX;
-    document.getElementById('offsetYRange').value = savedOffsetY;
-    document.getElementById('offsetXRange').value = savedOffsetX;
+    function copyTitle() {
+      const title = document.getElementById('pageTitle').innerText;
+      if (title && title !== "Mini MoonBoard") {
+        navigator.clipboard.writeText(title).then(() => {
+          const btn = document.getElementById('btnCopyTitle');
+          btn.innerText = "✅";
+          setTimeout(() => { btn.innerText = "📋"; }, 1500);
+        }).catch(() => { alert("Copie impossible."); });
+      }
+    }
 
     // === GESTION DU POINT ROUGE NO KICKBOARD ===
     function toggleKickboard() {
       isNoKickboard = !isNoKickboard;
       updateKickboardUI();
-      window.scannedNoKickboard = isNoKickboard; // Conserve le choix manuel avant sauvegarde
+      // Si on modifie une route chargée, on deselectionne pour forcer à re-sauvegarder
+      document.getElementById('routeSelect').value = "";
+      updateCheckboxState();
     }
 
     function updateKickboardUI() {
       const dot = document.getElementById('kickboardDot');
-      if (isNoKickboard) {
-        dot.classList.add('active');
-      } else {
-        dot.classList.remove('active');
-      }
+      if (isNoKickboard) { dot.classList.add('active'); }
+      else { dot.classList.remove('active'); }
     }
 
-    function copyTitle() {
-      const title = document.getElementById('pageTitle').innerText;
-      if (title && !title.includes("⏳")) {
-        navigator.clipboard.writeText(title).then(() => {
-          const btn = document.getElementById('btnCopyTitle');
-          btn.innerText = "✅";
-          setTimeout(() => { btn.innerText = "📋"; }, 1500);
-        }).catch(() => { alert("Copie impossible sur ce navigateur."); });
-      }
-    }
-
-    async function exportRoutes() {
-      if (Object.keys(localRoutes).length === 0) return alert("Aucun bloc à sauvegarder !");
-      const jsonStr = JSON.stringify(localRoutes, null, 2);
-      const blob = new Blob([jsonStr], { type: 'application/json' });
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-      if (isIOS && navigator.canShare) {
-        const file = new File([blob], "mes_blocs_moonboard.json", { type: 'application/json' });
-        try {
-          await navigator.share({
-            files: [file],
-            title: 'Sauvegarde MoonBoard',
-            text: 'Sauvegarde de mes blocs DIY.'
-          });
-          return;
-        } catch (error) { console.log('Partage annulé ou erreur :', error); }
-      }
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = "mes_blocs_moonboard.json";
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 0);
-    }
-
-    // Import classique par fichier
-    function importRoutes(event) {
-      const file = event.target.files[0];
-      if(!file) return;
-      
-      // Verification simpliste de l'extension pour iOS
-      if(!file.name.toLowerCase().endsWith('.json')){
-          alert("Erreur : Safari a probablement ajouté '.txt' à ton fichier. Essaie d'utiliser le bouton 'Coller JSON' à la place, c'est plus simple sur iPhone !");
-          event.target.value = '';
-          return;
-      }
-      
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const importedRoutes = JSON.parse(e.target.result);
-          processImportData(importedRoutes);
-        } catch(err) { alert("Erreur : Le fichier n'est pas un JSON valide."); }
-      };
-      reader.readAsText(file);
-      event.target.value = ''; 
-    }
-
-    // NOUVEAU : Importation par copier/coller direct
-    async function importFromPaste() {
-        try {
-            // Safari demande une permission explicite ou un contexte sécurisé (HTTPS)
-            // Sur iOS, prompt est souvent plus robuste pour récupérer du texte collé
-            const text = prompt("Collez le code JSON généré par l'IA ici :");
-            if (!text || text.trim() === "") return;
-
-            const importedRoutes = JSON.parse(text);
-            processImportData(importedRoutes);
-        } catch (err) {
-            alert("Erreur : Le texte collé n'est pas un JSON valide. Assure-toi d'avoir bien copié TOUT le texte généré par l'IA, y compris les accolades { et }.");
-        }
-    }
-    
-    // Fonction commune pour traiter les données importées
-    function processImportData(data){
-        if(!data || typeof data !== 'object') {
-            alert("Erreur : Données invalides.");
-            return;
-        }
-        
-        const count = Object.keys(data).length;
-        if(count === 0){
-            alert("Aucun bloc trouvé dans les données.");
-            return;
-        }
-
-        // Fusionner avec les routes locales
-        localRoutes = { ...localRoutes, ...data };
-        localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
-        initRouteSelector();
-        alert(`Succès ! ${count} bloc(s) importé(s) et fusionné(s) avec ta liste.`);
-    }
-
+    // === GESTION DE LA SAUVEGARDE ET DE L'ÉDITION MANUELLE ===
     function initRouteSelector() {
       const selector = document.getElementById('routeSelect');
       const filterGrade = document.getElementById('gradeFilter').value;
       const currentVal = selector.value; 
       
-      selector.innerHTML = '<option value="">-- Choisir un bloc --</option>';
+      selector.innerHTML = '<option value="">-- Charger un bloc --</option>';
       let hasValidCurrent = false;
 
       Object.keys(localRoutes).forEach(routeName => {
@@ -373,6 +238,13 @@
     }
 
     function saveCurrentRoute() {
+      const title = document.getElementById('pageTitle').innerText;
+      
+      if (title === "Mini MoonBoard" || title.trim() === "") {
+          alert("Erreur : Donne un nom à ton bloc avant de l'enregistrer (clique sur le crayon ✏️ en haut).");
+          return;
+      }
+      
       let route = { depart: [], progression: [], arrivee: [], completed: false, noKickboard: false };
       let hasHolds = false;
       Object.keys(holdStates).forEach(id => {
@@ -381,53 +253,21 @@
         if (holdStates[id] === 3) { route.arrivee.push(id); hasHolds = true; }
       });
       
-      if (!hasHolds) { alert("Le panneau est vide !"); return; }
+      if (!hasHolds) { alert("Erreur : Le panneau est vide ! Clique sur des prises d'abord."); return; }
 
-      let defaultName = window.scannedRouteName ? window.scannedRouteName : "Mon Bloc";
-      let routeName = prompt("Nom et cotation du bloc :", defaultName);
-      if (!routeName || routeName.trim() === "") return;
-
-      if (localRoutes[routeName]) {
-          route.completed = localRoutes[routeName].completed;
-      }
+      // Si le bloc existe déjà, on conserve l'état 'completed'
+      if (localRoutes[title]) { route.completed = localRoutes[title].completed; }
       
       // Enregistre l'état du point rouge
       route.noKickboard = isNoKickboard;
 
-      localRoutes[routeName] = route;
+      localRoutes[title] = route;
       localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
+      
       initRouteSelector();
-      document.getElementById('routeSelect').value = routeName;
-      loadSelectedRoute();
-    }
-
-    function deleteCurrentRoute() {
-      const selector = document.getElementById('routeSelect');
-      const routeName = selector.value;
-      
-      if (!routeName || !localRoutes[routeName]) {
-        alert("Aucun bloc sauvegardé n'est actuellement sélectionné.");
-        return;
-      }
-      
-      if (confirm(`Es-tu sûr de vouloir supprimer définitivement le bloc "${routeName}" ?`)) {
-        delete localRoutes[routeName];
-        localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
-        initRouteSelector();
-        clearBoard(); 
-      }
-    }
-
-    function clearSavedRoutes() {
-      if (Object.keys(localRoutes).length === 0) return alert("Liste déjà vide !");
-      if (confirm("⚠️ ATTENTION : Es-tu sûr de vouloir effacer TOUS les blocs enregistrés de l'application ? Action irréversible !")) {
-        localStorage.removeItem('moonboard_custom_routes');
-        localRoutes = {};
-        initRouteSelector();
-        document.getElementById('pageTitle').innerText = "Mini MoonBoard";
-        isNoKickboard = false;
-        updateKickboardUI();
-      }
+      document.getElementById('routeSelect').value = title;
+      updateCheckboxState();
+      alert(`Le bloc "${title}" a bien été enregistré dans ton téléphone.`);
     }
 
     function loadSelectedRoute() {
@@ -446,8 +286,9 @@
         document.getElementById('pageTitle').innerText = routeName;
         isNoKickboard = !!route.noKickboard;
       } else {
-        document.getElementById('pageTitle').innerText = window.scannedRouteName || "Mini MoonBoard";
-        isNoKickboard = window.scannedNoKickboard || false;
+        // Mode "Nouveau Bloc"
+        document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+        isNoKickboard = false;
       }
       
       updateKickboardUI();
@@ -455,6 +296,110 @@
       sendBLEFrame();
     }
 
+    // NOUVEAU bouton : Efface la grille et prépare un nouveau bloc manuel
+    function clearBoard() {
+      document.getElementById('routeSelect').value = ""; 
+      document.getElementById('pageTitle').innerText = "Mini MoonBoard";
+      isNoKickboard = false;
+      updateKickboardUI();
+      updateCheckboxState();
+      Object.keys(holdStates).forEach(id => { if(holdStates[id] !== 0) { holdStates[id] = 0; updateUI(id); }});
+      sendBLEFrame();
+    }
+
+    // === GESTION DE LA SUPPRESSION (❌ et ⚠️) ===
+    function deleteCurrentRoute() {
+      const selector = document.getElementById('routeSelect');
+      const routeName = selector.value;
+      
+      if (!routeName || !localRoutes[routeName]) {
+        alert("Erreur : Charge un bloc sauvegardé dans la liste pour pouvoir le supprimer.");
+        return;
+      }
+      
+      if (confirm(`⚠️ ATTENTION ⚠️\n\nEs-tu sûr de vouloir supprimer définitivement le bloc "${routeName}" ?`)) {
+        delete localRoutes[routeName];
+        localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
+        initRouteSelector();
+        clearBoard(); 
+      }
+    }
+
+    function clearSavedRoutes() {
+      if (Object.keys(localRoutes).length === 0) return alert("La liste est déjà vide.");
+      if (confirm("⚠️ ATTENTION DANGER ⚠️\n\nEs-tu sûr de vouloir effacer TOUS les blocs enregistrés de ton téléphone ? Action irréversible ! (Pense à faire un Export avant si tu veux les garder).")) {
+        localStorage.removeItem('moonboard_custom_routes');
+        localRoutes = {};
+        initRouteSelector();
+        clearBoard();
+      }
+    }
+
+    // === IMPORTATION / EXPORTATION ===
+    async function exportRoutes() {
+      if (Object.keys(localRoutes).length === 0) return alert("La liste est vide, rien à exporter.");
+      const jsonStr = JSON.stringify(localRoutes, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+      if (isIOS && navigator.canShare) {
+        const file = new File([blob], "mes_blocs_moonboard.json", { type: 'application/json' });
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Sauvegarde MoonBoard',
+            text: 'Sauvegarde de mes blocs Mini DIY.'
+          });
+          return;
+        } catch (error) { console.log('Partage annulé ou erreur :', error); }
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "mes_blocs_moonboard.json";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 0);
+    }
+
+    function importRoutes(event) {
+      const file = event.target.files[0];
+      if(!file) return;
+      if(!file.name.toLowerCase().endsWith('.json')){
+          alert("Erreur : Ce n'est pas un fichier .json. Si tu utilises Notes, Safari a probablement ajouté '.txt'. Utilise le bouton 'Coller JSON' à la place, c'est plus simple !");
+          event.target.value = '';
+          return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try { const importedRoutes = JSON.parse(e.target.result); processImportData(importedRoutes);
+        } catch(err) { alert("Erreur : Le fichier n'est pas un JSON valide."); }
+      };
+      reader.readAsText(file);
+      event.target.value = ''; 
+    }
+
+    function importFromPaste() {
+        try {
+            const text = prompt("Collez le code JSON généré par l'IA ici :");
+            if (!text || text.trim() === "") return;
+            const importedRoutes = JSON.parse(text);
+            processImportData(importedRoutes);
+        } catch (err) { alert("Erreur : Texte non valide. Copie TOUT le texte généré par l'IA, y compris les accolades { et }."); }
+    }
+    
+    function processImportData(data){
+        if(!data || typeof data !== 'object') { alert("Erreur de données."); return; }
+        const count = Object.keys(data).length;
+        if(count === 0){ alert("Aucun bloc trouvé."); return; }
+        localRoutes = { ...localRoutes, ...data }; // Fusion
+        localStorage.setItem('moonboard_custom_routes', JSON.stringify(localRoutes));
+        initRouteSelector();
+        alert(`Succès ! ${count} bloc(s) importé(s) et fusionné(s) dans ta liste.`);
+    }
+
+    // === NAVIGATION (◄/►, Coche) ===
     function prevRoute() {
       const selector = document.getElementById('routeSelect');
       const options = Array.from(selector.options).filter(opt => opt.value !== "");
@@ -514,6 +459,7 @@
     function toggleHold(holdId) {
       holdStates[holdId] = (holdStates[holdId] + 1) % 4;
       updateUI(holdId);
+      // Si on modifie le panneau, on délectionne la route pour forcer à re-sauvegarder
       document.getElementById('routeSelect').value = ""; 
       updateCheckboxState();
       sendBLEFrame();
@@ -524,196 +470,7 @@
       if(el) el.className = `hold state-${holdStates[holdId]}`;
     }
 
-    function clearBoard() {
-      document.getElementById('routeSelect').value = ""; 
-      document.getElementById('pageTitle').innerText = window.scannedRouteName || "Mini MoonBoard";
-      isNoKickboard = window.scannedNoKickboard || false;
-      updateKickboardUI();
-      updateCheckboxState();
-      Object.keys(holdStates).forEach(id => { if(holdStates[id] !== 0) { holdStates[id] = 0; updateUI(id); }});
-      sendBLEFrame();
-    }
-
-    // === GESTION DU CALQUE ET CALIBRATION 4 AXES ===
-    function changeOpacity(val) { document.getElementById('overlayImage').style.opacity = val; }
-
-    function toggleOverlay() {
-      const overlay = document.getElementById('overlayImage');
-      const btn = document.getElementById('btnToggleOverlay');
-      isOverlayVisible = !isOverlayVisible;
-      if (isOverlayVisible) {
-        overlay.style.display = "block";
-        btn.innerText = "Masquer";
-      } else {
-        overlay.style.display = "none";
-        btn.innerText = "Afficher";
-      }
-    }
-
-    function toggleCalibration() {
-      const panel = document.getElementById('calibrationPanel');
-      panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
-    }
-
-    function updateCalibration() {
-      savedScaleY = document.getElementById('scaleYRange').value;
-      savedScaleX = document.getElementById('scaleXRange').value;
-      savedOffsetY = document.getElementById('offsetYRange').value;
-      savedOffsetX = document.getElementById('offsetXRange').value;
-      
-      localStorage.setItem('mb_calib_scaleY', savedScaleY);
-      localStorage.setItem('mb_calib_scaleX', savedScaleX);
-      localStorage.setItem('mb_calib_offsetY', savedOffsetY);
-      localStorage.setItem('mb_calib_offsetX', savedOffsetX);
-      
-      applyCalibration();
-    }
-
-    function applyCalibration() {
-      const overlay = document.getElementById('overlayImage');
-      overlay.style.transform = `translate(${savedOffsetX}%, ${savedOffsetY}%) scale(${savedScaleX}, ${savedScaleY})`;
-    }
-
-    // === GESTION MULTI-IMAGES ET DECOUPAGE ===
-    document.getElementById('fileInput').addEventListener('change', function(e) {
-      if(!e.target.files || e.target.files.length === 0) return;
-      overlayImages = Array.from(e.target.files).map(file => URL.createObjectURL(file));
-      currentOverlayIndex = 0;
-      if (overlayImages.length > 1) document.getElementById('multiImageNav').style.display = "flex";
-      else document.getElementById('multiImageNav').style.display = "none";
-
-      loadOverlayImage(overlayImages[currentOverlayIndex]);
-      e.target.value = ''; 
-    });
-
-    function prevOverlayImage() {
-      if (overlayImages.length === 0) return;
-      currentOverlayIndex = (currentOverlayIndex === 0) ? overlayImages.length - 1 : currentOverlayIndex - 1;
-      loadOverlayImage(overlayImages[currentOverlayIndex]);
-    }
-
-    function nextOverlayImage() {
-      if (overlayImages.length === 0) return;
-      currentOverlayIndex = (currentOverlayIndex + 1) % overlayImages.length;
-      loadOverlayImage(overlayImages[currentOverlayIndex]);
-    }
-
-    function loadOverlayImage(imageUrl) {
-      const titleEl = document.getElementById('pageTitle');
-      titleEl.innerText = "⏳ Découpage...";
-      titleEl.style.color = "#f39c12";
-      
-      isNoKickboard = false;
-      window.scannedNoKickboard = false;
-      updateKickboardUI();
-      
-      document.getElementById('imageCounter').innerText = `${currentOverlayIndex + 1}/${overlayImages.length}`;
-      
-      const jobId = ++currentOcrJob; 
-      const img = new Image();
-      
-      img.onload = function() {
-        if (jobId !== currentOcrJob) return;
-
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-
-        let topY = -1, botY = -1;
-        let scanX = Math.floor(canvas.width * 0.05); 
-        for (let y = 0; y < canvas.height; y++) {
-           let i = (y * canvas.width + scanX) * 4;
-           if (imgData[i] > 150 && imgData[i+1] > 150 && imgData[i+2] < 100) {
-               if (topY === -1) topY = y;
-               botY = y;
-           }
-        }
-        
-        if (topY === -1 || (botY - topY) < (canvas.height * 0.3)) { 
-            topY = canvas.height * 0.25; botY = canvas.height * 0.85; 
-        }
-        
-        const cropCanvas = document.createElement('canvas');
-        cropCanvas.width = canvas.width;
-        cropCanvas.height = botY - topY;
-        const cropCtx = cropCanvas.getContext('2d');
-        cropCtx.drawImage(img, 0, topY, canvas.width, botY - topY, 0, 0, cropCanvas.width, cropCanvas.height);
-
-        const overlay = document.getElementById('overlayImage');
-        overlay.src = cropCanvas.toDataURL();
-        overlay.style.display = "block";
-        overlay.style.opacity = document.getElementById('opacityRange').value;
-        
-        isOverlayVisible = true;
-        document.getElementById('btnToggleOverlay').innerText = "Masquer";
-        document.getElementById('overlayControls').style.display = "flex";
-        applyCalibration(); 
-
-        if (typeof Tesseract !== 'undefined') {
-            titleEl.innerText = "⏳ Lecture OCR...";
-            setTimeout(async () => {
-                if (jobId !== currentOcrJob) return; 
-
-                try {
-                    const headerCanvas = document.createElement('canvas');
-                    headerCanvas.width = img.width;
-                    // Scanne le haut de l'image (jusqu'à 35%) pour attraper le bandeau No Kickboard
-                    headerCanvas.height = img.height * 0.35; 
-                    const hCtx = headerCanvas.getContext('2d');
-                    hCtx.drawImage(img, 0, 0);
-                    
-                    const { data } = await Tesseract.recognize(headerCanvas.toDataURL(), 'eng');
-                    if (jobId !== currentOcrJob) return; 
-
-                    let detectedName = "";
-                    let detectedGrade = "";
-                    
-                    const rawText = data.text.toLowerCase();
-                    
-                    // Détection du texte "no kickboard"
-                    if (rawText.includes('no kickboard') || rawText.includes('footless')) {
-                        isNoKickboard = true;
-                        window.scannedNoKickboard = true;
-                        updateKickboardUI();
-                    }
-
-                    const lines = data.lines.map(l => l.text.trim());
-                    let setByIndex = lines.findIndex(l => l.toLowerCase().includes('set by'));
-                    
-                    if (setByIndex > 0) detectedName = lines[setByIndex - 1];
-                    else {
-                       let validLine = lines.find(l => /[A-Za-z]/.test(l) && l.length > 3 && !l.includes(':'));
-                       if(validLine) detectedName = validLine;
-                    }
-
-                    let gradeLine = lines.find(l => l.toLowerCase().includes('user') || l.toLowerCase().includes('setter'));
-                    if (gradeLine) {
-                        let gradeMatch = gradeLine.match(/([4-9][A-C]\+?|V\d+)/i);
-                        if (gradeMatch) detectedGrade = gradeMatch[1].toUpperCase();
-                    }
-
-                    detectedName = detectedName.replace(/[^a-zA-Z0-9 \-\+\(\)\.]/g, '').replace(/\s+/g, ' ').trim();
-                    if(detectedName.length < 2) detectedName = "Nouveau Bloc";
-                    if(detectedGrade && !detectedName.includes(detectedGrade)) detectedName = `${detectedName} (${detectedGrade})`;
-
-                    window.scannedRouteName = detectedName;
-                    titleEl.innerText = detectedName;
-                } catch (err) {
-                    if (jobId !== currentOcrJob) return;
-                    titleEl.innerText = "Mini MoonBoard";
-                }
-            }, 50);
-        } else {
-            titleEl.innerText = "Mini MoonBoard";
-        }
-      };
-      img.src = imageUrl;
-    }
-
-    // === GESTION DU BLUETOOTH ===
+    // === BLUETOOTH BLE ===
     async function toggleBLE() {
       if (bleDevice && bleDevice.gatt.connected) {
         bleDevice.gatt.disconnect();
