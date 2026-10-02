@@ -94,7 +94,7 @@
 
         /* Case à cocher "No kickboard" pendant l'édition */
         .edit-kickboard-container {
-            display: none; /* Masqué par défaut, affiché que pendant l'édition */
+            display: none; 
             align-items: center;
             gap: 5px;
             background-color: #dc3545;
@@ -195,7 +195,7 @@
         }
 
         .hold {
-            width: 80%; 
+            width: 140%; /* Taille agrandie (presque le double) */
             aspect-ratio: 1;
             border-radius: 50%;
             background: transparent;
@@ -205,9 +205,10 @@
             transition: transform 0.1s;
         }
         
-        .hold.depart { border: 4px solid #2ecc71; background: rgba(46, 204, 113, 0.4); }
-        .hold.progression { border: 4px solid #3498db; background: rgba(52, 152, 219, 0.4); }
-        .hold.arrivee { border: 4px solid #e74c3c; background: rgba(231, 76, 60, 0.4); }
+        /* Plus de fond (background), juste un cercle épais de 6px */
+        .hold.depart { border: 6px solid #2ecc71; }
+        .hold.progression { border: 6px solid #3498db; }
+        .hold.arrivee { border: 6px solid #e74c3c; }
 
         .grid-adjusting .hold {
             border: 1px dashed rgba(255, 255, 255, 0.6) !important;
@@ -245,24 +246,19 @@
 </head>
 <body>
 
-    <!-- L'indicateur No Kickboard statique en haut à gauche -->
     <div id="noKickboardBadge" class="no-kickboard-badge">NO<br>KICKBOARD</div>
 
     <h1>Mini MoonBoard</h1>
 
     <div class="btn-row">
-        <!-- Bouton Connecter / Déconnecter (Interrupteur) -->
         <button id="btnConnect" class="btn-blue">Se connecter</button>
-        
         <button id="btnClear" class="btn-orange">Nouveau / Effacer</button>
         <button id="btnPencil" class="btn-orange" title="Activer/Désactiver l'édition">✏️ Modifier</button>
         
-        <!-- Case à cocher visible uniquement pendant l'édition -->
         <label id="editKickboardContainer" class="edit-kickboard-container">
             <input type="checkbox" id="chkEditKickboard"> No Kickboard
         </label>
         
-        <!-- Sélecteur pour filtrer par cotation COMPLET -->
         <select id="filterCotation" class="btn-outline" title="Filtrer par cotation">
             <option value="">Filtre (Tous)</option>
             <option value="6A">6A</option>
@@ -305,7 +301,6 @@
         <button id="btnNext">▶</button>
     </div>
 
-    <!-- LIGNE DE STATISTIQUES GLOBALES -->
     <div class="footer-info">
         <label>
             <input type="checkbox" id="excludeCompleted"> Masquer cochés
@@ -318,7 +313,6 @@
         <div class="grid-overlay" id="gridOverlay"></div>
     </div>
 
-    <!-- MODALE D'AJUSTEMENT DE LA GRILLE -->
     <div id="adjustModal" class="modal">
         <div class="modal-content">
             <h3>Ajuster la grille</h3>
@@ -470,7 +464,7 @@
             btnPencil.classList.toggle('active-pencil', isPencilActive);
             
             if (isPencilActive) {
-                editKickboardContainer.style.display = 'flex'; // Affiche la case à cocher No Kickboard
+                editKickboardContainer.style.display = 'flex'; 
                 
                 if (currentBlockName && blocks[currentBlockName]) {
                     btnSave.innerText = "💾 Mettre à jour";
@@ -487,7 +481,6 @@
             }
         });
 
-        // Mise à jour instantanée du Kickboard si on coche/décoche en édition
         chkEditKickboard.addEventListener('change', (e) => {
             if (currentBlockName && blocks[currentBlockName]) {
                 blocks[currentBlockName].noKickboard = e.target.checked;
@@ -495,6 +488,7 @@
             }
         });
 
+        // Édition par cycle : Vide -> Vert -> Bleu -> Rouge -> Vide
         function handleHoldClick(holdId) {
             if (!isPencilActive) return; 
             
@@ -507,32 +501,28 @@
                 updateBlockSelect();
                 blockSelect.value = currentBlockName;
                 
-                // Mettre à jour l'apparence du bouton Save puisqu'on vient de créer un nom
                 btnSave.innerText = "💾 Mettre à jour";
                 btnSave.classList.replace('btn-blue', 'btn-green');
             }
 
             let block = blocks[currentBlockName];
             
-            // 1. On mémorise l'état actuel de la prise
             let estDepart = block.depart.includes(holdId);
             let estProgression = block.progression.includes(holdId);
             let estArrivee = block.arrivee.includes(holdId);
             
-            // 2. On la nettoie de toutes les listes pour repartir à zéro
             block.depart = block.depart.filter(h => h !== holdId);
             block.progression = block.progression.filter(h => h !== holdId);
             block.arrivee = block.arrivee.filter(h => h !== holdId);
 
-            // 3. Logique de cycle : Vide ➔ Vert ➔ Bleu ➔ Rouge ➔ Vide
             if (estDepart) {
-                block.progression.push(holdId); // Si elle était verte, elle passe bleue
+                block.progression.push(holdId); 
             } else if (estProgression) {
-                block.arrivee.push(holdId);     // Si elle était bleue, elle passe rouge
+                block.arrivee.push(holdId);     
             } else if (estArrivee) {
-                // Si elle était rouge, elle s'éteint (on ne la remet dans aucun tableau)
+                // Reste vide
             } else {
-                block.depart.push(holdId);      // Si elle était vide, elle s'allume en vert
+                block.depart.push(holdId);      
             }
             
             displayBlock(currentBlockName);
@@ -557,7 +547,6 @@
                     noKickboardBadge.style.display = 'none';
                 }
                 
-                // Synchroniser la case à cocher du mode édition si on change de bloc
                 if (isPencilActive) chkEditKickboard.checked = block.noKickboard || false;
                 
             } else {
@@ -612,7 +601,6 @@
         // ==========================================
         blockSelect.addEventListener('change', (e) => {
             displayBlock(e.target.value);
-            // Si on change de bloc en mode modif, on adapte le bouton Save
             if (isPencilActive && currentBlockName) {
                 btnSave.innerText = "💾 Mettre à jour";
                 btnSave.classList.replace('btn-blue', 'btn-green');
@@ -660,7 +648,6 @@
         // --- ENREGISTREMENT ET ÉCRASEMENT ---
         btnSave.addEventListener('click', () => {
             if (!currentBlockName) {
-                // Création d'un bloc depuis zéro
                 let name = prompt("Nom de ce nouveau bloc ? (ex: Mon Bloc (6A+))");
                 if (!name) return;
                 currentBlockName = name;
@@ -670,18 +657,15 @@
                     noKickboard: isPencilActive ? chkEditKickboard.checked : false 
                 };
             } else {
-                // Écrasement propre du paramètre kickboard lors de l'édition
                 if (isPencilActive) {
                     blocks[currentBlockName].noKickboard = chkEditKickboard.checked;
                 }
             }
             
-            // Sauvegarde globale
             localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
             updateBlockSelect();
             blockSelect.value = currentBlockName;
             
-            // Désactivation propre du mode Édition après sauvegarde
             if (isPencilActive) {
                 isPencilActive = false;
                 btnPencil.classList.remove('active-pencil');
@@ -699,7 +683,6 @@
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 updateBlockSelect();
                 
-                // Réinitialiser le mode édition si le bloc est supprimé
                 if (isPencilActive) {
                     btnSave.innerText = "💾 Enregistrer";
                     btnSave.classList.replace('btn-green', 'btn-blue');
