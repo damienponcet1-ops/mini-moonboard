@@ -24,22 +24,6 @@
             color: #ffb700;
         }
         
-        /* BADGE NO KICKBOARD */
-        .no-kickboard-badge {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            color: #ff0000;
-            font-size: 0.85rem;
-            font-weight: 900;
-            text-align: left;
-            line-height: 1.2;
-            display: none; 
-            pointer-events: none; 
-            z-index: 1000;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-        }
-        
         /* BARRES D'OUTILS COMPACTES */
         .toolbar {
             display: flex;
@@ -113,7 +97,20 @@
             width: 18px;
             height: 18px;
             cursor: pointer;
-            margin: 0 4px;
+            margin: 0 2px;
+        }
+
+        /* BADGE NO KICKBOARD INTEGRE A LA LIGNE */
+        .inline-badge {
+            display: none; 
+            color: #ff0000;
+            font-size: 0.7rem;
+            font-weight: 900;
+            background-color: rgba(220, 53, 69, 0.15);
+            padding: 4px 6px;
+            border-radius: 4px;
+            border: 1px solid #dc3545;
+            white-space: nowrap;
         }
 
         .footer-info {
@@ -206,34 +203,43 @@
 </head>
 <body>
 
-    <div id="noKickboardBadge" class="no-kickboard-badge">NO<br>KICKBOARD</div>
     <h1>Mini MoonBoard</h1>
 
     <!-- LIGNE 1 : Outils globaux -->
     <div class="toolbar">
-        <button id="btnConnect" class="btn-blue">Connecter</button>
+        <button id="btnConnect" class="btn-blue" title="Bluetooth">
+            <!-- Icône Bluetooth SVG propre -->
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>
+        </button>
+        <button id="btnPasteJson" class="btn-light-purple">📋 Coller</button>
         <button id="btnClear" class="btn-orange">Nouveau</button>
         <button id="btnPencil" class="btn-orange">✏️ Modifier</button>
-        <button id="btnAdjustGrid" class="btn-gray">⚙️</button>
+        
         <label id="editKickboardContainer" class="edit-kickboard-container">
-            <input type="checkbox" id="chkEditKickboard"> No Kickboard
+            <input type="checkbox" id="chkEditKickboard"> No KB
         </label>
+        
+        <button id="btnAdjustGrid" class="btn-gray" title="Ajuster la grille">⚙️</button>
     </div>
     
     <!-- LIGNE 2 : Fichiers et Sauvegarde -->
     <div class="toolbar">
         <button id="btnExport" class="btn-green">📩 Exp</button>
         <button id="btnImport" class="btn-purple">📥 Imp</button>
-        <button id="btnPasteJson" class="btn-light-purple">📋 Coller</button>
+        <button id="btnClearStorage" class="btn-yellow">⚠️ Vider</button>
         <button id="btnSave" class="btn-blue">💾 Sauver</button>
         <button id="btnDelete" class="btn-red">❌ Suppr</button>
-        <button id="btnClearStorage" class="btn-yellow">⚠️ Vider</button>
     </div>
 
     <!-- LIGNE 3 : Navigation dense -->
     <div class="toolbar">
         <button id="btnPrev" class="btn-gray">◀</button>
         <select id="blockSelect" class="main-select"></select>
+        <button id="btnNext" class="btn-gray">▶</button>
+        
+        <input type="checkbox" id="chkCompleted" class="chk-completed" title="Marquer comme réussi">
+        <span id="noKickboardBadge" class="inline-badge">NO KICKBOARD</span>
+        
         <select id="filterCotation" class="btn-outline">
             <option value="">Tous</option>
             <option value="6A">6A</option> <option value="6A+">6A+</option>
@@ -245,8 +251,6 @@
             <option value="8A">8A</option> <option value="8A+">8A+</option>
             <option value="8B">8B</option> <option value="8B+">8B+</option>
         </select>
-        <input type="checkbox" id="chkCompleted" class="chk-completed">
-        <button id="btnNext" class="btn-gray">▶</button>
     </div>
 
     <!-- LIGNE 4 : Stats -->
@@ -320,11 +324,9 @@
                     optionalServices: ['generic_access'] 
                 });
                 bluetoothDevice.addEventListener('gattserverdisconnected', () => {
-                    btnConnect.textContent = "Connecter";
                     btnConnect.classList.replace('btn-red', 'btn-blue');
                 });
                 await bluetoothDevice.gatt.connect();
-                btnConnect.textContent = "Déconnecter";
                 btnConnect.classList.replace('btn-blue', 'btn-red');
             } catch (error) {
                 console.error(error);
@@ -464,7 +466,10 @@
                 block.arrivee.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('arrivee'); });
                 
                 chkCompleted.checked = block.completed || false;
+                
+                // Gérer le badge en mode normal
                 noKickboardBadge.style.display = block.noKickboard ? 'block' : 'none';
+                
                 if (isPencilActive) chkEditKickboard.checked = block.noKickboard || false;
             } else {
                 chkCompleted.checked = false;
