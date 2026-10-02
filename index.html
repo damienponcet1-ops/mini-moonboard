@@ -61,6 +61,20 @@
         .btn-yellow { background-color: #f1c40f; color: #000; }
         .btn-gray { background-color: #333; color: #fff; }
         
+        /* Bouton Bluetooth avec effet lumineux (néon) */
+        .btn-bt { 
+            background-color: #333; 
+            color: #888; 
+            border: 1px solid transparent; 
+            transition: all 0.3s ease; 
+        }
+        .btn-bt.connected { 
+            color: #00d2ff; 
+            background-color: #111; 
+            border: 1px solid #00d2ff; 
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.6); 
+        }
+        
         /* Sélecteurs */
         select.btn-outline { 
             background-color: #1e1e1e; 
@@ -94,17 +108,17 @@
         }
 
         .chk-completed {
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             cursor: pointer;
-            margin: 0 2px;
+            margin: 0 4px;
         }
 
         /* BADGE NO KICKBOARD INTEGRE A LA LIGNE */
         .inline-badge {
             display: none; 
             color: #ff0000;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             font-weight: 900;
             background-color: rgba(220, 53, 69, 0.15);
             padding: 4px 6px;
@@ -207,9 +221,8 @@
 
     <!-- LIGNE 1 : Outils globaux -->
     <div class="toolbar">
-        <button id="btnConnect" class="btn-blue" title="Bluetooth">
-            <!-- Icône Bluetooth SVG propre -->
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>
+        <button id="btnConnect" class="btn-bt" title="Bluetooth">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>
         </button>
         <button id="btnPasteJson" class="btn-light-purple">📋 Coller</button>
         <button id="btnClear" class="btn-orange">Nouveau</button>
@@ -231,15 +244,9 @@
         <button id="btnDelete" class="btn-red">❌ Suppr</button>
     </div>
 
-    <!-- LIGNE 3 : Navigation dense -->
-    <div class="toolbar">
-        <button id="btnPrev" class="btn-gray">◀</button>
+    <!-- LIGNE 3 : Sélecteur et Filtre -->
+    <div class="toolbar" style="flex-wrap: nowrap;">
         <select id="blockSelect" class="main-select"></select>
-        <button id="btnNext" class="btn-gray">▶</button>
-        
-        <input type="checkbox" id="chkCompleted" class="chk-completed" title="Marquer comme réussi">
-        <span id="noKickboardBadge" class="inline-badge">NO KICKBOARD</span>
-        
         <select id="filterCotation" class="btn-outline">
             <option value="">Tous</option>
             <option value="6A">6A</option> <option value="6A+">6A+</option>
@@ -253,7 +260,19 @@
         </select>
     </div>
 
-    <!-- LIGNE 4 : Stats -->
+    <!-- LIGNE 4 : NO KICKBOARD, Checkbox et Flèches -->
+    <div class="toolbar" style="justify-content: space-between;">
+        <div style="min-width: 100px; display: flex; align-items: center;">
+            <span id="noKickboardBadge" class="inline-badge">NO KICKBOARD</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
+            <input type="checkbox" id="chkCompleted" class="chk-completed" title="Marquer comme réussi">
+            <button id="btnPrev" class="btn-gray">◀</button>
+            <button id="btnNext" class="btn-gray">▶</button>
+        </div>
+    </div>
+
+    <!-- LIGNE 5 : Stats -->
     <div class="footer-info">
         <label><input type="checkbox" id="excludeCompleted"> Masquer cochés</label>
         <span id="blockCounter">Fait:0 | Reste:0 | Tot:0</span>
@@ -324,10 +343,10 @@
                     optionalServices: ['generic_access'] 
                 });
                 bluetoothDevice.addEventListener('gattserverdisconnected', () => {
-                    btnConnect.classList.replace('btn-red', 'btn-blue');
+                    btnConnect.classList.remove('connected');
                 });
                 await bluetoothDevice.gatt.connect();
-                btnConnect.classList.replace('btn-blue', 'btn-red');
+                btnConnect.classList.add('connected');
             } catch (error) {
                 console.error(error);
             }
@@ -467,8 +486,8 @@
                 
                 chkCompleted.checked = block.completed || false;
                 
-                // Gérer le badge en mode normal
-                noKickboardBadge.style.display = block.noKickboard ? 'block' : 'none';
+                // Affiche ou masque l'étiquette NO KICKBOARD alignée
+                noKickboardBadge.style.display = block.noKickboard ? 'inline-block' : 'none';
                 
                 if (isPencilActive) chkEditKickboard.checked = block.noKickboard || false;
             } else {
@@ -521,6 +540,7 @@
         });
         
         filterCotation.addEventListener('change', updateBlockSelect);
+        
         document.getElementById('btnPrev').addEventListener('click', () => {
             if(blockSelect.selectedIndex > 0) { blockSelect.selectedIndex--; displayBlock(blockSelect.value); }
         });
