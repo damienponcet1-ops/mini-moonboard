@@ -37,11 +37,12 @@
             display: none; 
             pointer-events: none; 
             z-index: 1000;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.8); /* Ombre pour la lisibilité */
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
         }
         
         .btn-row {
             display: flex;
+            flex-wrap: wrap;
             gap: 6px;
             justify-content: center;
             align-items: center;
@@ -89,6 +90,20 @@
             color: #000 !important;
             box-shadow: 0 0 10px rgba(241, 196, 15, 0.8);
             transform: scale(1.05);
+        }
+
+        /* Case à cocher "No kickboard" pendant l'édition */
+        .edit-kickboard-container {
+            display: none; /* Masqué par défaut, affiché que pendant l'édition */
+            align-items: center;
+            gap: 5px;
+            background-color: #dc3545;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
         }
 
         .nav-container {
@@ -239,8 +254,13 @@
         <!-- Bouton Connecter / Déconnecter (Interrupteur) -->
         <button id="btnConnect" class="btn-blue">Se connecter</button>
         
-        <button id="btnClear" class="btn-orange">Effacer</button>
-        <button id="btnPencil" class="btn-orange" title="Activer/Désactiver l'édition">✏️</button>
+        <button id="btnClear" class="btn-orange">Nouveau / Effacer</button>
+        <button id="btnPencil" class="btn-orange" title="Activer/Désactiver l'édition">✏️ Modifier</button>
+        
+        <!-- Case à cocher visible uniquement pendant l'édition -->
+        <label id="editKickboardContainer" class="edit-kickboard-container">
+            <input type="checkbox" id="chkEditKickboard"> No Kickboard
+        </label>
         
         <!-- Sélecteur pour filtrer par cotation COMPLET -->
         <select id="filterCotation" class="btn-outline" title="Filtrer par cotation">
@@ -333,10 +353,14 @@
         const blockSelect = document.getElementById('blockSelect');
         const filterCotation = document.getElementById('filterCotation');
         const btnPencil = document.getElementById('btnPencil');
+        const btnSave = document.getElementById('btnSave');
         const excludeCompletedCheckbox = document.getElementById('excludeCompleted');
         const blockCounter = document.getElementById('blockCounter');
         const chkCompleted = document.getElementById('chkCompleted');
         const noKickboardBadge = document.getElementById('noKickboardBadge');
+        
+        const editKickboardContainer = document.getElementById('editKickboardContainer');
+        const chkEditKickboard = document.getElementById('chkEditKickboard');
 
         // ==========================================
         // BLUETOOTH (Connexion / Déconnexion)
@@ -442,10 +466,37 @@
             });
         }
 
+        // --- GESTION DU BOUTON MODIFIER ---
         btnPencil.addEventListener('click', () => {
             isPencilActive = !isPencilActive;
             btnPencil.classList.toggle('active-pencil', isPencilActive);
-            if (!isPencilActive) currentEditState = "depart"; 
+            
+            if (isPencilActive) {
+                currentEditState = "depart"; 
+                editKickboardContainer.style.display = 'flex'; // Affiche la case à cocher No Kickboard
+                
+                if (currentBlockName && blocks[currentBlockName]) {
+                    btnSave.innerText = "💾 Mettre à jour";
+                    btnSave.classList.replace('btn-blue', 'btn-green');
+                    chkEditKickboard.checked = blocks[currentBlockName].noKickboard || false;
+                } else {
+                    btnSave.innerText = "💾 Enregistrer";
+                    chkEditKickboard.checked = false;
+                }
+            } else {
+                currentEditState = "depart"; 
+                editKickboardContainer.style.display = 'none';
+                btnSave.innerText = "💾 Enregistrer";
+                btnSave.classList.replace('btn-green', 'btn-blue');
+            }
+        });
+
+        // Mise à jour instantanée du Kickboard si on coche/décoche en édition
+        chkEditKickboard.addEventListener('change', (e) => {
+            if (currentBlockName && blocks[currentBlockName]) {
+                blocks[currentBlockName].noKickboard = e.target.checked;
+                displayBlock(currentBlockName);
+            }
         });
 
         function handleHoldClick(holdId) {
@@ -456,9 +507,13 @@
                 if (!newName) return; 
                 
                 currentBlockName = newName;
-                blocks[currentBlockName] = { depart: [], progression: [], arrivee: [], completed: false, noKickboard: false };
+                blocks[currentBlockName] = { depart: [], progression: [], arrivee: [], completed: false, noKickboard: chkEditKickboard.checked };
                 updateBlockSelect();
                 blockSelect.value = currentBlockName;
+                
+                // Mettre à jour l'apparence du bouton Save puisqu'on vient de créer un nom
+                btnSave.innerText = "💾 Mettre à jour";
+                btnSave.classList.replace('btn-blue', 'btn-green');
             }
 
             let block = blocks[currentBlockName];
@@ -478,7 +533,6 @@
                 currentEditState = "depart"; 
             }
             displayBlock(currentBlockName);
-            localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
         }
 
         function displayBlock(name) {
@@ -494,15 +548,19 @@
                 
                 chkCompleted.checked = block.completed || false;
                 
-                // Affichage du badge texte statique si le JSON le précise
                 if (block.noKickboard) {
                     noKickboardBadge.style.display = 'block';
                 } else {
                     noKickboardBadge.style.display = 'none';
                 }
+                
+                // Synchroniser la case à cocher du mode édition si on change de bloc
+                if (isPencilActive) chkEditKickboard.checked = block.noKickboard || false;
+                
             } else {
                 chkCompleted.checked = false;
                 noKickboardBadge.style.display = 'none';
+                if (isPencilActive) chkEditKickboard.checked = false;
             }
         }
 
@@ -517,13 +575,11 @@
             let excludeChecked = excludeCompletedCheckbox.checked;
             let currentGradeFilter = filterCotation.value;
 
-            // Compteur global absolu
             let totalBlocks = allKeys.length;
             let totalCompleted = allKeys.filter(k => blocks[k].completed).length;
             let totalNotCompleted = totalBlocks - totalCompleted;
             blockCounter.textContent = `Fait : ${totalCompleted} | À faire : ${totalNotCompleted} | Total : ${totalBlocks}`;
 
-            // Application des filtres pour le sélecteur
             let filteredKeys = allKeys.filter(k => {
                 if (excludeChecked && blocks[k].completed) return false;
                 if (currentGradeFilter && !k.includes(currentGradeFilter)) return false;
@@ -551,7 +607,15 @@
         // ==========================================
         // ÉCOUTEURS D'ÉVÉNEMENTS GÉNÉRAUX
         // ==========================================
-        blockSelect.addEventListener('change', (e) => displayBlock(e.target.value));
+        blockSelect.addEventListener('change', (e) => {
+            displayBlock(e.target.value);
+            // Si on change de bloc en mode modif, on adapte le bouton Save
+            if (isPencilActive && currentBlockName) {
+                btnSave.innerText = "💾 Mettre à jour";
+                btnSave.classList.replace('btn-blue', 'btn-green');
+            }
+        });
+        
         filterCotation.addEventListener('change', updateBlockSelect);
         
         document.getElementById('btnPrev').addEventListener('click', () => {
@@ -571,6 +635,10 @@
         document.getElementById('btnClear').addEventListener('click', () => {
             displayBlock(""); 
             blockSelect.value = "";
+            if (isPencilActive) {
+                btnSave.innerText = "💾 Enregistrer";
+                btnSave.classList.replace('btn-green', 'btn-blue');
+            }
         });
 
         chkCompleted.addEventListener('change', (e) => {
@@ -586,16 +654,40 @@
             updateBlockSelect();
         });
 
-        document.getElementById('btnSave').addEventListener('click', () => {
-            let name = currentBlockName || prompt("Nom de ce nouveau bloc ? (Pense à inclure la cotation, ex: Mon Bloc (6A+))");
-            if (name) {
-                // Création d'un bloc par défaut sans noKickboard
-                if (!blocks[name]) blocks[name] = { depart: [], progression: [], arrivee: [], completed: false, noKickboard: false };
-                localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-                updateBlockSelect();
-                blockSelect.value = name;
-                alert("Bloc sauvegardé !");
+        // --- ENREGISTREMENT ET ÉCRASEMENT ---
+        btnSave.addEventListener('click', () => {
+            if (!currentBlockName) {
+                // Création d'un bloc depuis zéro
+                let name = prompt("Nom de ce nouveau bloc ? (ex: Mon Bloc (6A+))");
+                if (!name) return;
+                currentBlockName = name;
+                blocks[currentBlockName] = { 
+                    depart: [], progression: [], arrivee: [], 
+                    completed: false, 
+                    noKickboard: isPencilActive ? chkEditKickboard.checked : false 
+                };
+            } else {
+                // Écrasement propre du paramètre kickboard lors de l'édition
+                if (isPencilActive) {
+                    blocks[currentBlockName].noKickboard = chkEditKickboard.checked;
+                }
             }
+            
+            // Sauvegarde globale
+            localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+            updateBlockSelect();
+            blockSelect.value = currentBlockName;
+            
+            // Désactivation propre du mode Édition après sauvegarde
+            if (isPencilActive) {
+                isPencilActive = false;
+                btnPencil.classList.remove('active-pencil');
+                editKickboardContainer.style.display = 'none';
+                btnSave.innerText = "💾 Enregistrer";
+                btnSave.classList.replace('btn-green', 'btn-blue');
+            }
+            
+            alert(`Bloc "${currentBlockName}" sauvegardé avec succès !`);
         });
 
         document.getElementById('btnDelete').addEventListener('click', () => {
@@ -603,6 +695,12 @@
                 delete blocks[currentBlockName];
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 updateBlockSelect();
+                
+                // Réinitialiser le mode édition si le bloc est supprimé
+                if (isPencilActive) {
+                    btnSave.innerText = "💾 Enregistrer";
+                    btnSave.classList.replace('btn-green', 'btn-blue');
+                }
             }
         });
 
