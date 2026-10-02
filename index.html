@@ -195,7 +195,7 @@
         }
 
         .hold {
-            width: 140%; /* Taille agrandie (presque le double) */
+            width: 170%; /* Agrandissement très important */
             aspect-ratio: 1;
             border-radius: 50%;
             background: transparent;
@@ -205,14 +205,24 @@
             transition: transform 0.1s;
         }
         
-        /* Plus de fond (background), juste un cercle épais de 6px */
-        .hold.depart { border: 6px solid #2ecc71; }
-        .hold.progression { border: 6px solid #3498db; }
-        .hold.arrivee { border: 6px solid #e74c3c; }
+        /* Bordures fines (3px) avec couleurs fluo et effet lumineux pour bien ressortir */
+        .hold.depart { 
+            border: 3px solid #00ff00; 
+            box-shadow: 0 0 8px rgba(0, 255, 0, 0.8); 
+        }
+        .hold.progression { 
+            border: 3px solid #00d2ff; 
+            box-shadow: 0 0 8px rgba(0, 210, 255, 0.8); 
+        }
+        .hold.arrivee { 
+            border: 3px solid #ff0000; 
+            box-shadow: 0 0 8px rgba(255, 0, 0, 0.8); 
+        }
 
         .grid-adjusting .hold {
             border: 1px dashed rgba(255, 255, 255, 0.6) !important;
             background: rgba(255, 255, 255, 0.2) !important;
+            box-shadow: none !important;
         }
 
         /* MODALE D'AJUSTEMENT FLOTTANTE */
