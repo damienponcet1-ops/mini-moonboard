@@ -810,7 +810,6 @@
         function downloadData(dataObj, filename) {
             const dataStr = JSON.stringify(dataObj, null, 2);
             
-            // 1. Solution API Web Share (Idéal pour iPhone/iPad/Safari)
             if (navigator.canShare) {
                 try {
                     const file = new File([dataStr], filename, { type: "application/json" });
@@ -823,12 +822,11 @@
                         }).catch(err => console.log("Partage annulé ou erreur", err));
                         
                         dropdownMenu.classList.remove('show');
-                        return; // Si l'API Share s'ouvre, on arrête là.
+                        return; 
                     }
                 } catch (e) { console.log("L'API Share a échoué, passage à la méthode classique.", e); }
             }
 
-            // 2. Fallback Classique (Idéal pour Android, Chrome, PC)
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -837,7 +835,7 @@
             a.download = filename;
             
             document.body.appendChild(a);
-            a.click(); // Déclenche le téléchargement
+            a.click(); 
             
             setTimeout(() => {
                 document.body.removeChild(a);
@@ -1177,7 +1175,7 @@
         }, { passive: true });
 
         const adjustPanel = document.getElementById('adjustPanel');
-        const bottomPanel = document.getElementById('bottomPanel');
+        /* C'est ICI que j'avais laissé traîner le doublon "const bottomPanel" ! Il est supprimé. */
         const defaultGridConfig = { top: 9, left: 7.5, width: 85, height: 75.5 };
         let gridConfig = JSON.parse(localStorage.getItem('minimoon_grid')) || defaultGridConfig;
 
