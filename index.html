@@ -252,7 +252,7 @@
         .hold.progression { border: 3px solid #00d2ff; box-shadow: 0 0 8px rgba(0, 210, 255, 0.8); }
         .hold.arrivee { border: 3px solid #ff0000; box-shadow: 0 0 8px rgba(255, 0, 0, 0.8); }
 
-        /* PANNEAU DU BAS RÉDUIT DE ~30% */
+        /* PANNEAU DU BAS RÉDUIT */
         .bottom-panel {
             width: 100%;
             max-width: 450px;
@@ -292,10 +292,12 @@
         .triptych-btn:active {
             transform: scale(0.95);
         }
+        
+        /* Cotation avec code couleur dynamique */
         .triptych-grade {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 900;
-            color: #e67e22;
+            color: #ffffff;
             cursor: default;
         }
         .triptych-grade:active { transform: none; }
@@ -305,8 +307,13 @@
             font-weight: bold;
             color: #b388ff;
         }
+        .triptych-list.in-list {
+            background-color: #dc3545; /* Rouge pour retirer si on est dans une liste spécifique */
+            border-color: #bd2130;
+            color: #ffffff;
+        }
         
-        /* Coche Ronde Centrale Réduite */
+        /* Coche Ronde Centrale */
         .check-circle {
             width: 32px;
             height: 32px;
@@ -357,7 +364,7 @@
         
         <h1>Mini Moon Board 2025</h1>
         
-        <!-- Outils de Création (cachés par défaut) -->
+        <!-- Outils de Création -->
         <div id="creationTools" style="display: none; gap: 6px;">
             <button id="btnCancelCreate" class="btn-red">❌ Annuler</button>
             <button id="btnSaveCreate" class="btn-green">💾 Enregistrer</button>
@@ -377,7 +384,7 @@
         <input type="file" id="fileImport" accept=".json" style="display: none;">
     </div>
 
-    <!-- RECHERCHE CACHÉE (Apparaît au clic sur la loupe) -->
+    <!-- RECHERCHE -->
     <div style="width: 100%; max-width: 450px;">
         <input type="text" id="searchInput" class="search-input" placeholder="Rechercher par nom...">
     </div>
@@ -388,7 +395,7 @@
         <button id="btnSearchToggle" class="btn-gray">🔍</button>
     </div>
 
-    <!-- LIGNE 3 : Filtres (Listes & Cotations) -->
+    <!-- LIGNE 3 : Filtres -->
     <div class="toolbar" style="flex-wrap: nowrap;">
         <select id="filterList" class="btn-outline" style="flex: 1;">
             <option value="">Toutes les listes</option>
@@ -434,12 +441,12 @@
         <div class="grid-overlay" id="gridOverlay"></div>
     </div>
 
-    <!-- PANNEAU DU BAS RÉDUIT -->
+    <!-- PANNEAU DU BAS -->
     <div id="bottomPanel" class="bottom-panel">
         <div id="bottomBlockName" class="bottom-name">Sélectionnez un bloc</div>
         
         <div class="bottom-triptych">
-            <!-- Cotation -->
+            <!-- Cotation (Fond couleur dynamique) -->
             <div id="bottomGrade" class="triptych-btn triptych-grade">-</div>
             
             <!-- Coche Validation -->
@@ -451,7 +458,7 @@
                 </div>
             </div>
             
-            <!-- Ajout Liste -->
+            <!-- Ajout / Retrait Liste (Dynamique) -->
             <div id="bottomListAdd" class="triptych-btn triptych-list">➕</div>
         </div>
     </div>
@@ -476,9 +483,7 @@
         <div class="modal-content">
             <h3 id="listModalTitle">Ajouter à une liste</h3>
             
-            <div id="existingLists" class="list-items-container">
-                <!-- Boutons générés dynamiquement -->
-            </div>
+            <div id="existingLists" class="list-items-container"></div>
             
             <input type="text" id="newListName" placeholder="Nom de la nouvelle liste..." autocomplete="off">
             
@@ -545,6 +550,30 @@
         const newListNameInput = document.getElementById('newListName');
         const listModalTitle = document.getElementById('listModalTitle');
 
+        // Fonction pour attribuer une couleur du vert au violet selon la cotation
+        function getGradeColor(gradeStr) {
+            if (!gradeStr) return '#333333';
+            let g = gradeStr.toUpperCase().trim();
+            
+            // Échelle de 6A à 8B+ (Vert -> Bleu -> Orange -> Rouge -> Violet)
+            const gradeScale = {
+                '6A': '#27ae60', '6A+': '#2ecc71',
+                '6B': '#3498db', '6B+': '#2980b9',
+                '6C': '#1abc9c', '6C+': '#16a085',
+                '7A': '#f39c12', '7A+': '#e67e22',
+                '7B': '#d35400', '7B+': '#e74c3c',
+                '7C': '#c0392b', '7C+': '#8e44ad',
+                '8A': '#9b59b6', '8A+': '#8e44ad',
+                '8B': '#6c5ce7', '8B+': '#4834d4'
+            };
+
+            // Recherche directe ou par correspondance partielle
+            for (let key in gradeScale) {
+                if (g.includes(key)) return gradeScale[key];
+            }
+            return '#333333'; // Gris par défaut si inconnu
+        }
+
         function updateListFilterOptions() {
             let currentFilter = filterList.value;
             filterList.innerHTML = '<option value="">Toutes les listes</option>';
@@ -577,21 +606,59 @@
                     localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
                     renderListModal();
                     updateBlockSelect();
+                    updateListButtonState();
                 };
                 existingListsDiv.appendChild(btn);
             }
         }
 
+        // Gestion intelligente du bouton en bas à droite (Ajout/Retrait rapide ou Modale)
+        function updateListButtonState() {
+            let activeList = filterList.value;
+            if (activeList && customLists[activeList]) {
+                // Une liste spécifique est sélectionnée : Action directe Ajouter/Retirer
+                let isInside = customLists[activeList].includes(currentBlockName);
+                if (isInside) {
+                    bottomListAdd.textContent = '➖';
+                    bottomListAdd.classList.add('in-list');
+                    bottomListAdd.title = `Retirer de la liste "${activeList}"`;
+                } else {
+                    bottomListAdd.textContent = '➕';
+                    bottomListAdd.classList.remove('in-list');
+                    bottomListAdd.title = `Ajouter à la liste "${activeList}"`;
+                }
+            } else {
+                // "Toutes les listes" : Ouvre la modale générale
+                bottomListAdd.textContent = '➕';
+                bottomListAdd.classList.remove('in-list');
+                bottomListAdd.title = "Gérer les listes";
+            }
+        }
+
         bottomListAdd.addEventListener('click', () => {
             if(!currentBlockName) return alert("Sélectionnez un bloc d'abord !");
-            listModal.style.display = 'block';
-            newListNameInput.value = '';
-            renderListModal();
+            let activeList = filterList.value;
+            
+            if (activeList && customLists[activeList]) {
+                // Bascule rapide dans la liste active
+                let isInside = customLists[activeList].includes(currentBlockName);
+                if (isInside) {
+                    customLists[activeList] = customLists[activeList].filter(b => b !== currentBlockName);
+                } else {
+                    customLists[activeList].push(currentBlockName);
+                }
+                localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
+                updateListButtonState();
+                updateBlockSelect();
+            } else {
+                // Ouvre la modale complète
+                listModal.style.display = 'block';
+                newListNameInput.value = '';
+                renderListModal();
+            }
         });
 
-        btnCloseList.addEventListener('click', () => {
-            listModal.style.display = 'none';
-        });
+        btnCloseList.addEventListener('click', () => listModal.style.display = 'none');
 
         btnCreateList.addEventListener('click', () => {
             let val = newListNameInput.value.trim();
@@ -607,6 +674,7 @@
             updateListFilterOptions();
             renderListModal();
             updateBlockSelect();
+            updateListButtonState();
         });
 
         btnMenu.addEventListener('click', (e) => {
@@ -647,9 +715,7 @@
                 });
                 await bluetoothDevice.gatt.connect();
                 btnConnect.classList.add('connected');
-            } catch (error) {
-                console.error(error);
-            }
+            } catch (error) { console.error(error); }
         });
 
         function sendToESP32(blockData) {
@@ -665,11 +731,8 @@
             const blob = new Blob([data], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
-            a.download = 'minimoon_export.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            a.href = url; a.download = 'minimoon_export.json';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
             URL.revokeObjectURL(url);
             dropdownMenu.classList.remove('show');
         });
@@ -798,7 +861,7 @@
             if (name) {
                 blocks[name] = {
                     depart: currentCreation.depart, progression: currentCreation.progression, arrivee: currentCreation.arrivee,
-                    method: "", grade: "?", isBenchmark: false, completed: false
+                    method: "", grade: "6B+", isBenchmark: false, completed: false
                 };
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 
@@ -834,18 +897,24 @@
                 if (block.isBenchmark) badgeBenchmark.style.display = 'inline-flex';
 
                 bottomBlockName.textContent = name;
-                bottomGrade.textContent = block.grade || "?";
+                let gradeVal = block.grade || "?";
+                bottomGrade.textContent = gradeVal;
+                bottomGrade.style.backgroundColor = getGradeColor(gradeVal);
+
                 if (block.completed) {
                     bottomCheck.classList.add('is-checked');
                 } else {
                     bottomCheck.classList.remove('is-checked');
                 }
 
+                updateListButtonState();
                 sendToESP32(block);
             } else {
                 bottomBlockName.textContent = "Aucun bloc sélectionné";
                 bottomGrade.textContent = "-";
+                bottomGrade.style.backgroundColor = "#333333";
                 bottomCheck.classList.remove('is-checked');
+                updateListButtonState();
                 sendToESP32({ depart: [], progression: [], arrivee: [] });
             }
         }
@@ -902,7 +971,10 @@
 
         blockSelect.addEventListener('change', (e) => displayBlock(e.target.value));
         filterCotation.addEventListener('change', updateBlockSelect);
-        filterList.addEventListener('change', updateBlockSelect);
+        filterList.addEventListener('change', (e) => {
+            updateBlockSelect();
+            updateListButtonState();
+        });
         filterBenchmark.addEventListener('change', updateBlockSelect);
         
         excludeCompletedCheckbox.addEventListener('change', () => {
