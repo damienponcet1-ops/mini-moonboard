@@ -2,7 +2,8 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Empêche le zoom sur mobile au clic sur un champ de texte -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mini Moon Board 2025</title>
     
     <link rel="manifest" href="manifest.json">
@@ -68,7 +69,7 @@
             font-size: 0.8rem;
         }
         
-        /* BARRES D'OUTILS COMPACTES */
+        /* BARRES D'OUTILS */
         .toolbar {
             display: flex;
             flex-wrap: wrap;
@@ -80,7 +81,7 @@
             margin-bottom: 8px;
         }
 
-        button, select.btn-outline, select.main-select, input.search-input {
+        button, select.btn-outline, select.main-select, input {
             border: none;
             padding: 6px 8px;
             border-radius: 4px;
@@ -100,6 +101,7 @@
         .btn-orange { background-color: #e67e22; }
         .btn-green { background-color: #27ae60; }
         .btn-purple { background-color: #673ab7; }
+        .btn-light-purple { background-color: #b388ff; color: #000; }
         .btn-red { background-color: #dc3545; }
         .btn-yellow { background-color: #f1c40f; color: #000; }
         .btn-gray { background-color: #333; color: #fff; }
@@ -140,6 +142,13 @@
             box-sizing: border-box;
             margin-bottom: 8px;
             display: none;
+            font-size: 16px; /* 16px min empêche iOS de zoomer */
+        }
+        input[type="text"] {
+            font-size: 16px; 
+            background: #333; 
+            color: white; 
+            border: 1px solid #555;
         }
 
         .chk-completed {
@@ -149,7 +158,7 @@
             margin: 0 4px;
         }
 
-        /* BADGES (Règles & Benchmark affichés sur le bloc) */
+        /* BADGES */
         .badges-container {
             display: flex;
             gap: 4px;
@@ -165,7 +174,6 @@
             border-radius: 4px;
             white-space: nowrap;
         }
-        /* Couleurs des règles */
         .badge-nokickboard { color: #ff0000; background-color: rgba(220, 53, 69, 0.15); border: 1px solid #dc3545; }
         .badge-markedholds { color: #28a745; background-color: rgba(40, 167, 69, 0.15); border: 1px solid #28a745; }
         .badge-footless { color: #f1c40f; background-color: rgba(241, 196, 15, 0.15); border: 1px solid #f1c40f; }
@@ -251,19 +259,20 @@
         .hold.progression { border: 3px solid #00d2ff; box-shadow: 0 0 8px rgba(0, 210, 255, 0.8); }
         .hold.arrivee { border: 3px solid #ff0000; box-shadow: 0 0 8px rgba(255, 0, 0, 0.8); }
 
-        /* MODALE D'AJUSTEMENT GRILLE */
+        /* MODALES (Ajustement et Listes) */
         .modal {
-            display: none; position: fixed; top: 5px; left: 50%; transform: translateX(-50%); 
+            display: none; position: fixed; top: 15px; left: 50%; transform: translateX(-50%); 
             z-index: 1000; width: 95%; max-width: 350px;
         }
         .modal-content {
-            background: rgba(30, 30, 30, 0.95); padding: 10px; border-radius: 8px; 
-            display: flex; flex-direction: column; gap: 4px; border: 1px solid #444;
+            background: rgba(30, 30, 30, 0.98); padding: 12px; border-radius: 8px; 
+            display: flex; flex-direction: column; gap: 8px; border: 1px solid #555; box-shadow: 0 5px 15px rgba(0,0,0,0.8);
         }
-        .modal-content h3 { margin: 0; font-size: 0.9rem; color: #ffb700; text-align: center; }
+        .modal-content h3 { margin: 0; font-size: 1rem; color: #ffb700; text-align: center; }
         .modal-content label { display: flex; justify-content: space-between; font-size: 0.75rem; color: #ccc; }
         .modal-buttons { display: flex; gap: 8px; margin-top: 5px; }
-        .modal-buttons button { flex: 1; }
+        .modal-buttons button { flex: 1; padding: 10px; }
+        .list-items-container { display: flex; flex-direction: column; gap: 4px; max-height: 150px; overflow-y: auto; }
     </style>
 </head>
 <body>
@@ -282,14 +291,15 @@
             <button id="btnSaveCreate" class="btn-green">💾</button>
         </div>
 
-        <!-- Menu Hamburger (caché pendant la création) -->
+        <!-- Menu Hamburger -->
         <div>
             <button id="btnMenu" class="btn-menu">☰</button>
             <div id="dropdownMenu" class="dropdown-content">
                 <button id="btnImport" class="btn-purple">📥 Importer</button>
+                <button id="btnExport" class="btn-green">📤 Exporter</button>
                 <button id="btnClearStorage" class="btn-yellow">⚠️ Vider</button>
-                <button id="btnAdjustGrid" class="btn-gray">⚙️</button>
-                <button id="btnPencil" class="btn-orange">✏️</button>
+                <button id="btnAdjustGrid" class="btn-gray">⚙️ Grille</button>
+                <button id="btnPencil" class="btn-orange">✏️ Créer</button>
             </div>
         </div>
         <input type="file" id="fileImport" accept=".json" style="display: none;">
@@ -297,15 +307,23 @@
 
     <!-- RECHERCHE CACHÉE (Apparaît au clic sur la loupe) -->
     <div style="width: 100%; max-width: 450px;">
-        <input type="text" id="searchInput" class="search-input" placeholder="Rechercher un bloc par nom...">
+        <input type="text" id="searchInput" class="search-input" placeholder="Rechercher par nom...">
     </div>
 
-    <!-- LIGNE 2 : Select, Loupe & Cotation -->
+    <!-- LIGNE 2 : Select, Loupe & Ajout Liste -->
     <div class="toolbar" style="flex-wrap: nowrap;">
         <select id="blockSelect" class="main-select"></select>
         <button id="btnSearchToggle" class="btn-gray">🔍</button>
-        <select id="filterCotation" class="btn-outline">
-            <option value="">Tous</option>
+        <button id="btnOpenListModal" class="btn-light-purple">➕ Liste</button>
+    </div>
+
+    <!-- LIGNE 3 : Filtres (Cotation et Listes) -->
+    <div class="toolbar" style="flex-wrap: nowrap;">
+        <select id="filterList" class="btn-outline" style="flex: 1;">
+            <option value="">Toutes les listes</option>
+        </select>
+        <select id="filterCotation" class="btn-outline" style="flex: 1;">
+            <option value="">Toutes les cotations</option>
             <option value="6A">6A</option> <option value="6A+">6A+</option>
             <option value="6B">6B</option> <option value="6B+">6B+</option>
             <option value="6C">6C</option> <option value="6C+">6C+</option>
@@ -317,7 +335,7 @@
         </select>
     </div>
 
-    <!-- LIGNE 3 : Badges et Navigation -->
+    <!-- LIGNE 4 : Badges et Navigation -->
     <div class="toolbar" style="justify-content: space-between;">
         <div class="badges-container" id="badgesContainer">
             <span id="badgeBenchmark" class="badge-benchmark" title="Ce bloc est un Benchmark">B</span>
@@ -333,7 +351,7 @@
         </div>
     </div>
 
-    <!-- LIGNE 4 : Filtres et Stats -->
+    <!-- LIGNE 5 : Footer / Stats -->
     <div class="footer-info">
         <label style="display: flex; align-items: center; gap: 4px;">
             <input type="checkbox" id="excludeCompleted"> Masquer cochés
@@ -345,7 +363,8 @@
             <span style="background-color: #f1c40f; color: #000; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; border: 1px solid #d4ac0d;">B</span>
         </label>
 
-        <span id="blockCounter" class="counter">Fait:0 | Reste:0 | Tot:0</span>
+        <!-- Compteur mis à jour (Filtre / Total) -->
+        <span id="blockCounter" class="counter">Affiché:0 | Total:0</span>
     </div>
 
     <!-- MUR -->
@@ -369,6 +388,24 @@
         </div>
     </div>
 
+    <!-- MODALE LISTES -->
+    <div id="listModal" class="modal">
+        <div class="modal-content">
+            <h3 id="listModalTitle">Ajouter à une liste</h3>
+            
+            <div id="existingLists" class="list-items-container">
+                <!-- Les boutons des listes existantes s'affichent ici -->
+            </div>
+            
+            <input type="text" id="newListName" placeholder="Nom de la nouvelle liste..." autocomplete="off">
+            
+            <div class="modal-buttons">
+                <button id="btnCloseList" class="btn-gray">Fermer</button>
+                <button id="btnCreateList" class="btn-blue">Créer & Ajouter</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -380,9 +417,9 @@
         const ROWS = [12,11,10,9,8,7,6,5,4,3,2,1];
         
         let blocks = JSON.parse(localStorage.getItem('minimoon_blocks') || '{}');
+        let customLists = JSON.parse(localStorage.getItem('minimoon_lists') || '{}');
         let currentBlockName = "";
         
-        // Variables Création
         let isCreating = false;
         let currentCreation = { depart: [], progression: [], arrivee: [] };
 
@@ -390,6 +427,7 @@
         const gridOverlay = document.getElementById('gridOverlay');
         const blockSelect = document.getElementById('blockSelect');
         const filterCotation = document.getElementById('filterCotation');
+        const filterList = document.getElementById('filterList');
         const filterBenchmark = document.getElementById('filterBenchmark');
         const excludeCompletedCheckbox = document.getElementById('excludeCompleted');
         const blockCounter = document.getElementById('blockCounter');
@@ -414,14 +452,92 @@
         const badgeBenchmark = document.getElementById('badgeBenchmark');
 
         // ==========================================
+        // GESTION DES LISTES
+        // ==========================================
+        const listModal = document.getElementById('listModal');
+        const btnOpenListModal = document.getElementById('btnOpenListModal');
+        const btnCloseList = document.getElementById('btnCloseList');
+        const btnCreateList = document.getElementById('btnCreateList');
+        const existingListsDiv = document.getElementById('existingLists');
+        const newListNameInput = document.getElementById('newListName');
+        const listModalTitle = document.getElementById('listModalTitle');
+
+        function updateListFilterOptions() {
+            let currentFilter = filterList.value;
+            filterList.innerHTML = '<option value="">Toutes les listes</option>';
+            for(let listName in customLists) {
+                let opt = document.createElement('option');
+                opt.value = listName;
+                opt.textContent = listName;
+                filterList.appendChild(opt);
+            }
+            if(customLists[currentFilter]) filterList.value = currentFilter;
+        }
+
+        function renderListModal() {
+            if(!currentBlockName) return;
+            listModalTitle.textContent = `Listes pour "${currentBlockName}"`;
+            existingListsDiv.innerHTML = '';
+            
+            for(let listName in customLists) {
+                let isInside = customLists[listName].includes(currentBlockName);
+                let btn = document.createElement('button');
+                btn.textContent = listName + (isInside ? ' ✅' : '');
+                btn.className = isInside ? 'btn-green' : 'btn-gray';
+                
+                // Clic pour Ajouter / Retirer
+                btn.onclick = () => {
+                    if(isInside) {
+                        customLists[listName] = customLists[listName].filter(b => b !== currentBlockName);
+                    } else {
+                        customLists[listName].push(currentBlockName);
+                    }
+                    localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
+                    renderListModal();
+                    updateBlockSelect();
+                };
+                existingListsDiv.appendChild(btn);
+            }
+        }
+
+        btnOpenListModal.addEventListener('click', () => {
+            if(!currentBlockName) return alert("Sélectionnez un bloc d'abord !");
+            listModal.style.display = 'block';
+            newListNameInput.value = '';
+            renderListModal();
+        });
+
+        btnCloseList.addEventListener('click', () => {
+            listModal.style.display = 'none';
+        });
+
+        btnCreateList.addEventListener('click', () => {
+            let val = newListNameInput.value.trim();
+            if(!val) return alert("Entrez un nom de liste.");
+            if(!customLists[val]) customLists[val] = [];
+            
+            // On l'ajoute directement dedans si c'est nouveau
+            if(!customLists[val].includes(currentBlockName)) {
+                customLists[val].push(currentBlockName);
+            }
+            
+            localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
+            newListNameInput.value = '';
+            updateListFilterOptions();
+            renderListModal();
+            updateBlockSelect();
+        });
+
+
+        // ==========================================
         // MENU DÉROULANT (HAMBURGER)
         // ==========================================
         btnMenu.addEventListener('click', (e) => {
             dropdownMenu.classList.toggle('show');
             e.stopPropagation();
         });
-        document.addEventListener('click', () => {
-            dropdownMenu.classList.remove('show');
+        document.addEventListener('click', (e) => {
+            if(!e.target.matches('.btn-menu')) dropdownMenu.classList.remove('show');
         });
 
         // ==========================================
@@ -473,6 +589,22 @@
             blockData.arrivee.forEach(id => moves.push({ Description: id, isEnd: true }));
             // --> INSERE TON CODE D'ENVOI ICI <--
         }
+
+        // ==========================================
+        // EXPORTATION JSON
+        // ==========================================
+        document.getElementById('btnExport').addEventListener('click', () => {
+            const data = JSON.stringify(blocks, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'minimoon_export.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
 
         // ==========================================
         // IMPORTATION JSON
@@ -669,11 +801,11 @@
             let allKeys = Object.keys(blocks);
             let excludeChecked = excludeCompletedCheckbox.checked;
             let currentGradeFilter = filterCotation.value;
+            let currentListFilter = filterList.value;
             let benchmarkOnly = filterBenchmark.checked;
             let searchQuery = searchInput.value.toLowerCase();
 
-            let totalBlocks = allKeys.length;
-            let totalCompleted = allKeys.filter(k => blocks[k].completed).length;
+            let totalBlocksInDB = allKeys.length;
             
             let filteredKeys = allKeys.filter(k => {
                 let b = blocks[k];
@@ -681,13 +813,15 @@
                 if (currentGradeFilter && !(b.grade && b.grade.includes(currentGradeFilter))) return false;
                 if (benchmarkOnly && !b.isBenchmark) return false;
                 if (searchQuery && !k.toLowerCase().includes(searchQuery)) return false;
+                if (currentListFilter && (!customLists[currentListFilter] || !customLists[currentListFilter].includes(k))) return false;
                 return true;
             });
             
             // Tri par ordre alphabétique
             filteredKeys.sort((a, b) => a.localeCompare(b));
 
-            blockCounter.textContent = `Fait:${totalCompleted} | Reste:${totalBlocks - totalCompleted} | Tot:${totalBlocks}`;
+            // Mise à jour des compteurs "Affiché / Total"
+            blockCounter.textContent = `Affiché:${filteredKeys.length} | Total:${totalBlocksInDB}`;
 
             filteredKeys.forEach(k => {
                 let opt = document.createElement('option');
@@ -707,6 +841,7 @@
         // Evénements
         blockSelect.addEventListener('change', (e) => displayBlock(e.target.value));
         filterCotation.addEventListener('change', updateBlockSelect);
+        filterList.addEventListener('change', updateBlockSelect);
         filterBenchmark.addEventListener('change', updateBlockSelect);
         
         document.getElementById('btnPrev').addEventListener('click', () => {
@@ -720,7 +855,8 @@
             if (currentBlockName && blocks[currentBlockName]) {
                 blocks[currentBlockName].completed = e.target.checked;
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-                updateBlockSelect();
+                // Optionnel: updateBlockSelect() si on veut qu'il disparaisse instantanément quand "Masquer cochés" est actif
+                if (excludeCompletedCheckbox.checked) updateBlockSelect();
             }
         });
         excludeCompletedCheckbox.addEventListener('change', () => {
@@ -756,6 +892,7 @@
         }
 
         document.getElementById('btnAdjustGrid').addEventListener('click', () => {
+            dropdownMenu.classList.remove('show');
             adjustModal.style.display = 'block'; gridOverlay.classList.add('grid-adjusting');
         });
         document.getElementById('btnCloseAdjust').addEventListener('click', () => {
@@ -771,8 +908,12 @@
             });
         });
 
+        // INITIALISATION
         excludeCompletedCheckbox.checked = localStorage.getItem('minimoon_exclude') === 'true';
-        applyGridConfig(); initGrid(); updateBlockSelect();
+        updateListFilterOptions();
+        applyGridConfig(); 
+        initGrid(); 
+        updateBlockSelect();
     </script>
 </body>
 </html>
