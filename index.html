@@ -2,7 +2,6 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <!-- Empêche le zoom sur mobile au clic sur un champ de texte -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mini Moon Board 2025</title>
     
@@ -96,12 +95,11 @@
         }
         button:active { opacity: 0.8; }
         
-        /* Couleurs des boutons */
+        /* Couleurs */
         .btn-blue { background-color: #005bb5; }
         .btn-orange { background-color: #e67e22; }
         .btn-green { background-color: #27ae60; }
         .btn-purple { background-color: #673ab7; }
-        .btn-light-purple { background-color: #b388ff; color: #000; }
         .btn-red { background-color: #dc3545; }
         .btn-yellow { background-color: #f1c40f; color: #000; }
         .btn-gray { background-color: #333; color: #fff; }
@@ -142,20 +140,13 @@
             box-sizing: border-box;
             margin-bottom: 8px;
             display: none;
-            font-size: 16px; /* 16px min empêche iOS de zoomer */
+            font-size: 16px;
         }
         input[type="text"] {
             font-size: 16px; 
             background: #333; 
             color: white; 
             border: 1px solid #555;
-        }
-
-        .chk-completed {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-            margin: 0 4px;
         }
 
         /* BADGES */
@@ -165,6 +156,10 @@
             align-items: center;
             flex-wrap: wrap;
             min-height: 22px;
+            justify-content: flex-start;
+            width: 100%;
+            max-width: 450px;
+            margin-bottom: 6px;
         }
         .inline-badge {
             display: none; 
@@ -201,7 +196,7 @@
             max-width: 450px;
             font-size: 0.75rem;
             color: #ddd;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             padding: 0 2px;
             box-sizing: border-box;
         }
@@ -243,7 +238,6 @@
             cursor: pointer;
         }
 
-        /* PRISES */
         .hold {
             width: 170%; 
             aspect-ratio: 1;
@@ -254,12 +248,91 @@
             pointer-events: none; 
             transition: transform 0.1s;
         }
-        
         .hold.depart { border: 3px solid #00ff00; box-shadow: 0 0 8px rgba(0, 255, 0, 0.8); }
         .hold.progression { border: 3px solid #00d2ff; box-shadow: 0 0 8px rgba(0, 210, 255, 0.8); }
         .hold.arrivee { border: 3px solid #ff0000; box-shadow: 0 0 8px rgba(255, 0, 0, 0.8); }
 
-        /* MODALES (Ajustement et Listes) */
+        /* NOUVEAU PANNEAU DU BAS (Infos du bloc) */
+        .bottom-panel {
+            width: 100%;
+            max-width: 450px;
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .bottom-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #ffb700;
+            text-align: center;
+            background: #1e1e1e;
+            padding: 12px 8px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            word-wrap: break-word;
+        }
+        .bottom-triptych {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .triptych-btn {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .triptych-btn:active {
+            transform: scale(0.95);
+        }
+        .triptych-grade {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: #e67e22;
+            cursor: default;
+        }
+        .triptych-grade:active { transform: none; }
+        
+        .triptych-list {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #b388ff;
+        }
+        
+        /* Coche Ronde Centrale */
+        .check-circle {
+            width: 60%;
+            height: 60%;
+            border-radius: 50%;
+            border: 3px solid #555;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+        }
+        .check-circle svg {
+            width: 65%;
+            height: 65%;
+            stroke: #555;
+            transition: all 0.2s;
+        }
+        /* État coché */
+        .triptych-btn.is-checked .check-circle {
+            background: #27ae60;
+            border-color: #27ae60;
+        }
+        .triptych-btn.is-checked .check-circle svg {
+            stroke: #fff;
+        }
+
+        /* MODALES */
         .modal {
             display: none; position: fixed; top: 15px; left: 50%; transform: translateX(-50%); 
             z-index: 1000; width: 95%; max-width: 350px;
@@ -287,12 +360,12 @@
         
         <!-- Outils de Création (cachés par défaut) -->
         <div id="creationTools" style="display: none; gap: 6px;">
-            <button id="btnCancelCreate" class="btn-red">❌</button>
-            <button id="btnSaveCreate" class="btn-green">💾</button>
+            <button id="btnCancelCreate" class="btn-red">❌ Annuler</button>
+            <button id="btnSaveCreate" class="btn-green">💾 Enregistrer</button>
         </div>
 
         <!-- Menu Hamburger -->
-        <div>
+        <div id="mainMenu">
             <button id="btnMenu" class="btn-menu">☰</button>
             <div id="dropdownMenu" class="dropdown-content">
                 <button id="btnImport" class="btn-purple">📥 Importer</button>
@@ -310,14 +383,13 @@
         <input type="text" id="searchInput" class="search-input" placeholder="Rechercher par nom...">
     </div>
 
-    <!-- LIGNE 2 : Select, Loupe & Ajout Liste -->
+    <!-- LIGNE 2 : Select & Loupe -->
     <div class="toolbar" style="flex-wrap: nowrap;">
         <select id="blockSelect" class="main-select"></select>
         <button id="btnSearchToggle" class="btn-gray">🔍</button>
-        <button id="btnOpenListModal" class="btn-light-purple">➕ Liste</button>
     </div>
 
-    <!-- LIGNE 3 : Filtres (Cotation et Listes) -->
+    <!-- LIGNE 3 : Filtres (Listes & Cotations) -->
     <div class="toolbar" style="flex-wrap: nowrap;">
         <select id="filterList" class="btn-outline" style="flex: 1;">
             <option value="">Toutes les listes</option>
@@ -335,35 +407,25 @@
         </select>
     </div>
 
-    <!-- LIGNE 4 : Badges et Navigation -->
-    <div class="toolbar" style="justify-content: space-between;">
-        <div class="badges-container" id="badgesContainer">
-            <span id="badgeBenchmark" class="badge-benchmark" title="Ce bloc est un Benchmark">B</span>
-            <span id="badgeNoKb" class="inline-badge badge-nokickboard">NO KICKBOARD</span>
-            <span id="badgeMarked" class="inline-badge badge-markedholds">MARKED HOLDS</span>
-            <span id="badgeFootless" class="inline-badge badge-footless">FOOTLESS</span>
-        </div>
-        
-        <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
-            <input type="checkbox" id="chkCompleted" class="chk-completed" title="Marquer comme réussi">
-            <button id="btnPrev" class="btn-gray">◀</button>
-            <button id="btnNext" class="btn-gray">▶</button>
-        </div>
+    <!-- BADGES AU DESSUS DES STATS -->
+    <div class="badges-container" id="badgesContainer">
+        <span id="badgeBenchmark" class="badge-benchmark" title="Ce bloc est un Benchmark">B</span>
+        <span id="badgeNoKb" class="inline-badge badge-nokickboard">NO KICKBOARD</span>
+        <span id="badgeMarked" class="inline-badge badge-markedholds">MARKED HOLDS</span>
+        <span id="badgeFootless" class="inline-badge badge-footless">FOOTLESS</span>
     </div>
 
-    <!-- LIGNE 5 : Footer / Stats -->
+    <!-- LIGNE 4 : Footer / Stats -->
     <div class="footer-info">
         <label style="display: flex; align-items: center; gap: 4px;">
             <input type="checkbox" id="excludeCompleted"> Masquer cochés
         </label>
         
-        <!-- Filtre Benchmark -->
         <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;" title="N'afficher que les Benchmarks">
             <input type="checkbox" id="filterBenchmark">
             <span style="background-color: #f1c40f; color: #000; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; border: 1px solid #d4ac0d;">B</span>
         </label>
 
-        <!-- Compteur mis à jour (Filtre / Total) -->
         <span id="blockCounter" class="counter">Affiché:0 | Total:0</span>
     </div>
 
@@ -371,6 +433,28 @@
     <div class="board-container" id="mainBoardContainer">
         <img src="mini_moonboard_bg.jpg" alt="Mini MoonBoard" class="board-image" id="boardImage">
         <div class="grid-overlay" id="gridOverlay"></div>
+    </div>
+
+    <!-- NOUVEAU PANNEAU DU BAS : Nom du bloc + Triptyque (Cotation, Coche, Liste) -->
+    <div id="bottomPanel" class="bottom-panel">
+        <div id="bottomBlockName" class="bottom-name">Sélectionnez un bloc</div>
+        
+        <div class="bottom-triptych">
+            <!-- Cotation -->
+            <div id="bottomGrade" class="triptych-btn triptych-grade">-</div>
+            
+            <!-- Coche Validation -->
+            <div id="bottomCheck" class="triptych-btn">
+                <div class="check-circle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+            </div>
+            
+            <!-- Ajout Liste -->
+            <div id="bottomListAdd" class="triptych-btn triptych-list">➕</div>
+        </div>
     </div>
 
     <!-- MODALE GRILLE -->
@@ -394,7 +478,7 @@
             <h3 id="listModalTitle">Ajouter à une liste</h3>
             
             <div id="existingLists" class="list-items-container">
-                <!-- Les boutons des listes existantes s'affichent ici -->
+                <!-- Boutons générés dynamiquement -->
             </div>
             
             <input type="text" id="newListName" placeholder="Nom de la nouvelle liste..." autocomplete="off">
@@ -423,7 +507,7 @@
         let isCreating = false;
         let currentCreation = { depart: [], progression: [], arrivee: [] };
 
-        // DOM Elements
+        // DOM Elements - Selecteurs
         const gridOverlay = document.getElementById('gridOverlay');
         const blockSelect = document.getElementById('blockSelect');
         const filterCotation = document.getElementById('filterCotation');
@@ -431,19 +515,26 @@
         const filterBenchmark = document.getElementById('filterBenchmark');
         const excludeCompletedCheckbox = document.getElementById('excludeCompleted');
         const blockCounter = document.getElementById('blockCounter');
-        const chkCompleted = document.getElementById('chkCompleted');
         
-        // Recherche
+        // DOM Elements - Recherche
         const searchInput = document.getElementById('searchInput');
         const btnSearchToggle = document.getElementById('btnSearchToggle');
 
-        // Menu et Création
+        // DOM Elements - Menu et Création
+        const mainMenu = document.getElementById('mainMenu');
         const btnMenu = document.getElementById('btnMenu');
         const dropdownMenu = document.getElementById('dropdownMenu');
         const creationTools = document.getElementById('creationTools');
         const btnPencil = document.getElementById('btnPencil');
         const btnCancelCreate = document.getElementById('btnCancelCreate');
         const btnSaveCreate = document.getElementById('btnSaveCreate');
+
+        // DOM Elements - Panneau du bas
+        const bottomPanel = document.getElementById('bottomPanel');
+        const bottomBlockName = document.getElementById('bottomBlockName');
+        const bottomGrade = document.getElementById('bottomGrade');
+        const bottomCheck = document.getElementById('bottomCheck');
+        const bottomListAdd = document.getElementById('bottomListAdd');
 
         // Badges
         const badgeNoKb = document.getElementById('badgeNoKb');
@@ -455,7 +546,6 @@
         // GESTION DES LISTES
         // ==========================================
         const listModal = document.getElementById('listModal');
-        const btnOpenListModal = document.getElementById('btnOpenListModal');
         const btnCloseList = document.getElementById('btnCloseList');
         const btnCreateList = document.getElementById('btnCreateList');
         const existingListsDiv = document.getElementById('existingLists');
@@ -485,7 +575,6 @@
                 btn.textContent = listName + (isInside ? ' ✅' : '');
                 btn.className = isInside ? 'btn-green' : 'btn-gray';
                 
-                // Clic pour Ajouter / Retirer
                 btn.onclick = () => {
                     if(isInside) {
                         customLists[listName] = customLists[listName].filter(b => b !== currentBlockName);
@@ -500,7 +589,7 @@
             }
         }
 
-        btnOpenListModal.addEventListener('click', () => {
+        bottomListAdd.addEventListener('click', () => {
             if(!currentBlockName) return alert("Sélectionnez un bloc d'abord !");
             listModal.style.display = 'block';
             newListNameInput.value = '';
@@ -516,7 +605,6 @@
             if(!val) return alert("Entrez un nom de liste.");
             if(!customLists[val]) customLists[val] = [];
             
-            // On l'ajoute directement dedans si c'est nouveau
             if(!customLists[val].includes(currentBlockName)) {
                 customLists[val].push(currentBlockName);
             }
@@ -587,7 +675,6 @@
             blockData.depart.forEach(id => moves.push({ Description: id, isStart: true }));
             blockData.progression.forEach(id => moves.push({ Description: id }));
             blockData.arrivee.forEach(id => moves.push({ Description: id, isEnd: true }));
-            // --> INSERE TON CODE D'ENVOI ICI <--
         }
 
         // ==========================================
@@ -604,6 +691,7 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+            dropdownMenu.classList.remove('show');
         });
 
         // ==========================================
@@ -611,24 +699,18 @@
         // ==========================================
         document.getElementById('btnImport').addEventListener('click', () => {
             document.getElementById('fileImport').click();
+            dropdownMenu.classList.remove('show');
         });
 
         document.getElementById('fileImport').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = ev => {
                 try {
                     let parsed = JSON.parse(ev.target.result);
-                    let dataArray = [];
-                    
-                    if (Array.isArray(parsed)) {
-                        dataArray = parsed;
-                    } else if (parsed && typeof parsed === 'object') {
-                        let arrayKey = Object.keys(parsed).find(k => Array.isArray(parsed[k]));
-                        dataArray = arrayKey ? parsed[arrayKey] : Object.values(parsed);
-                    }
+                    let dataArray = Array.isArray(parsed) ? parsed : 
+                                    (Object.keys(parsed).find(k => Array.isArray(parsed[k])) ? parsed[Object.keys(parsed).find(k => Array.isArray(parsed[k]))] : Object.values(parsed));
                     
                     if (!dataArray || dataArray.length === 0) return alert("Aucun bloc valide trouvé.");
 
@@ -639,14 +721,12 @@
                         let routeGrade = route.grade || route.Grade || route.userGrade || route.UserGrade || "?";
                         let isBenchmark = route.isBenchmark === true || route.IsBenchmark === true;
                         let routeMoves = route.moves || route.Moves || [];
-
                         let depart = [], progression = [], arrivee = [];
                         
                         if (Array.isArray(routeMoves)) {
                             routeMoves.forEach(m => {
                                 let rawId = m.Description || m.description || m.hold || m.id || m.Id;
                                 if (!rawId && typeof m === 'string') rawId = m;
-                                
                                 if (rawId && typeof rawId === 'string') {
                                     let id = rawId.toUpperCase();
                                     if (m.isStart || m.IsStart) depart.push(id);
@@ -655,27 +735,22 @@
                                 }
                             });
                         }
-
                         newBlocks[routeName] = {
-                            depart: depart, progression: progression, arrivee: arrivee,
-                            method: routeMethod, grade: routeGrade, isBenchmark: isBenchmark, completed: false
+                            depart, progression, arrivee, method: routeMethod, grade: routeGrade, isBenchmark, completed: false
                         };
                     });
-
                     blocks = {...blocks, ...newBlocks};
                     localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                     alert(`${Object.keys(newBlocks).length} blocs importés !`);
                     updateBlockSelect(); 
-                } catch(err) { 
-                    alert("Erreur: Le fichier n'est pas un JSON valide."); 
-                }
+                } catch(err) { alert("Erreur: Fichier invalide."); }
             };
             reader.readAsText(file);
             e.target.value = '';
         });
 
         document.getElementById('btnClearStorage').addEventListener('click', () => {
-            if(confirm("⚠️ Effacer TOUS les blocs de la mémoire locale ?")) {
+            if(confirm("⚠️ Effacer TOUS les blocs ?")) {
                 blocks = {}; localStorage.removeItem('minimoon_blocks'); updateBlockSelect();
             }
         });
@@ -702,7 +777,6 @@
 
         function handleHoldClick(holdId) {
             if (!isCreating) return;
-            
             let estDepart = currentCreation.depart.includes(holdId);
             let estProgression = currentCreation.progression.includes(holdId);
             let estArrivee = currentCreation.arrivee.includes(holdId);
@@ -720,12 +794,12 @@
             else { currentCreation.depart.push(holdId); h.classList.add('depart'); }
         }
 
-        // Lancer la Création
         btnPencil.addEventListener('click', () => {
             isCreating = true;
             dropdownMenu.classList.remove('show');
-            btnMenu.style.display = 'none';
+            mainMenu.style.display = 'none';
             creationTools.style.display = 'flex';
+            bottomPanel.style.display = 'none'; // Cache le panneau du bas pendant la création
             
             document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
             badgeNoKb.style.display = 'none'; badgeMarked.style.display = 'none';
@@ -734,15 +808,14 @@
             currentCreation = { depart: [], progression: [], arrivee: [] };
         });
 
-        // Annuler Création
         btnCancelCreate.addEventListener('click', () => {
             isCreating = false;
-            btnMenu.style.display = 'block';
+            mainMenu.style.display = 'block';
             creationTools.style.display = 'none';
+            bottomPanel.style.display = 'flex';
             displayBlock(blockSelect.value);
         });
 
-        // Enregistrer bloc
         btnSaveCreate.addEventListener('click', () => {
             if (currentCreation.depart.length === 0 && currentCreation.progression.length === 0 && currentCreation.arrivee.length === 0) {
                 return alert("Ajoute au moins une prise sur le mur !");
@@ -756,8 +829,9 @@
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 
                 isCreating = false;
-                btnMenu.style.display = 'block';
+                mainMenu.style.display = 'block';
                 creationTools.style.display = 'none';
+                bottomPanel.style.display = 'flex';
                 
                 updateBlockSelect();
                 blockSelect.value = name;
@@ -779,17 +853,26 @@
                 block.progression.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('progression'); });
                 block.arrivee.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('arrivee'); });
                 
-                chkCompleted.checked = block.completed || false;
-                
                 let methodLower = (block.method || "").toLowerCase();
                 if (methodLower.includes("no kickboard")) badgeNoKb.style.display = 'inline-block';
                 if (methodLower.includes("marked hold") || methodLower.includes("any marked")) badgeMarked.style.display = 'inline-block';
                 if (methodLower.includes("footless")) badgeFootless.style.display = 'inline-block';
                 if (block.isBenchmark) badgeBenchmark.style.display = 'inline-flex';
 
+                // MAJ Panneau du bas
+                bottomBlockName.textContent = name;
+                bottomGrade.textContent = block.grade || "?";
+                if (block.completed) {
+                    bottomCheck.classList.add('is-checked');
+                } else {
+                    bottomCheck.classList.remove('is-checked');
+                }
+
                 sendToESP32(block);
             } else {
-                chkCompleted.checked = false;
+                bottomBlockName.textContent = "Aucun bloc sélectionné";
+                bottomGrade.textContent = "-";
+                bottomCheck.classList.remove('is-checked');
                 sendToESP32({ depart: [], progression: [], arrivee: [] });
             }
         }
@@ -817,10 +900,7 @@
                 return true;
             });
             
-            // Tri par ordre alphabétique
             filteredKeys.sort((a, b) => a.localeCompare(b));
-
-            // Mise à jour des compteurs "Affiché / Total"
             blockCounter.textContent = `Affiché:${filteredKeys.length} | Total:${totalBlocksInDB}`;
 
             filteredKeys.forEach(k => {
@@ -838,31 +918,39 @@
             }
         }
 
-        // Evénements
+        // Action de validation depuis le gros bouton rond
+        bottomCheck.addEventListener('click', () => {
+            if (currentBlockName && blocks[currentBlockName]) {
+                blocks[currentBlockName].completed = !blocks[currentBlockName].completed;
+                localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+                displayBlock(currentBlockName);
+                if (excludeCompletedCheckbox.checked) updateBlockSelect();
+            }
+        });
+
         blockSelect.addEventListener('change', (e) => displayBlock(e.target.value));
         filterCotation.addEventListener('change', updateBlockSelect);
         filterList.addEventListener('change', updateBlockSelect);
         filterBenchmark.addEventListener('change', updateBlockSelect);
         
-        document.getElementById('btnPrev').addEventListener('click', () => {
-            if(blockSelect.selectedIndex > 0) { blockSelect.selectedIndex--; displayBlock(blockSelect.value); }
-        });
-        document.getElementById('btnNext').addEventListener('click', () => {
-            if(blockSelect.selectedIndex < blockSelect.options.length - 1) { blockSelect.selectedIndex++; displayBlock(blockSelect.value); }
-        });
-
-        chkCompleted.addEventListener('change', (e) => {
-            if (currentBlockName && blocks[currentBlockName]) {
-                blocks[currentBlockName].completed = e.target.checked;
-                localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-                // Optionnel: updateBlockSelect() si on veut qu'il disparaisse instantanément quand "Masquer cochés" est actif
-                if (excludeCompletedCheckbox.checked) updateBlockSelect();
-            }
-        });
         excludeCompletedCheckbox.addEventListener('change', () => {
             localStorage.setItem('minimoon_exclude', excludeCompletedCheckbox.checked);
             updateBlockSelect();
         });
+
+        // Navigation par fonctions (Swipe)
+        function goToPrevBlock() {
+            if(blockSelect.selectedIndex > 0) { 
+                blockSelect.selectedIndex--; 
+                displayBlock(blockSelect.value); 
+            }
+        }
+        function goToNextBlock() {
+            if(blockSelect.selectedIndex < blockSelect.options.length - 1) { 
+                blockSelect.selectedIndex++; 
+                displayBlock(blockSelect.value); 
+            }
+        }
 
         // Swipe & Calibrage
         let touchStartX = 0, touchStartY = 0;
@@ -875,8 +963,8 @@
             const deltaX = e.changedTouches[0].screenX - touchStartX;
             const deltaY = e.changedTouches[0].screenY - touchStartY;
             if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
-                if (deltaX > 0) document.getElementById('btnPrev').click();
-                else document.getElementById('btnNext').click();
+                if (deltaX > 0) goToPrevBlock();
+                else goToNextBlock();
             }
         }, { passive: true });
 
