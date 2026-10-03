@@ -254,6 +254,13 @@
             pointer-events: none; 
             transition: transform 0.1s;
         }
+        
+        /* Mode Ajustement de Grille : Affiche tous les cercles en pointillés */
+        .grid-adjusting .hold {
+            border: 1px dashed rgba(255, 255, 255, 0.6) !important;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
         .hold.depart { border: 3px solid #00ff00; box-shadow: 0 0 8px rgba(0, 255, 0, 0.8); }
         .hold.progression { border: 3px solid #00d2ff; box-shadow: 0 0 8px rgba(0, 210, 255, 0.8); }
         .hold.arrivee { border: 3px solid #ff0000; box-shadow: 0 0 8px rgba(255, 0, 0, 0.8); }
@@ -463,7 +470,7 @@
                 <label><input type="checkbox" id="onlyCompleted"> <span class="menu-icon-check"></span> Uniquement réalisés</label>
                 <label><input type="checkbox" id="filterBenchmark"> <span class="menu-icon-badge">B</span> Uniquement Benchmarks</label>
                 <hr>
-                <button id="btnClearStorage" style="color: #e74c3c;">⚠️ Vider la base</button>
+                <button id="btnClearStorage" style="color: #e74c3c;">⚠️️ Vider la base</button>
             </div>
         </div>
         <input type="file" id="fileImport" accept=".json" style="display: none;">
@@ -1103,11 +1110,14 @@
 
         document.getElementById('btnAdjustGrid').addEventListener('click', () => {
             dropdownMenu.classList.remove('show');
-            adjustModal.style.display = 'block'; gridOverlay.classList.add('grid-adjusting');
+            adjustModal.style.display = 'block'; 
+            gridOverlay.classList.add('grid-adjusting');
         });
         document.getElementById('btnCloseAdjust').addEventListener('click', () => {
-            adjustModal.style.display = 'none'; gridOverlay.classList.remove('grid-adjusting');
+            adjustModal.style.display = 'none'; 
+            gridOverlay.classList.remove('grid-adjusting');
             localStorage.setItem('minimoon_grid', JSON.stringify(gridConfig));
+            displayBlock(currentBlockName);
         });
         document.getElementById('btnResetAdjust').addEventListener('click', () => {
             gridConfig = {...defaultGridConfig}; applyGridConfig();
