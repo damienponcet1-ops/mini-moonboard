@@ -116,9 +116,9 @@
             white-space: nowrap;
         }
         /* Couleurs demandées pour les règles */
-        .badge-nokickboard { color: #ff0000; background-color: rgba(220, 53, 69, 0.15); border: 1px solid #dc3545; } /* Rouge */
-        .badge-markedholds { color: #28a745; background-color: rgba(40, 167, 69, 0.15); border: 1px solid #28a745; } /* Vert */
-        .badge-footless { color: #f1c40f; background-color: rgba(241, 196, 15, 0.15); border: 1px solid #f1c40f; } /* Jaune */
+        .badge-nokickboard { color: #ff0000; background-color: rgba(220, 53, 69, 0.15); border: 1px solid #dc3545; }
+        .badge-markedholds { color: #28a745; background-color: rgba(40, 167, 69, 0.15); border: 1px solid #28a745; }
+        .badge-footless { color: #f1c40f; background-color: rgba(241, 196, 15, 0.15); border: 1px solid #f1c40f; }
         
         .badge-benchmark {
             display: none;
@@ -226,17 +226,17 @@
 
     <h1>Mini MoonBoard</h1>
 
-    <!-- LIGNE 1 : Outils -->
+    <!-- LIGNE 1 : Outils Ultra-Compacte -->
     <div class="toolbar">
         <button id="btnConnect" class="btn-bt" title="Bluetooth">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>
         </button>
-        <button id="btnImport" class="btn-purple">📥 Importer JSON</button>
+        <button id="btnImport" class="btn-purple">📥 Importer</button>
         <input type="file" id="fileImport" accept=".json" style="display: none;">
         
         <button id="btnClearStorage" class="btn-yellow">⚠️ Vider</button>
-        <button id="btnAdjustGrid" class="btn-gray">⚙️ Grille</button>
-        <button id="btnPencil" class="btn-orange">✏️ Créer</button>
+        <button id="btnAdjustGrid" class="btn-gray">⚙️</button>
+        <button id="btnPencil" class="btn-orange">✏️</button>
         <button id="btnSave" class="btn-green" style="display: none;">💾 Enregistrer</button>
     </div>
 
@@ -273,20 +273,18 @@
         </div>
     </div>
 
-    <!-- LIGNE 4 : Filtres et Stats (Disposition exacte demandée) -->
+    <!-- LIGNE 4 : Filtres et Stats -->
     <div class="footer-info">
-        <!-- A gauche -->
         <label style="display: flex; align-items: center; gap: 4px;">
             <input type="checkbox" id="excludeCompleted"> Masquer cochés
         </label>
         
-        <!-- Au milieu : Filtre Benchmark -->
+        <!-- Filtre Benchmark au centre -->
         <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;" title="N'afficher que les Benchmarks">
             <input type="checkbox" id="filterBenchmark">
             <span style="background-color: #f1c40f; color: #000; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; border: 1px solid #d4ac0d;">B</span>
         </label>
 
-        <!-- A droite : Stats -->
         <span id="blockCounter" class="counter">Fait:0 | Reste:0 | Tot:0</span>
     </div>
 
@@ -324,7 +322,7 @@
         let blocks = JSON.parse(localStorage.getItem('minimoon_blocks') || '{}');
         let currentBlockName = "";
         
-        // Variables pour la Création
+        // Variables Création
         let isCreating = false;
         let currentCreation = { depart: [], progression: [], arrivee: [] };
 
@@ -371,7 +369,6 @@
             }
         });
 
-        // Fonction pour envoyer à l'ESP32
         function sendToESP32(blockData) {
             if (!blockData) return;
             console.log("Envoi à l'ESP32 du bloc :", blockData);
@@ -385,7 +382,7 @@
         }
 
         // ==========================================
-        // IMPORTATION JSON
+        // IMPORTATION JSON INTELLIGENTE
         // ==========================================
         document.getElementById('btnImport').addEventListener('click', () => {
             document.getElementById('fileImport').click();
@@ -399,28 +396,57 @@
             reader.onload = ev => {
                 try {
                     let parsed = JSON.parse(ev.target.result);
-                    let dataArray = Array.isArray(parsed) ? parsed : (parsed.data || Object.values(parsed) || []);
                     
+                    // Trouver le tableau dans le JSON (Tolérance pour différents formats)
+                    let dataArray = [];
+                    if (Array.isArray(parsed)) {
+                        dataArray = parsed;
+                    } else if (parsed && typeof parsed === 'object') {
+                        // Chercher une propriété contenant un tableau
+                        let arrayKey = Object.keys(parsed).find(k => Array.isArray(parsed[k]));
+                        dataArray = arrayKey ? parsed[arrayKey] : Object.values(parsed);
+                    }
+                    
+                    if (!dataArray || dataArray.length === 0) {
+                        alert("Aucun bloc valide trouvé dans ce fichier.");
+                        return;
+                    }
+
                     let newBlocks = {};
-                    dataArray.forEach(route => {
+                    dataArray.forEach((route, index) => {
+                        // Tolérance majuscules/minuscules
+                        let routeName = route.name || route.Name || `Bloc_Importé_${index + 1}`;
+                        let routeMethod = route.method || route.Method || "";
+                        let routeGrade = route.grade || route.Grade || route.userGrade || route.UserGrade || "?";
+                        let isBenchmark = route.isBenchmark === true || route.IsBenchmark === true;
+                        let routeMoves = route.moves || route.Moves || [];
+
                         let depart = [], progression = [], arrivee = [];
                         
-                        if (route.moves && Array.isArray(route.moves)) {
-                            route.moves.forEach(m => {
-                                let id = (m.Description || m.hold || m.id || m).toUpperCase();
-                                if (m.isStart) depart.push(id);
-                                else if (m.isEnd) arrivee.push(id);
-                                else progression.push(id);
+                        if (Array.isArray(routeMoves)) {
+                            routeMoves.forEach(m => {
+                                let rawId = m.Description || m.description || m.hold || m.id || m.Id;
+                                if (!rawId && typeof m === 'string') rawId = m; // Cas où c'est juste un array de string
+                                
+                                if (rawId && typeof rawId === 'string') {
+                                    let id = rawId.toUpperCase();
+                                    let isStart = m.isStart || m.IsStart;
+                                    let isEnd = m.isEnd || m.IsEnd;
+                                    
+                                    if (isStart) depart.push(id);
+                                    else if (isEnd) arrivee.push(id);
+                                    else progression.push(id);
+                                }
                             });
                         }
 
-                        newBlocks[route.name] = {
+                        newBlocks[routeName] = {
                             depart: depart,
                             progression: progression,
                             arrivee: arrivee,
-                            method: route.method || "",
-                            grade: route.grade || route.userGrade || "",
-                            isBenchmark: route.isBenchmark === true,
+                            method: routeMethod,
+                            grade: routeGrade,
+                            isBenchmark: isBenchmark,
                             completed: false
                         };
                     });
@@ -430,7 +456,7 @@
                     alert(`${Object.keys(newBlocks).length} blocs importés avec succès !`);
                     updateBlockSelect(); 
                 } catch(err) { 
-                    alert("Erreur de format JSON."); 
+                    alert("Erreur: Le fichier fourni n'est pas un JSON valide."); 
                     console.error(err);
                 }
             };
@@ -447,7 +473,7 @@
         });
 
         // ==========================================
-        // GESTION DU MUR, DES BLOCS ET CREATION
+        // GESTION DU MUR ET CREATION
         // ==========================================
         function initGrid() {
             gridOverlay.innerHTML = '';
@@ -474,7 +500,7 @@
             let estProgression = currentCreation.progression.includes(holdId);
             let estArrivee = currentCreation.arrivee.includes(holdId);
             
-            // Retirer de toutes les listes
+            // Retirer
             currentCreation.depart = currentCreation.depart.filter(h => h !== holdId);
             currentCreation.progression = currentCreation.progression.filter(h => h !== holdId);
             currentCreation.arrivee = currentCreation.arrivee.filter(h => h !== holdId);
@@ -482,7 +508,7 @@
             let h = document.querySelector(`[data-id="${holdId}"]`);
             h.classList.remove('depart', 'progression', 'arrivee');
 
-            // Cycle: Vide -> Départ(Vert) -> Progression(Bleu) -> Arrivée(Rouge) -> Vide
+            // Cycle: Vide -> Vert -> Bleu -> Rouge -> Vide
             if (estDepart) {
                 currentCreation.progression.push(holdId); 
                 h.classList.add('progression');
@@ -497,16 +523,15 @@
             }
         }
 
-        // Activer / Annuler le mode création
+        // Activer / Annuler Création
         btnPencil.addEventListener('click', () => {
             isCreating = !isCreating;
             
             if (isCreating) {
                 btnPencil.classList.add('active-pencil');
-                btnPencil.innerHTML = '❌ Annuler';
-                btnSave.style.display = 'flex'; // Affiche le bouton Enregistrer
+                btnPencil.innerHTML = '❌';
+                btnSave.style.display = 'flex';
                 
-                // Nettoyer visuellement
                 document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
                 badgeNoKb.style.display = 'none';
                 badgeMarked.style.display = 'none';
@@ -515,15 +540,14 @@
                 
                 currentCreation = { depart: [], progression: [], arrivee: [] };
             } else {
-                // Annuler
                 btnPencil.classList.remove('active-pencil');
-                btnPencil.innerHTML = '✏️ Créer';
+                btnPencil.innerHTML = '✏️';
                 btnSave.style.display = 'none';
-                displayBlock(blockSelect.value); // Restaure le bloc actuel
+                displayBlock(blockSelect.value);
             }
         });
 
-        // Enregistrer le bloc créé
+        // Enregistrer bloc créé
         btnSave.addEventListener('click', () => {
             if (currentCreation.depart.length === 0 && currentCreation.progression.length === 0 && currentCreation.arrivee.length === 0) {
                 alert("Ajoute au moins une prise en cliquant sur le mur !");
@@ -536,17 +560,16 @@
                     depart: currentCreation.depart,
                     progression: currentCreation.progression,
                     arrivee: currentCreation.arrivee,
-                    method: "", // Par défaut, aucune règle
+                    method: "", 
                     grade: "?",
                     isBenchmark: false,
                     completed: false
                 };
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 
-                // Quitter le mode création
                 isCreating = false;
                 btnPencil.classList.remove('active-pencil');
-                btnPencil.innerHTML = '✏️ Créer';
+                btnPencil.innerHTML = '✏️️';
                 btnSave.style.display = 'none';
                 
                 updateBlockSelect();
@@ -556,12 +579,11 @@
         });
 
         function displayBlock(name) {
-            if (isCreating) return; // Ne pas interférer si on dessine
+            if (isCreating) return; 
             
             currentBlockName = name;
             let block = blocks[name];
             
-            // Nettoyage visuel
             document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
             badgeNoKb.style.display = 'none';
             badgeMarked.style.display = 'none';
@@ -575,7 +597,6 @@
                 
                 chkCompleted.checked = block.completed || false;
                 
-                // Affichage dynamique des badges de règles (Method)
                 let methodLower = (block.method || "").toLowerCase();
                 if (methodLower.includes("no kickboard")) badgeNoKb.style.display = 'inline-block';
                 if (methodLower.includes("marked hold") || methodLower.includes("any marked")) badgeMarked.style.display = 'inline-block';
@@ -586,7 +607,7 @@
                 sendToESP32(block);
             } else {
                 chkCompleted.checked = false;
-                sendToESP32({ depart: [], progression: [], arrivee: [] }); // Extinction
+                sendToESP32({ depart: [], progression: [], arrivee: [] });
             }
         }
 
@@ -668,7 +689,7 @@
             touchEndX = e.changedTouches[0].screenX;
             touchEndY = e.changedTouches[0].screenY;
             
-            if (isCreating) return; // Pas de swipe si on dessine
+            if (isCreating) return;
 
             const deltaX = touchEndX - touchStartX;
             const deltaY = touchEndY - touchStartY;
