@@ -52,7 +52,7 @@
             right: 0;
             top: 35px;
             background-color: #1e1e1e;
-            min-width: 200px;
+            min-width: 210px;
             box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.8);
             z-index: 100;
             border-radius: 4px;
@@ -76,6 +76,9 @@
             text-align: left;
             cursor: pointer;
             border-radius: 3px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .dropdown-content button:hover, .dropdown-content label:hover {
             background-color: #2a2a2a;
@@ -87,6 +90,49 @@
             width: 100%;
         }
         
+        /* Icônes spécifiques du Menu Hamburger */
+        .menu-icon-badge {
+            display: inline-flex;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            font-size: 0.7rem;
+            font-weight: bold;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #d4ac0d;
+            background-color: #f1c40f;
+            color: #000;
+            flex-shrink: 0;
+        }
+        .menu-icon-check {
+            display: inline-flex;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: #27ae60;
+            border: 1px solid #2ecc71;
+            flex-shrink: 0;
+        }
+        .menu-icon-check-slash {
+            display: inline-flex;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: #27ae60;
+            border: 1px solid #dc3545;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .menu-icon-check-slash::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 0; right: 0;
+            height: 2px;
+            background-color: #dc3545;
+            transform: translateY(-50%) rotate(-45deg);
+        }
+
         /* BARRES D'OUTILS */
         .toolbar {
             display: flex;
@@ -114,7 +160,6 @@
         }
         button:active { opacity: 0.8; }
         
-        /* Couleurs */
         .btn-blue { background-color: #005bb5; }
         .btn-orange { background-color: #e67e22; }
         .btn-green { background-color: #27ae60; }
@@ -123,7 +168,6 @@
         .btn-yellow { background-color: #f1c40f; color: #000; }
         .btn-gray { background-color: #333; color: #fff; }
         
-        /* Bouton Bluetooth */
         .btn-bt { 
             background-color: #333; 
             color: #888; 
@@ -138,7 +182,6 @@
             box-shadow: 0 0 10px rgba(0, 210, 255, 0.6); 
         }
         
-        /* Sélecteurs et Recherche */
         select.btn-outline { 
             background-color: #1e1e1e; 
             border: 1px solid #e67e22; 
@@ -166,64 +209,6 @@
             background: #333; 
             color: white; 
             border: 1px solid #555;
-        }
-
-        /* BADGES CENTRÉS (Ligne un poil plus épaisse) */
-        .badges-container {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-            flex-wrap: wrap;
-            min-height: 22px;
-            justify-content: center;
-            width: 100%;
-            max-width: 450px;
-            margin-bottom: 6px;
-        }
-        .inline-badge {
-            display: none; 
-            font-size: 0.75rem;
-            font-weight: 900;
-            padding: 3px 8px;
-            border-radius: 5px;
-            white-space: nowrap;
-            border-width: 2px;
-            border-style: solid;
-        }
-        .badge-nokickboard { color: #ff3333; background-color: rgba(220, 53, 69, 0.2); border-color: #dc3545; }
-        .badge-markedholds { color: #2ecc71; background-color: rgba(40, 167, 69, 0.2); border-color: #28a745; }
-        .badge-footless { color: #f1c40f; background-color: rgba(241, 196, 15, 0.2); border-color: #f1c40f; }
-        
-        .badge-benchmark {
-            display: none;
-            background-color: #f1c40f;
-            color: #000;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            font-size: 0.75rem;
-            font-weight: bold;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid #d4ac0d;
-        }
-
-        /* FOOTER STATS DISCRET TOUT A DROITE */
-        .footer-info {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            width: 100%;
-            max-width: 450px;
-            font-size: 0.7rem;
-            color: #aaa;
-            margin-bottom: 4px;
-            padding: 0 2px;
-            box-sizing: border-box;
-        }
-        .footer-info span.counter {
-            color: #ffb700;
-            font-weight: bold;
         }
 
         /* PANNEAU */
@@ -273,16 +258,63 @@
         .hold.progression { border: 3px solid #00d2ff; box-shadow: 0 0 8px rgba(0, 210, 255, 0.8); }
         .hold.arrivee { border: 3px solid #ff0000; box-shadow: 0 0 8px rgba(255, 0, 0, 0.8); }
 
+        /* BADGES SOUS LE MUR */
+        .badges-container {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+            min-height: 22px;
+            justify-content: center;
+            width: 100%;
+            max-width: 450px;
+            margin-top: 6px;
+            margin-bottom: 2px;
+        }
+        .inline-badge {
+            display: none; 
+            font-size: 0.75rem;
+            font-weight: 900;
+            padding: 3px 8px;
+            border-radius: 5px;
+            white-space: nowrap;
+            border-width: 2px;
+            border-style: solid;
+        }
+        .badge-nokickboard { color: #ff3333; background-color: rgba(220, 53, 69, 0.2); border-color: #dc3545; }
+        .badge-markedholds { color: #2ecc71; background-color: rgba(40, 167, 69, 0.2); border-color: #28a745; }
+        .badge-footless { color: #f1c40f; background-color: rgba(241, 196, 15, 0.2); border-color: #f1c40f; }
+        
+        .badge-benchmark {
+            display: none;
+            background-color: #f1c40f;
+            color: #000;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: bold;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #d4ac0d;
+        }
+
         /* PANNEAU DU BAS */
         .bottom-panel {
             width: 100%;
             max-width: 450px;
-            margin-top: 6px;
+            margin-top: 4px;
             display: flex;
             flex-direction: column;
             gap: 6px;
         }
+        .name-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
         .bottom-name {
+            flex-grow: 1;
             font-size: 1rem;
             font-weight: bold;
             color: #ffb700;
@@ -293,16 +325,33 @@
             border: 1px solid #333;
             word-wrap: break-word;
         }
+        .nav-btn {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            color: #ffb700;
+            font-size: 1rem;
+            padding: 10px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .nav-btn:active { background: #333; }
+
         .bottom-triptych {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
+        }
+        .triptych-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
         }
         .triptych-btn {
             background: #1e1e1e;
             border: 1px solid #333;
             border-radius: 8px;
             height: 52px;
+            width: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -333,7 +382,6 @@
             color: #ffffff;
         }
         
-        /* Carré de validation rempli entièrement en vert */
         .check-circle {
             width: 32px;
             height: 32px;
@@ -357,6 +405,19 @@
         }
         .triptych-btn.is-checked .check-circle svg {
             stroke: #ffffff;
+        }
+
+        /* Compteur minimaliste sous le bouton de droite */
+        .footer-info {
+            font-size: 0.65rem;
+            color: #888;
+            margin-top: 2px;
+            text-align: right;
+            width: 100%;
+        }
+        .footer-info span.counter {
+            color: #ffb700;
+            font-weight: bold;
         }
 
         /* MODALES */
@@ -385,13 +446,11 @@
         
         <h1>Mini Moon Board 2025</h1>
         
-        <!-- Outils de Création -->
         <div id="creationTools" style="display: none; gap: 6px;">
             <button id="btnCancelCreate" class="btn-red">❌ Annuler</button>
             <button id="btnSaveCreate" class="btn-green">💾 Enregistrer</button>
         </div>
 
-        <!-- Menu Hamburger -->
         <div id="mainMenu">
             <button id="btnMenu" class="btn-menu">☰</button>
             <div id="dropdownMenu" class="dropdown-content">
@@ -400,9 +459,9 @@
                 <button id="btnPencil" style="color: #f39c12;">✏️ Créer un bloc</button>
                 <button id="btnAdjustGrid" style="color: #aaa;">⚙️ Ajuster la grille</button>
                 <hr>
-                <label><input type="checkbox" id="excludeCompleted"> Masquer réalisés</label>
-                <label><input type="checkbox" id="onlyCompleted"> Uniquement réalisés</label>
-                <label><input type="checkbox" id="filterBenchmark"> Uniquement Benchmarks</label>
+                <label><input type="checkbox" id="excludeCompleted"> <span class="menu-icon-check-slash"></span> Masquer réalisés</label>
+                <label><input type="checkbox" id="onlyCompleted"> <span class="menu-icon-check"></span> Uniquement réalisés</label>
+                <label><input type="checkbox" id="filterBenchmark"> <span class="menu-icon-badge">B</span> Uniquement Benchmarks</label>
                 <hr>
                 <button id="btnClearStorage" style="color: #e74c3c;">⚠️ Vider la base</button>
             </div>
@@ -439,7 +498,13 @@
         </select>
     </div>
 
-    <!-- BADGES CENTRÉS -->
+    <!-- MUR -->
+    <div class="board-container" id="mainBoardContainer">
+        <img src="mini_moonboard_bg.jpg" alt="Mini MoonBoard" class="board-image" id="boardImage">
+        <div class="grid-overlay" id="gridOverlay"></div>
+    </div>
+
+    <!-- BADGES SOUS LE MUR -->
     <div class="badges-container" id="badgesContainer">
         <span id="badgeBenchmark" class="badge-benchmark" title="Ce bloc est un Benchmark">B</span>
         <span id="badgeNoKb" class="inline-badge badge-nokickboard">NO KICKBOARD</span>
@@ -447,20 +512,13 @@
         <span id="badgeFootless" class="inline-badge badge-footless">FOOTLESS</span>
     </div>
 
-    <!-- MUR -->
-    <div class="board-container" id="mainBoardContainer">
-        <img src="mini_moonboard_bg.jpg" alt="Mini MoonBoard" class="board-image" id="boardImage">
-        <div class="grid-overlay" id="gridOverlay"></div>
-    </div>
-
-    <!-- COMPTEUR DISCRET EN BAS À DROITE -->
-    <div class="footer-info">
-        <span id="blockCounter" class="counter">Affiché:0 | Total:0</span>
-    </div>
-
     <!-- PANNEAU DU BAS -->
     <div id="bottomPanel" class="bottom-panel">
-        <div id="bottomBlockName" class="bottom-name">Sélectionnez un bloc</div>
+        <div class="name-row">
+            <button id="btnPrevBottom" class="nav-btn">◀</button>
+            <div id="bottomBlockName" class="bottom-name">Sélectionnez un bloc</div>
+            <button id="btnNextBottom" class="nav-btn">▶</button>
+        </div>
         
         <div class="bottom-triptych">
             <!-- Cotation -->
@@ -475,8 +533,13 @@
                 </div>
             </div>
             
-            <!-- Ajout / Retrait Liste -->
-            <div id="bottomListAdd" class="triptych-btn triptych-list">➕</div>
+            <!-- Ajout / Retrait Liste + Compteur en dessous -->
+            <div class="triptych-container">
+                <div id="bottomListAdd" class="triptych-btn triptych-list">➕</div>
+                <div class="footer-info">
+                    <span id="blockCounter" class="counter">0/0</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -528,7 +591,6 @@
         let isCreating = false;
         let currentCreation = { depart: [], progression: [], arrivee: [] };
 
-        // DOM Elements
         const gridOverlay = document.getElementById('gridOverlay');
         const blockSelect = document.getElementById('blockSelect');
         const filterCotation = document.getElementById('filterCotation');
@@ -554,13 +616,14 @@
         const bottomGrade = document.getElementById('bottomGrade');
         const bottomCheck = document.getElementById('bottomCheck');
         const bottomListAdd = document.getElementById('bottomListAdd');
+        const btnPrevBottom = document.getElementById('btnPrevBottom');
+        const btnNextBottom = document.getElementById('btnNextBottom');
 
         const badgeNoKb = document.getElementById('badgeNoKb');
         const badgeMarked = document.getElementById('badgeMarked');
         const badgeFootless = document.getElementById('badgeFootless');
         const badgeBenchmark = document.getElementById('badgeBenchmark');
 
-        // Listes Modale
         const listModal = document.getElementById('listModal');
         const btnCloseList = document.getElementById('btnCloseList');
         const btnCreateList = document.getElementById('btnCreateList');
@@ -953,7 +1016,7 @@
             });
             
             filteredKeys.sort((a, b) => a.localeCompare(b));
-            blockCounter.textContent = `Affiché:${filteredKeys.length} | Total:${totalBlocksInDB}`;
+            blockCounter.textContent = `${filteredKeys.length}/${totalBlocksInDB}`;
 
             filteredKeys.forEach(k => {
                 let opt = document.createElement('option');
@@ -1008,6 +1071,9 @@
                 displayBlock(blockSelect.value); 
             }
         }
+
+        btnPrevBottom.addEventListener('click', goToPrevBlock);
+        btnNextBottom.addEventListener('click', goToNextBlock);
 
         let touchStartX = 0, touchStartY = 0;
         const mainBoardContainer = document.getElementById('mainBoardContainer');
