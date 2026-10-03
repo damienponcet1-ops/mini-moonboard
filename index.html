@@ -255,15 +255,15 @@
             transition: transform 0.1s;
         }
         
-        /* Mode Ajustement de Grille : Affiche tous les cercles en pointillés */
-        .grid-adjusting .hold {
-            border: 1px dashed rgba(255, 255, 255, 0.6) !important;
-            background: rgba(255, 255, 255, 0.1);
+        /* Mode Ajustement de Grille : Forçage prioritaire de l'affichage en pointillés */
+        div.grid-overlay.grid-adjusting div.hold {
+            border: 1.5px dashed rgba(255, 255, 255, 0.9) !important;
+            background: rgba(0, 0, 0, 0.35) !important;
         }
 
-        .hold.depart { border: 3px solid #00ff00; box-shadow: 0 0 8px rgba(0, 255, 0, 0.8); }
-        .hold.progression { border: 3px solid #00d2ff; box-shadow: 0 0 8px rgba(0, 210, 255, 0.8); }
-        .hold.arrivee { border: 3px solid #ff0000; box-shadow: 0 0 8px rgba(255, 0, 0, 0.8); }
+        .hold.depart { border: 3px solid #00ff00; box-shadow: 0 0 8px rgba(0, 255, 0, 0.8); background: transparent !important; }
+        .hold.progression { border: 3px solid #00d2ff; box-shadow: 0 0 8px rgba(0, 210, 255, 0.8); background: transparent !important; }
+        .hold.arrivee { border: 3px solid #ff0000; box-shadow: 0 0 8px rgba(255, 0, 0, 0.8); background: transparent !important; }
 
         /* BADGES SOUS LE MUR */
         .badges-container {
@@ -470,7 +470,7 @@
                 <label><input type="checkbox" id="onlyCompleted"> <span class="menu-icon-check"></span> Uniquement réalisés</label>
                 <label><input type="checkbox" id="filterBenchmark"> <span class="menu-icon-badge">B</span> Uniquement Benchmarks</label>
                 <hr>
-                <button id="btnClearStorage" style="color: #e74c3c;">⚠️️ Vider la base</button>
+                <button id="btnClearStorage" style="color: #e74c3c;">⚠️ Vider la base</button>
             </div>
         </div>
         <input type="file" id="fileImport" accept=".json" style="display: none;">
@@ -955,7 +955,7 @@
         });
 
         function displayBlock(name) {
-            if (isCreating) return; 
+            if (isCreating || gridOverlay.classList.contains('grid-adjusting')) return; 
             currentBlockName = name;
             let block = blocks[name];
             
@@ -1088,7 +1088,7 @@
             touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY;
         }, { passive: true });
         mainBoardContainer.addEventListener('touchend', e => {
-            if (isCreating) return;
+            if (isCreating || gridOverlay.classList.contains('grid-adjusting')) return;
             const deltaX = e.changedTouches[0].screenX - touchStartX;
             const deltaY = e.changedTouches[0].screenY - touchStartY;
             if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
