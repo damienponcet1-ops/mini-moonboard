@@ -390,7 +390,7 @@
         .footer-info { font-size: 0.65rem; color: #888; margin-top: 2px; text-align: right; width: 100%; }
         .footer-info span.counter { color: #ffb700; font-weight: bold; }
 
-        /* PANNEAU DE RÉGLAGE GRILLE (REMPLACE LE PANNEAU DU BAS SANS FLOTTER) */
+        /* PANNEAU DE RÉGLAGE GRILLE */
         #adjustPanel {
             display: none; /* Masqué par défaut */
             width: 100%;
@@ -436,7 +436,7 @@
             padding: 10px;
         }
 
-        /* MODALE LISTES (Celle-ci reste en modale car elle ne nécessite pas de voir le mur en même temps) */
+        /* MODALE LISTES */
         .modal {
             display: none; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); 
             z-index: 1000; width: 95%; max-width: 350px;
@@ -555,7 +555,7 @@
         </div>
     </div>
 
-    <!-- PANNEAU DE RÉGLAGE GRILLE (S'affiche à la place du panneau ci-dessus) -->
+    <!-- PANNEAU DE RÉGLAGE GRILLE -->
     <div id="adjustPanel">
         <h3>Ajuster la grille</h3>
         <div class="adjust-grid-layout">
@@ -806,16 +806,50 @@
             blockData.arrivee.forEach(id => moves.push({ Description: id, isEnd: true }));
         }
 
+        /* ----- NOUVELLE FONCTION D'EXPORT ULTRA ROBUSTE (AVEC PARTAGE NATIF IOS) ----- */
+        function downloadData(dataObj, filename) {
+            const dataStr = JSON.stringify(dataObj, null, 2);
+            
+            // 1. Solution API Web Share (Idéal pour iPhone/iPad/Safari)
+            if (navigator.canShare) {
+                try {
+                    const file = new File([dataStr], filename, { type: "application/json" });
+                    if (navigator.canShare({ files: [file] })) {
+                        navigator.share({
+                            title: "Export Mini Moon Board",
+                            files: [file]
+                        }).then(() => {
+                            console.log("Fichier partagé avec succès");
+                        }).catch(err => console.log("Partage annulé ou erreur", err));
+                        
+                        dropdownMenu.classList.remove('show');
+                        return; // Si l'API Share s'ouvre, on arrête là.
+                    }
+                } catch (e) { console.log("L'API Share a échoué, passage à la méthode classique.", e); }
+            }
+
+            // 2. Fallback Classique (Idéal pour Android, Chrome, PC)
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            
+            document.body.appendChild(a);
+            a.click(); // Déclenche le téléchargement
+            
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 100);
+
+            dropdownMenu.classList.remove('show');
+        }
+
         /* 1. EXPORT BLOCS (Brut) */
         document.getElementById('btnExportBlocks').addEventListener('click', () => {
-            const data = JSON.stringify(blocks, null, 2);
-            const blob = new Blob([data], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = 'minimoon_blocks_export.json';
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            dropdownMenu.classList.remove('show');
+            downloadData(blocks, 'minimoon_blocks_export.json');
         });
 
         /* 2. EXPORT SAUVEGARDE COMPLÈTE (Total) */
@@ -826,15 +860,9 @@
                 lists: customLists,
                 gridConfig: JSON.parse(localStorage.getItem('minimoon_grid') || '{}')
             };
-            const data = JSON.stringify(backupData, null, 2);
-            const blob = new Blob([data], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `minimoon_backup_${new Date().toISOString().slice(0,10)}.json`;
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            dropdownMenu.classList.remove('show');
+            downloadData(backupData, `minimoon_backup_${new Date().toISOString().slice(0,10)}.json`);
         });
+        /* ----------------------------------------------------------------------------- */
 
         document.getElementById('btnImport').addEventListener('click', () => {
             document.getElementById('fileImport').click();
@@ -850,7 +878,6 @@
                 try {
                     let parsed = JSON.parse(ev.target.result);
                     
-                    // Cas d'une sauvegarde complète
                     if (parsed && parsed.type === "minimoon_full_backup") {
                         if (parsed.blocks) {
                             blocks = parsed.blocks;
@@ -870,7 +897,6 @@
                         return alert("Sauvegarde complète restaurée avec succès !");
                     }
 
-                    // Cas d'un fichier de blocs standard
                     let dataArray = Array.isArray(parsed) ? parsed : 
                                     (Object.keys(parsed).find(k => Array.isArray(parsed[k])) ? parsed[Object.keys(parsed).find(k => Array.isArray(parsed[k]))] : Object.values(parsed));
                     
@@ -1151,7 +1177,7 @@
         }, { passive: true });
 
         const adjustPanel = document.getElementById('adjustPanel');
-        /* LE DOUBLON A ETE RETIRE ICI */
+        const bottomPanel = document.getElementById('bottomPanel');
         const defaultGridConfig = { top: 9, left: 7.5, width: 85, height: 75.5 };
         let gridConfig = JSON.parse(localStorage.getItem('minimoon_grid')) || defaultGridConfig;
 
@@ -1162,7 +1188,6 @@
             document.getElementById('adjWidth').value = gridConfig.width; document.getElementById('adjHeight').value = gridConfig.height;
         }
 
-        /* NOUVELLE LOGIQUE D'AFFICHAGE DU RÉGLAGE DE GRILLE */
         document.getElementById('btnAdjustGrid').addEventListener('click', () => {
             dropdownMenu.classList.remove('show');
             bottomPanel.style.display = 'none';
