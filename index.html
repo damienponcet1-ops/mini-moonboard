@@ -56,12 +56,15 @@
         .btn-orange { background-color: #e67e22; }
         .btn-green { background-color: #27ae60; }
         .btn-purple { background-color: #673ab7; }
-        .btn-light-purple { background-color: #b388ff; color: #000; }
         .btn-red { background-color: #dc3545; }
         .btn-yellow { background-color: #f1c40f; color: #000; }
         .btn-gray { background-color: #333; color: #fff; }
+
+        .active-pencil {
+            background-color: #dc3545 !important; /* Rouge quand actif pour annuler */
+        }
         
-        /* Bouton Bluetooth avec effet lumineux (néon) */
+        /* Bouton Bluetooth */
         .btn-bt { 
             background-color: #333; 
             color: #888; 
@@ -96,7 +99,7 @@
             margin: 0 4px;
         }
 
-        /* BADGES (Règles & Benchmark) */
+        /* BADGES (Règles & Benchmark affichés sur le bloc) */
         .badges-container {
             display: flex;
             gap: 4px;
@@ -112,9 +115,10 @@
             border-radius: 4px;
             white-space: nowrap;
         }
-        .badge-nokickboard { color: #ff0000; background-color: rgba(220, 53, 69, 0.15); border: 1px solid #dc3545; }
-        .badge-markedholds { color: #28a745; background-color: rgba(40, 167, 69, 0.15); border: 1px solid #28a745; }
-        .badge-footless { color: #f1c40f; background-color: rgba(241, 196, 15, 0.15); border: 1px solid #f1c40f; }
+        /* Couleurs demandées pour les règles */
+        .badge-nokickboard { color: #ff0000; background-color: rgba(220, 53, 69, 0.15); border: 1px solid #dc3545; } /* Rouge */
+        .badge-markedholds { color: #28a745; background-color: rgba(40, 167, 69, 0.15); border: 1px solid #28a745; } /* Vert */
+        .badge-footless { color: #f1c40f; background-color: rgba(241, 196, 15, 0.15); border: 1px solid #f1c40f; } /* Jaune */
         
         .badge-benchmark {
             display: none;
@@ -130,15 +134,7 @@
             border: 1px solid #d4ac0d;
         }
 
-        .filter-checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.75rem;
-            color: #ddd;
-            cursor: pointer;
-        }
-
+        /* FOOTER STATS ET FILTRES */
         .footer-info {
             display: flex;
             justify-content: space-between;
@@ -151,8 +147,7 @@
             padding: 0 2px;
             box-sizing: border-box;
         }
-        
-        .footer-info span {
+        .footer-info span.counter {
             color: #ffb700;
             font-weight: bold;
         }
@@ -187,6 +182,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            cursor: pointer;
         }
 
         /* PRISES */
@@ -230,17 +226,21 @@
 
     <h1>Mini MoonBoard</h1>
 
-    <!-- LIGNE 1 : Connectivité et Importation -->
+    <!-- LIGNE 1 : Outils -->
     <div class="toolbar">
         <button id="btnConnect" class="btn-bt" title="Bluetooth">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>
         </button>
-        <button id="btnPasteJson" class="btn-light-purple">📋 Coller Base JSON</button>
+        <button id="btnImport" class="btn-purple">📥 Importer JSON</button>
+        <input type="file" id="fileImport" accept=".json" style="display: none;">
+        
         <button id="btnClearStorage" class="btn-yellow">⚠️ Vider</button>
-        <button id="btnAdjustGrid" class="btn-gray" title="Ajuster la grille">⚙️ Grille</button>
+        <button id="btnAdjustGrid" class="btn-gray">⚙️ Grille</button>
+        <button id="btnPencil" class="btn-orange">✏️ Créer</button>
+        <button id="btnSave" class="btn-green" style="display: none;">💾 Enregistrer</button>
     </div>
 
-    <!-- LIGNE 2 : Navigation et Filtres -->
+    <!-- LIGNE 2 : Select & Cotation -->
     <div class="toolbar" style="flex-wrap: nowrap;">
         <select id="blockSelect" class="main-select"></select>
         
@@ -255,16 +255,12 @@
             <option value="8A">8A</option> <option value="8A+">8A+</option>
             <option value="8B">8B</option> <option value="8B+">8B+</option>
         </select>
-
-        <label class="filter-checkbox-label" title="Benchmark uniquement">
-            <input type="checkbox" id="filterBenchmark"> ★
-        </label>
     </div>
 
-    <!-- LIGNE 3 : Badges et Contrôles -->
+    <!-- LIGNE 3 : Badges et Navigation -->
     <div class="toolbar" style="justify-content: space-between;">
         <div class="badges-container" id="badgesContainer">
-            <span id="badgeBenchmark" class="badge-benchmark" title="Benchmark">B</span>
+            <span id="badgeBenchmark" class="badge-benchmark" title="Ce bloc est un Benchmark" style="display: none;">B</span>
             <span id="badgeNoKb" class="inline-badge badge-nokickboard">NO KICKBOARD</span>
             <span id="badgeMarked" class="inline-badge badge-markedholds">MARKED HOLDS</span>
             <span id="badgeFootless" class="inline-badge badge-footless">FOOTLESS</span>
@@ -277,10 +273,21 @@
         </div>
     </div>
 
-    <!-- LIGNE 4 : Stats -->
+    <!-- LIGNE 4 : Filtres et Stats (Disposition exacte demandée) -->
     <div class="footer-info">
-        <label><input type="checkbox" id="excludeCompleted"> Masquer cochés</label>
-        <span id="blockCounter">Fait:0 | Reste:0 | Tot:0</span>
+        <!-- A gauche -->
+        <label style="display: flex; align-items: center; gap: 4px;">
+            <input type="checkbox" id="excludeCompleted"> Masquer cochés
+        </label>
+        
+        <!-- Au milieu : Filtre Benchmark -->
+        <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;" title="N'afficher que les Benchmarks">
+            <input type="checkbox" id="filterBenchmark">
+            <span style="background-color: #f1c40f; color: #000; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; border: 1px solid #d4ac0d;">B</span>
+        </label>
+
+        <!-- A droite : Stats -->
+        <span id="blockCounter" class="counter">Fait:0 | Reste:0 | Tot:0</span>
     </div>
 
     <!-- MUR -->
@@ -316,6 +323,10 @@
         
         let blocks = JSON.parse(localStorage.getItem('minimoon_blocks') || '{}');
         let currentBlockName = "";
+        
+        // Variables pour la Création
+        let isCreating = false;
+        let currentCreation = { depart: [], progression: [], arrivee: [] };
 
         const gridOverlay = document.getElementById('gridOverlay');
         const blockSelect = document.getElementById('blockSelect');
@@ -325,6 +336,9 @@
         const blockCounter = document.getElementById('blockCounter');
         const chkCompleted = document.getElementById('chkCompleted');
         
+        const btnPencil = document.getElementById('btnPencil');
+        const btnSave = document.getElementById('btnSave');
+
         // Badges
         const badgeNoKb = document.getElementById('badgeNoKb');
         const badgeMarked = document.getElementById('badgeMarked');
@@ -357,66 +371,71 @@
             }
         });
 
-        // Fonction centralisée pour envoyer à l'ESP32
+        // Fonction pour envoyer à l'ESP32
         function sendToESP32(blockData) {
             if (!blockData) return;
             console.log("Envoi à l'ESP32 du bloc :", blockData);
             
-            // Reconstruire le tableau "moves" complet si besoin pour ton firmware ESP
-            // Exemple : [{id: "F5", isStart: true}, {id: "G8"}, {id: "K12", isEnd: true}]
             const moves = [];
             blockData.depart.forEach(id => moves.push({ Description: id, isStart: true }));
             blockData.progression.forEach(id => moves.push({ Description: id }));
             blockData.arrivee.forEach(id => moves.push({ Description: id, isEnd: true }));
 
             // --> INSERE TON CODE D'ENVOI ICI <--
-            // Exemple Bluetooth : characteristic.writeValue(encodeData(moves))
-            // Exemple WebSocket : if(ws && ws.readyState === 1) ws.send(JSON.stringify({moves: moves}));
         }
 
         // ==========================================
-        // IMPORTATION JSON INTELLIGENTE
+        // IMPORTATION JSON
         // ==========================================
-        document.getElementById('btnPasteJson').addEventListener('click', () => {
-            let str = prompt("Colle la base de données JSON complète ici :");
-            if (!str) return;
-            try {
-                let parsed = JSON.parse(str);
-                let dataArray = Array.isArray(parsed) ? parsed : (parsed.data || Object.values(parsed) || []);
-                
-                let newBlocks = {};
-                dataArray.forEach(route => {
-                    let depart = [], progression = [], arrivee = [];
+        document.getElementById('btnImport').addEventListener('click', () => {
+            document.getElementById('fileImport').click();
+        });
+
+        document.getElementById('fileImport').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    let parsed = JSON.parse(ev.target.result);
+                    let dataArray = Array.isArray(parsed) ? parsed : (parsed.data || Object.values(parsed) || []);
                     
-                    if (route.moves && Array.isArray(route.moves)) {
-                        route.moves.forEach(m => {
-                            let id = (m.Description || m.hold || m.id || m).toUpperCase();
-                            if (m.isStart) depart.push(id);
-                            else if (m.isEnd) arrivee.push(id);
-                            else progression.push(id);
-                        });
-                    }
+                    let newBlocks = {};
+                    dataArray.forEach(route => {
+                        let depart = [], progression = [], arrivee = [];
+                        
+                        if (route.moves && Array.isArray(route.moves)) {
+                            route.moves.forEach(m => {
+                                let id = (m.Description || m.hold || m.id || m).toUpperCase();
+                                if (m.isStart) depart.push(id);
+                                else if (m.isEnd) arrivee.push(id);
+                                else progression.push(id);
+                            });
+                        }
 
-                    // Formatage interne pour correspondre au PWA
-                    newBlocks[route.name] = {
-                        depart: depart,
-                        progression: progression,
-                        arrivee: arrivee,
-                        method: route.method || "",
-                        grade: route.grade || route.userGrade || "",
-                        isBenchmark: route.isBenchmark === true,
-                        completed: false
-                    };
-                });
+                        newBlocks[route.name] = {
+                            depart: depart,
+                            progression: progression,
+                            arrivee: arrivee,
+                            method: route.method || "",
+                            grade: route.grade || route.userGrade || "",
+                            isBenchmark: route.isBenchmark === true,
+                            completed: false
+                        };
+                    });
 
-                blocks = {...blocks, ...newBlocks};
-                localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-                alert(`${Object.keys(newBlocks).length} blocs chargés !`);
-                updateBlockSelect(); 
-            } catch(err) { 
-                alert("Erreur de format JSON."); 
-                console.error(err);
-            }
+                    blocks = {...blocks, ...newBlocks};
+                    localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+                    alert(`${Object.keys(newBlocks).length} blocs importés avec succès !`);
+                    updateBlockSelect(); 
+                } catch(err) { 
+                    alert("Erreur de format JSON."); 
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = ''; // Réinitialise l'input
         });
 
         document.getElementById('btnClearStorage').addEventListener('click', () => {
@@ -428,7 +447,7 @@
         });
 
         // ==========================================
-        // GESTION DU MUR ET DES BLOCS
+        // GESTION DU MUR, DES BLOCS ET CREATION
         // ==========================================
         function initGrid() {
             gridOverlay.innerHTML = '';
@@ -437,6 +456,7 @@
                     let holdId = c + r;
                     let cell = document.createElement('div');
                     cell.className = 'grid-cell';
+                    cell.addEventListener('click', () => handleHoldClick(holdId));
                     let div = document.createElement('div');
                     div.className = 'hold';
                     div.dataset.id = holdId;
@@ -446,7 +466,98 @@
             });
         }
 
+        // Clic sur une prise (Mode création)
+        function handleHoldClick(holdId) {
+            if (!isCreating) return;
+            
+            let estDepart = currentCreation.depart.includes(holdId);
+            let estProgression = currentCreation.progression.includes(holdId);
+            let estArrivee = currentCreation.arrivee.includes(holdId);
+            
+            // Retirer de toutes les listes
+            currentCreation.depart = currentCreation.depart.filter(h => h !== holdId);
+            currentCreation.progression = currentCreation.progression.filter(h => h !== holdId);
+            currentCreation.arrivee = currentCreation.arrivee.filter(h => h !== holdId);
+
+            let h = document.querySelector(`[data-id="${holdId}"]`);
+            h.classList.remove('depart', 'progression', 'arrivee');
+
+            // Cycle: Vide -> Départ(Vert) -> Progression(Bleu) -> Arrivée(Rouge) -> Vide
+            if (estDepart) {
+                currentCreation.progression.push(holdId); 
+                h.classList.add('progression');
+            } else if (estProgression) {
+                currentCreation.arrivee.push(holdId);
+                h.classList.add('arrivee');
+            } else if (estArrivee) {
+                // Reste vide
+            } else {
+                currentCreation.depart.push(holdId);
+                h.classList.add('depart');
+            }
+        }
+
+        // Activer / Annuler le mode création
+        btnPencil.addEventListener('click', () => {
+            isCreating = !isCreating;
+            
+            if (isCreating) {
+                btnPencil.classList.add('active-pencil');
+                btnPencil.innerHTML = '❌ Annuler';
+                btnSave.style.display = 'flex'; // Affiche le bouton Enregistrer
+                
+                // Nettoyer visuellement
+                document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
+                badgeNoKb.style.display = 'none';
+                badgeMarked.style.display = 'none';
+                badgeFootless.style.display = 'none';
+                badgeBenchmark.style.display = 'none';
+                
+                currentCreation = { depart: [], progression: [], arrivee: [] };
+            } else {
+                // Annuler
+                btnPencil.classList.remove('active-pencil');
+                btnPencil.innerHTML = '✏️ Créer';
+                btnSave.style.display = 'none';
+                displayBlock(blockSelect.value); // Restaure le bloc actuel
+            }
+        });
+
+        // Enregistrer le bloc créé
+        btnSave.addEventListener('click', () => {
+            if (currentCreation.depart.length === 0 && currentCreation.progression.length === 0 && currentCreation.arrivee.length === 0) {
+                alert("Ajoute au moins une prise en cliquant sur le mur !");
+                return;
+            }
+            
+            let name = prompt("Nom du nouveau bloc :");
+            if (name) {
+                blocks[name] = {
+                    depart: currentCreation.depart,
+                    progression: currentCreation.progression,
+                    arrivee: currentCreation.arrivee,
+                    method: "", // Par défaut, aucune règle
+                    grade: "?",
+                    isBenchmark: false,
+                    completed: false
+                };
+                localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+                
+                // Quitter le mode création
+                isCreating = false;
+                btnPencil.classList.remove('active-pencil');
+                btnPencil.innerHTML = '✏️ Créer';
+                btnSave.style.display = 'none';
+                
+                updateBlockSelect();
+                blockSelect.value = name;
+                displayBlock(name);
+            }
+        });
+
         function displayBlock(name) {
+            if (isCreating) return; // Ne pas interférer si on dessine
+            
             currentBlockName = name;
             let block = blocks[name];
             
@@ -458,23 +569,20 @@
             badgeBenchmark.style.display = 'none';
             
             if (block) {
-                // Allumer le visuel
                 block.depart.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('depart'); });
                 block.progression.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('progression'); });
                 block.arrivee.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('arrivee'); });
                 
                 chkCompleted.checked = block.completed || false;
                 
-                // Affichage dynamique des badges selon la "method"
+                // Affichage dynamique des badges de règles (Method)
                 let methodLower = (block.method || "").toLowerCase();
                 if (methodLower.includes("no kickboard")) badgeNoKb.style.display = 'inline-block';
                 if (methodLower.includes("marked hold") || methodLower.includes("any marked")) badgeMarked.style.display = 'inline-block';
                 if (methodLower.includes("footless")) badgeFootless.style.display = 'inline-block';
                 
-                // Logo Benchmark
-                if (block.isBenchmark) badgeBenchmark.style.display = 'flex';
+                if (block.isBenchmark) badgeBenchmark.style.display = 'inline-flex';
 
-                // Envoi physique aux LEDs
                 sendToESP32(block);
             } else {
                 chkCompleted.checked = false;
@@ -504,7 +612,6 @@
                 return true;
             });
 
-            // Ajout des options avec indication de la note dans la liste
             filteredKeys.forEach(k => {
                 let opt = document.createElement('option');
                 opt.value = k; 
@@ -521,7 +628,7 @@
             }
         }
 
-        // Evénements de l'interface
+        // Evénements
         blockSelect.addEventListener('change', (e) => displayBlock(e.target.value));
         filterCotation.addEventListener('change', updateBlockSelect);
         filterBenchmark.addEventListener('change', updateBlockSelect);
@@ -561,6 +668,8 @@
             touchEndX = e.changedTouches[0].screenX;
             touchEndY = e.changedTouches[0].screenY;
             
+            if (isCreating) return; // Pas de swipe si on dessine
+
             const deltaX = touchEndX - touchStartX;
             const deltaY = touchEndY - touchStartY;
 
