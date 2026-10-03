@@ -255,7 +255,7 @@
             transition: transform 0.1s;
         }
         
-        /* Mode Ajustement de Grille : Forçage prioritaire de l'affichage en pointillés */
+        /* Mode Ajustement de Grille : Affichage des cercles en pointillés et fond semi-transparent */
         div.grid-overlay.grid-adjusting div.hold {
             border: 1.5px dashed rgba(255, 255, 255, 0.9) !important;
             background: rgba(0, 0, 0, 0.35) !important;
@@ -432,6 +432,17 @@
             display: none; position: fixed; top: 15px; left: 50%; transform: translateX(-50%); 
             z-index: 1000; width: 95%; max-width: 350px;
         }
+        
+        /* MODALE AJUSTER LA GRILLE POSITIONNÉE EN HAUT ET TRANSLUCIDE */
+        #adjustModal {
+            top: 45px; /* Placé tout en haut juste sous le header pour libérer totalement le bas du carré */
+        }
+        #adjustModal .modal-content {
+            background: rgba(20, 20, 20, 0.82); /* Semi-transparent pour voir à travers */
+            backdrop-filter: blur(4px);
+            border: 1px solid #ffb700;
+        }
+
         .modal-content {
             background: rgba(30, 30, 30, 0.98); padding: 12px; border-radius: 8px; 
             display: flex; flex-direction: column; gap: 8px; border: 1px solid #555; box-shadow: 0 5px 15px rgba(0,0,0,0.8);
@@ -470,7 +481,7 @@
                 <label><input type="checkbox" id="onlyCompleted"> <span class="menu-icon-check"></span> Uniquement réalisés</label>
                 <label><input type="checkbox" id="filterBenchmark"> <span class="menu-icon-badge">B</span> Uniquement Benchmarks</label>
                 <hr>
-                <button id="btnClearStorage" style="color: #e74c3c;">⚠️ Vider la base</button>
+                <button id="btnClearStorage" style="color: #e74c3c;">⚠️️ Vider la base</button>
             </div>
         </div>
         <input type="file" id="fileImport" accept=".json" style="display: none;">
@@ -550,7 +561,7 @@
         </div>
     </div>
 
-    <!-- MODALE GRILLE -->
+    <!-- MODALE GRILLE (Positionnée en haut) -->
     <div id="adjustModal" class="modal">
         <div class="modal-content">
             <h3>Ajuster la grille</h3>
