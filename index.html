@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini MoonBoard DIY</title>
+    <title>Mini Moon Board 2025</title>
     
     <link rel="manifest" href="manifest.json">
     
@@ -18,10 +18,54 @@
             flex-direction: column;
             align-items: center;
         }
+        
+        /* HEADER : Bluetooth, Titre, Menu */
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 450px;
+            margin-bottom: 12px;
+            position: relative;
+        }
         h1 {
-            font-size: 1.1rem;
-            margin: 2px 0 8px 0;
+            font-size: 1.2rem;
+            margin: 0;
             color: #ffb700;
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        /* Menu Hamburger */
+        .btn-menu {
+            background: transparent;
+            color: white;
+            font-size: 1.5rem;
+            border: none;
+            cursor: pointer;
+            padding: 0 5px;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 35px;
+            background-color: #1e1e1e;
+            min-width: 140px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.8);
+            z-index: 100;
+            border-radius: 4px;
+            border: 1px solid #444;
+            flex-direction: column;
+        }
+        .dropdown-content.show {
+            display: flex;
+        }
+        .dropdown-content button {
+            margin: 4px;
+            justify-content: flex-start;
+            font-size: 0.8rem;
         }
         
         /* BARRES D'OUTILS COMPACTES */
@@ -36,7 +80,7 @@
             margin-bottom: 8px;
         }
 
-        button, select.btn-outline, select.main-select {
+        button, select.btn-outline, select.main-select, input.search-input {
             border: none;
             padding: 6px 8px;
             border-radius: 4px;
@@ -59,17 +103,14 @@
         .btn-red { background-color: #dc3545; }
         .btn-yellow { background-color: #f1c40f; color: #000; }
         .btn-gray { background-color: #333; color: #fff; }
-
-        .active-pencil {
-            background-color: #dc3545 !important; /* Rouge quand actif pour annuler */
-        }
         
         /* Bouton Bluetooth */
         .btn-bt { 
             background-color: #333; 
             color: #888; 
             border: 1px solid transparent; 
-            transition: all 0.3s ease; 
+            transition: all 0.3s ease;
+            padding: 6px;
         }
         .btn-bt.connected { 
             color: #00d2ff; 
@@ -78,7 +119,7 @@
             box-shadow: 0 0 10px rgba(0, 210, 255, 0.6); 
         }
         
-        /* Sélecteurs */
+        /* Sélecteurs et Recherche */
         select.btn-outline { 
             background-color: #1e1e1e; 
             border: 1px solid #e67e22; 
@@ -90,6 +131,15 @@
             flex-grow: 1;
             font-size: 0.85rem;
             min-width: 120px;
+        }
+        input.search-input {
+            background: #222;
+            border: 1px solid #444;
+            color: #fff;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 8px;
+            display: none;
         }
 
         .chk-completed {
@@ -115,7 +165,7 @@
             border-radius: 4px;
             white-space: nowrap;
         }
-        /* Couleurs demandées pour les règles */
+        /* Couleurs des règles */
         .badge-nokickboard { color: #ff0000; background-color: rgba(220, 53, 69, 0.15); border: 1px solid #dc3545; }
         .badge-markedholds { color: #28a745; background-color: rgba(40, 167, 69, 0.15); border: 1px solid #28a745; }
         .badge-footless { color: #f1c40f; background-color: rgba(241, 196, 15, 0.15); border: 1px solid #f1c40f; }
@@ -201,13 +251,7 @@
         .hold.progression { border: 3px solid #00d2ff; box-shadow: 0 0 8px rgba(0, 210, 255, 0.8); }
         .hold.arrivee { border: 3px solid #ff0000; box-shadow: 0 0 8px rgba(255, 0, 0, 0.8); }
 
-        .grid-adjusting .hold {
-            border: 1px dashed rgba(255, 255, 255, 0.6) !important;
-            background: rgba(255, 255, 255, 0.2) !important;
-            box-shadow: none !important;
-        }
-
-        /* MODALE D'AJUSTEMENT */
+        /* MODALE D'AJUSTEMENT GRILLE */
         .modal {
             display: none; position: fixed; top: 5px; left: 50%; transform: translateX(-50%); 
             z-index: 1000; width: 95%; max-width: 350px;
@@ -224,26 +268,42 @@
 </head>
 <body>
 
-    <h1>Mini MoonBoard</h1>
-
-    <!-- LIGNE 1 : Outils Ultra-Compacte -->
-    <div class="toolbar">
+    <!-- LIGNE 1 : Header (Bluetooth, Titre, Menu Hamburger) -->
+    <div class="header-container">
         <button id="btnConnect" class="btn-bt" title="Bluetooth">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>
         </button>
-        <button id="btnImport" class="btn-purple">📥 Importer</button>
-        <input type="file" id="fileImport" accept=".json" style="display: none;">
         
-        <button id="btnClearStorage" class="btn-yellow">⚠️ Vider</button>
-        <button id="btnAdjustGrid" class="btn-gray">⚙️</button>
-        <button id="btnPencil" class="btn-orange">✏️</button>
-        <button id="btnSave" class="btn-green" style="display: none;">💾 Enregistrer</button>
+        <h1>Mini Moon Board 2025</h1>
+        
+        <!-- Outils de Création (cachés par défaut) -->
+        <div id="creationTools" style="display: none; gap: 6px;">
+            <button id="btnCancelCreate" class="btn-red">❌</button>
+            <button id="btnSaveCreate" class="btn-green">💾</button>
+        </div>
+
+        <!-- Menu Hamburger (caché pendant la création) -->
+        <div>
+            <button id="btnMenu" class="btn-menu">☰</button>
+            <div id="dropdownMenu" class="dropdown-content">
+                <button id="btnImport" class="btn-purple">📥 Importer</button>
+                <button id="btnClearStorage" class="btn-yellow">⚠️ Vider</button>
+                <button id="btnAdjustGrid" class="btn-gray">⚙️</button>
+                <button id="btnPencil" class="btn-orange">✏️</button>
+            </div>
+        </div>
+        <input type="file" id="fileImport" accept=".json" style="display: none;">
     </div>
 
-    <!-- LIGNE 2 : Select & Cotation -->
+    <!-- RECHERCHE CACHÉE (Apparaît au clic sur la loupe) -->
+    <div style="width: 100%; max-width: 450px;">
+        <input type="text" id="searchInput" class="search-input" placeholder="Rechercher un bloc par nom...">
+    </div>
+
+    <!-- LIGNE 2 : Select, Loupe & Cotation -->
     <div class="toolbar" style="flex-wrap: nowrap;">
         <select id="blockSelect" class="main-select"></select>
-        
+        <button id="btnSearchToggle" class="btn-gray">🔍</button>
         <select id="filterCotation" class="btn-outline">
             <option value="">Tous</option>
             <option value="6A">6A</option> <option value="6A+">6A+</option>
@@ -260,7 +320,7 @@
     <!-- LIGNE 3 : Badges et Navigation -->
     <div class="toolbar" style="justify-content: space-between;">
         <div class="badges-container" id="badgesContainer">
-            <span id="badgeBenchmark" class="badge-benchmark" title="Ce bloc est un Benchmark" style="display: none;">B</span>
+            <span id="badgeBenchmark" class="badge-benchmark" title="Ce bloc est un Benchmark">B</span>
             <span id="badgeNoKb" class="inline-badge badge-nokickboard">NO KICKBOARD</span>
             <span id="badgeMarked" class="inline-badge badge-markedholds">MARKED HOLDS</span>
             <span id="badgeFootless" class="inline-badge badge-footless">FOOTLESS</span>
@@ -279,7 +339,7 @@
             <input type="checkbox" id="excludeCompleted"> Masquer cochés
         </label>
         
-        <!-- Filtre Benchmark au centre -->
+        <!-- Filtre Benchmark -->
         <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;" title="N'afficher que les Benchmarks">
             <input type="checkbox" id="filterBenchmark">
             <span style="background-color: #f1c40f; color: #000; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; border: 1px solid #d4ac0d;">B</span>
@@ -326,6 +386,7 @@
         let isCreating = false;
         let currentCreation = { depart: [], progression: [], arrivee: [] };
 
+        // DOM Elements
         const gridOverlay = document.getElementById('gridOverlay');
         const blockSelect = document.getElementById('blockSelect');
         const filterCotation = document.getElementById('filterCotation');
@@ -334,14 +395,49 @@
         const blockCounter = document.getElementById('blockCounter');
         const chkCompleted = document.getElementById('chkCompleted');
         
+        // Recherche
+        const searchInput = document.getElementById('searchInput');
+        const btnSearchToggle = document.getElementById('btnSearchToggle');
+
+        // Menu et Création
+        const btnMenu = document.getElementById('btnMenu');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        const creationTools = document.getElementById('creationTools');
         const btnPencil = document.getElementById('btnPencil');
-        const btnSave = document.getElementById('btnSave');
+        const btnCancelCreate = document.getElementById('btnCancelCreate');
+        const btnSaveCreate = document.getElementById('btnSaveCreate');
 
         // Badges
         const badgeNoKb = document.getElementById('badgeNoKb');
         const badgeMarked = document.getElementById('badgeMarked');
         const badgeFootless = document.getElementById('badgeFootless');
         const badgeBenchmark = document.getElementById('badgeBenchmark');
+
+        // ==========================================
+        // MENU DÉROULANT (HAMBURGER)
+        // ==========================================
+        btnMenu.addEventListener('click', (e) => {
+            dropdownMenu.classList.toggle('show');
+            e.stopPropagation();
+        });
+        document.addEventListener('click', () => {
+            dropdownMenu.classList.remove('show');
+        });
+
+        // ==========================================
+        // BARRE DE RECHERCHE
+        // ==========================================
+        btnSearchToggle.addEventListener('click', () => {
+            if (searchInput.style.display === 'none' || searchInput.style.display === '') {
+                searchInput.style.display = 'block';
+                searchInput.focus();
+            } else {
+                searchInput.style.display = 'none';
+                searchInput.value = '';
+                updateBlockSelect();
+            }
+        });
+        searchInput.addEventListener('input', updateBlockSelect);
 
         // ==========================================
         // BLUETOOTH / ENVOI ESP32
@@ -371,18 +467,15 @@
 
         function sendToESP32(blockData) {
             if (!blockData) return;
-            console.log("Envoi à l'ESP32 du bloc :", blockData);
-            
             const moves = [];
             blockData.depart.forEach(id => moves.push({ Description: id, isStart: true }));
             blockData.progression.forEach(id => moves.push({ Description: id }));
             blockData.arrivee.forEach(id => moves.push({ Description: id, isEnd: true }));
-
             // --> INSERE TON CODE D'ENVOI ICI <--
         }
 
         // ==========================================
-        // IMPORTATION JSON INTELLIGENTE
+        // IMPORTATION JSON
         // ==========================================
         document.getElementById('btnImport').addEventListener('click', () => {
             document.getElementById('fileImport').click();
@@ -396,25 +489,19 @@
             reader.onload = ev => {
                 try {
                     let parsed = JSON.parse(ev.target.result);
-                    
-                    // Trouver le tableau dans le JSON (Tolérance pour différents formats)
                     let dataArray = [];
+                    
                     if (Array.isArray(parsed)) {
                         dataArray = parsed;
                     } else if (parsed && typeof parsed === 'object') {
-                        // Chercher une propriété contenant un tableau
                         let arrayKey = Object.keys(parsed).find(k => Array.isArray(parsed[k]));
                         dataArray = arrayKey ? parsed[arrayKey] : Object.values(parsed);
                     }
                     
-                    if (!dataArray || dataArray.length === 0) {
-                        alert("Aucun bloc valide trouvé dans ce fichier.");
-                        return;
-                    }
+                    if (!dataArray || dataArray.length === 0) return alert("Aucun bloc valide trouvé.");
 
                     let newBlocks = {};
                     dataArray.forEach((route, index) => {
-                        // Tolérance majuscules/minuscules
                         let routeName = route.name || route.Name || `Bloc_Importé_${index + 1}`;
                         let routeMethod = route.method || route.Method || "";
                         let routeGrade = route.grade || route.Grade || route.userGrade || route.UserGrade || "?";
@@ -426,49 +513,38 @@
                         if (Array.isArray(routeMoves)) {
                             routeMoves.forEach(m => {
                                 let rawId = m.Description || m.description || m.hold || m.id || m.Id;
-                                if (!rawId && typeof m === 'string') rawId = m; // Cas où c'est juste un array de string
+                                if (!rawId && typeof m === 'string') rawId = m;
                                 
                                 if (rawId && typeof rawId === 'string') {
                                     let id = rawId.toUpperCase();
-                                    let isStart = m.isStart || m.IsStart;
-                                    let isEnd = m.isEnd || m.IsEnd;
-                                    
-                                    if (isStart) depart.push(id);
-                                    else if (isEnd) arrivee.push(id);
+                                    if (m.isStart || m.IsStart) depart.push(id);
+                                    else if (m.isEnd || m.IsEnd) arrivee.push(id);
                                     else progression.push(id);
                                 }
                             });
                         }
 
                         newBlocks[routeName] = {
-                            depart: depart,
-                            progression: progression,
-                            arrivee: arrivee,
-                            method: routeMethod,
-                            grade: routeGrade,
-                            isBenchmark: isBenchmark,
-                            completed: false
+                            depart: depart, progression: progression, arrivee: arrivee,
+                            method: routeMethod, grade: routeGrade, isBenchmark: isBenchmark, completed: false
                         };
                     });
 
                     blocks = {...blocks, ...newBlocks};
                     localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-                    alert(`${Object.keys(newBlocks).length} blocs importés avec succès !`);
+                    alert(`${Object.keys(newBlocks).length} blocs importés !`);
                     updateBlockSelect(); 
                 } catch(err) { 
-                    alert("Erreur: Le fichier fourni n'est pas un JSON valide."); 
-                    console.error(err);
+                    alert("Erreur: Le fichier n'est pas un JSON valide."); 
                 }
             };
             reader.readAsText(file);
-            e.target.value = ''; // Réinitialise l'input
+            e.target.value = '';
         });
 
         document.getElementById('btnClearStorage').addEventListener('click', () => {
             if(confirm("⚠️ Effacer TOUS les blocs de la mémoire locale ?")) {
-                blocks = {}; 
-                localStorage.removeItem('minimoon_blocks'); 
-                updateBlockSelect();
+                blocks = {}; localStorage.removeItem('minimoon_blocks'); updateBlockSelect();
             }
         });
 
@@ -492,7 +568,6 @@
             });
         }
 
-        // Clic sur une prise (Mode création)
         function handleHoldClick(holdId) {
             if (!isCreating) return;
             
@@ -500,7 +575,6 @@
             let estProgression = currentCreation.progression.includes(holdId);
             let estArrivee = currentCreation.arrivee.includes(holdId);
             
-            // Retirer
             currentCreation.depart = currentCreation.depart.filter(h => h !== holdId);
             currentCreation.progression = currentCreation.progression.filter(h => h !== holdId);
             currentCreation.arrivee = currentCreation.arrivee.filter(h => h !== holdId);
@@ -508,69 +582,50 @@
             let h = document.querySelector(`[data-id="${holdId}"]`);
             h.classList.remove('depart', 'progression', 'arrivee');
 
-            // Cycle: Vide -> Vert -> Bleu -> Rouge -> Vide
-            if (estDepart) {
-                currentCreation.progression.push(holdId); 
-                h.classList.add('progression');
-            } else if (estProgression) {
-                currentCreation.arrivee.push(holdId);
-                h.classList.add('arrivee');
-            } else if (estArrivee) {
-                // Reste vide
-            } else {
-                currentCreation.depart.push(holdId);
-                h.classList.add('depart');
-            }
+            if (estDepart) { currentCreation.progression.push(holdId); h.classList.add('progression'); } 
+            else if (estProgression) { currentCreation.arrivee.push(holdId); h.classList.add('arrivee'); } 
+            else if (estArrivee) { /* Vide */ } 
+            else { currentCreation.depart.push(holdId); h.classList.add('depart'); }
         }
 
-        // Activer / Annuler Création
+        // Lancer la Création
         btnPencil.addEventListener('click', () => {
-            isCreating = !isCreating;
+            isCreating = true;
+            dropdownMenu.classList.remove('show');
+            btnMenu.style.display = 'none';
+            creationTools.style.display = 'flex';
             
-            if (isCreating) {
-                btnPencil.classList.add('active-pencil');
-                btnPencil.innerHTML = '❌';
-                btnSave.style.display = 'flex';
-                
-                document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
-                badgeNoKb.style.display = 'none';
-                badgeMarked.style.display = 'none';
-                badgeFootless.style.display = 'none';
-                badgeBenchmark.style.display = 'none';
-                
-                currentCreation = { depart: [], progression: [], arrivee: [] };
-            } else {
-                btnPencil.classList.remove('active-pencil');
-                btnPencil.innerHTML = '✏️';
-                btnSave.style.display = 'none';
-                displayBlock(blockSelect.value);
-            }
+            document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
+            badgeNoKb.style.display = 'none'; badgeMarked.style.display = 'none';
+            badgeFootless.style.display = 'none'; badgeBenchmark.style.display = 'none';
+            
+            currentCreation = { depart: [], progression: [], arrivee: [] };
         });
 
-        // Enregistrer bloc créé
-        btnSave.addEventListener('click', () => {
+        // Annuler Création
+        btnCancelCreate.addEventListener('click', () => {
+            isCreating = false;
+            btnMenu.style.display = 'block';
+            creationTools.style.display = 'none';
+            displayBlock(blockSelect.value);
+        });
+
+        // Enregistrer bloc
+        btnSaveCreate.addEventListener('click', () => {
             if (currentCreation.depart.length === 0 && currentCreation.progression.length === 0 && currentCreation.arrivee.length === 0) {
-                alert("Ajoute au moins une prise en cliquant sur le mur !");
-                return;
+                return alert("Ajoute au moins une prise sur le mur !");
             }
-            
             let name = prompt("Nom du nouveau bloc :");
             if (name) {
                 blocks[name] = {
-                    depart: currentCreation.depart,
-                    progression: currentCreation.progression,
-                    arrivee: currentCreation.arrivee,
-                    method: "", 
-                    grade: "?",
-                    isBenchmark: false,
-                    completed: false
+                    depart: currentCreation.depart, progression: currentCreation.progression, arrivee: currentCreation.arrivee,
+                    method: "", grade: "?", isBenchmark: false, completed: false
                 };
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 
                 isCreating = false;
-                btnPencil.classList.remove('active-pencil');
-                btnPencil.innerHTML = '✏️️';
-                btnSave.style.display = 'none';
+                btnMenu.style.display = 'block';
+                creationTools.style.display = 'none';
                 
                 updateBlockSelect();
                 blockSelect.value = name;
@@ -580,15 +635,12 @@
 
         function displayBlock(name) {
             if (isCreating) return; 
-            
             currentBlockName = name;
             let block = blocks[name];
             
             document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
-            badgeNoKb.style.display = 'none';
-            badgeMarked.style.display = 'none';
-            badgeFootless.style.display = 'none';
-            badgeBenchmark.style.display = 'none';
+            badgeNoKb.style.display = 'none'; badgeMarked.style.display = 'none';
+            badgeFootless.style.display = 'none'; badgeBenchmark.style.display = 'none';
             
             if (block) {
                 block.depart.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('depart'); });
@@ -601,7 +653,6 @@
                 if (methodLower.includes("no kickboard")) badgeNoKb.style.display = 'inline-block';
                 if (methodLower.includes("marked hold") || methodLower.includes("any marked")) badgeMarked.style.display = 'inline-block';
                 if (methodLower.includes("footless")) badgeFootless.style.display = 'inline-block';
-                
                 if (block.isBenchmark) badgeBenchmark.style.display = 'inline-flex';
 
                 sendToESP32(block);
@@ -619,24 +670,28 @@
             let excludeChecked = excludeCompletedCheckbox.checked;
             let currentGradeFilter = filterCotation.value;
             let benchmarkOnly = filterBenchmark.checked;
+            let searchQuery = searchInput.value.toLowerCase();
 
             let totalBlocks = allKeys.length;
             let totalCompleted = allKeys.filter(k => blocks[k].completed).length;
-            let totalNotCompleted = totalBlocks - totalCompleted;
-            blockCounter.textContent = `Fait:${totalCompleted} | Reste:${totalNotCompleted} | Tot:${totalBlocks}`;
-
+            
             let filteredKeys = allKeys.filter(k => {
                 let b = blocks[k];
                 if (excludeChecked && b.completed) return false;
                 if (currentGradeFilter && !(b.grade && b.grade.includes(currentGradeFilter))) return false;
                 if (benchmarkOnly && !b.isBenchmark) return false;
+                if (searchQuery && !k.toLowerCase().includes(searchQuery)) return false;
                 return true;
             });
+            
+            // Tri par ordre alphabétique
+            filteredKeys.sort((a, b) => a.localeCompare(b));
+
+            blockCounter.textContent = `Fait:${totalCompleted} | Reste:${totalBlocks - totalCompleted} | Tot:${totalBlocks}`;
 
             filteredKeys.forEach(k => {
                 let opt = document.createElement('option');
-                opt.value = k; 
-                opt.textContent = `${k} (${blocks[k].grade || '?'})`;
+                opt.value = k; opt.textContent = `${k} (${blocks[k].grade || '?'})`;
                 blockSelect.appendChild(opt);
             });
 
@@ -668,61 +723,43 @@
                 updateBlockSelect();
             }
         });
-        
         excludeCompletedCheckbox.addEventListener('change', () => {
             localStorage.setItem('minimoon_exclude', excludeCompletedCheckbox.checked);
             updateBlockSelect();
         });
 
-        // ==========================================
-        // GESTION DU SWIPE & GRILLE
-        // ==========================================
-        let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
+        // Swipe & Calibrage
+        let touchStartX = 0, touchStartY = 0;
         const mainBoardContainer = document.getElementById('mainBoardContainer');
-
         mainBoardContainer.addEventListener('touchstart', e => {
-            touchStartX = e.changedTouches[0].screenX;
-            touchStartY = e.changedTouches[0].screenY;
+            touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY;
         }, { passive: true });
-
         mainBoardContainer.addEventListener('touchend', e => {
-            touchEndX = e.changedTouches[0].screenX;
-            touchEndY = e.changedTouches[0].screenY;
-            
             if (isCreating) return;
-
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-
+            const deltaX = e.changedTouches[0].screenX - touchStartX;
+            const deltaY = e.changedTouches[0].screenY - touchStartY;
             if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
                 if (deltaX > 0) document.getElementById('btnPrev').click();
                 else document.getElementById('btnNext').click();
             }
         }, { passive: true });
 
-        // Calibrage de la grille
         const adjustModal = document.getElementById('adjustModal');
         const defaultGridConfig = { top: 9, left: 7.5, width: 85, height: 75.5 };
         let gridConfig = JSON.parse(localStorage.getItem('minimoon_grid')) || defaultGridConfig;
 
         function applyGridConfig() {
-            gridOverlay.style.top = gridConfig.top + '%';
-            gridOverlay.style.left = gridConfig.left + '%';
-            gridOverlay.style.width = gridConfig.width + '%';
-            gridOverlay.style.height = gridConfig.height + '%';
-            document.getElementById('adjTop').value = gridConfig.top;
-            document.getElementById('adjLeft').value = gridConfig.left;
-            document.getElementById('adjWidth').value = gridConfig.width;
-            document.getElementById('adjHeight').value = gridConfig.height;
+            gridOverlay.style.top = gridConfig.top + '%'; gridOverlay.style.left = gridConfig.left + '%';
+            gridOverlay.style.width = gridConfig.width + '%'; gridOverlay.style.height = gridConfig.height + '%';
+            document.getElementById('adjTop').value = gridConfig.top; document.getElementById('adjLeft').value = gridConfig.left;
+            document.getElementById('adjWidth').value = gridConfig.width; document.getElementById('adjHeight').value = gridConfig.height;
         }
 
         document.getElementById('btnAdjustGrid').addEventListener('click', () => {
-            adjustModal.style.display = 'block'; 
-            gridOverlay.classList.add('grid-adjusting');
+            adjustModal.style.display = 'block'; gridOverlay.classList.add('grid-adjusting');
         });
         document.getElementById('btnCloseAdjust').addEventListener('click', () => {
-            adjustModal.style.display = 'none';
-            gridOverlay.classList.remove('grid-adjusting');
+            adjustModal.style.display = 'none'; gridOverlay.classList.remove('grid-adjusting');
             localStorage.setItem('minimoon_grid', JSON.stringify(gridConfig));
         });
         document.getElementById('btnResetAdjust').addEventListener('click', () => {
@@ -730,16 +767,12 @@
         });
         ['adjTop', 'adjLeft', 'adjWidth', 'adjHeight'].forEach(id => {
             document.getElementById(id).addEventListener('input', (e) => {
-                gridConfig[id.replace('adj', '').toLowerCase()] = parseFloat(e.target.value);
-                applyGridConfig();
+                gridConfig[id.replace('adj', '').toLowerCase()] = parseFloat(e.target.value); applyGridConfig();
             });
         });
 
-        // INITIALISATION
         excludeCompletedCheckbox.checked = localStorage.getItem('minimoon_exclude') === 'true';
-        applyGridConfig(); 
-        initGrid();
-        updateBlockSelect();
+        applyGridConfig(); initGrid(); updateBlockSelect();
     </script>
 </body>
 </html>
