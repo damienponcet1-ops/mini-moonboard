@@ -52,7 +52,7 @@
             right: 0;
             top: 35px;
             background-color: #1e1e1e;
-            min-width: 210px;
+            min-width: 230px;
             box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.8);
             z-index: 100;
             border-radius: 4px;
@@ -211,7 +211,7 @@
             border: 1px solid #555;
         }
 
-        /* PANNEAU */
+        /* PANNEAU DU MUR */
         .board-container {
             position: relative;
             width: 100%;
@@ -255,7 +255,7 @@
             transition: transform 0.1s;
         }
         
-        /* Mode Ajustement de Grille : Affichage des cercles en pointillés et fond semi-transparent */
+        /* Mode Ajustement de Grille : Cercles pointillés et fond semi-transparent */
         div.grid-overlay.grid-adjusting div.hold {
             border: 1.5px dashed rgba(255, 255, 255, 0.9) !important;
             background: rgba(0, 0, 0, 0.35) !important;
@@ -306,7 +306,7 @@
             border: 1px solid #d4ac0d;
         }
 
-        /* PANNEAU DU BAS */
+        /* PANNEAU DU BAS (STANDARD) */
         .bottom-panel {
             width: 100%;
             max-width: 450px;
@@ -366,28 +366,11 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        .triptych-btn:active {
-            transform: scale(0.95);
-        }
-        
-        .triptych-grade {
-            font-size: 1.4rem;
-            font-weight: 900;
-            color: #ffffff;
-            cursor: default;
-        }
+        .triptych-btn:active { transform: scale(0.95); }
+        .triptych-grade { font-size: 1.4rem; font-weight: 900; color: #ffffff; cursor: default; }
         .triptych-grade:active { transform: none; }
-        
-        .triptych-list {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: #b388ff;
-        }
-        .triptych-list.in-list {
-            background-color: #dc3545;
-            border-color: #bd2130;
-            color: #ffffff;
-        }
+        .triptych-list { font-size: 1.8rem; font-weight: bold; color: #b388ff; }
+        .triptych-list.in-list { background-color: #dc3545; border-color: #bd2130; color: #ffffff; }
         
         .check-circle {
             width: 32px;
@@ -400,86 +383,69 @@
             transition: all 0.2s;
             background: transparent;
         }
-        .check-circle svg {
-            width: 20px;
-            height: 20px;
-            stroke: #555;
-            transition: all 0.2s;
-        }
-        .triptych-btn.is-checked .check-circle {
-            background: #27ae60;
-            border-color: #27ae60;
-        }
-        .triptych-btn.is-checked .check-circle svg {
-            stroke: #ffffff;
-        }
+        .check-circle svg { width: 20px; height: 20px; stroke: #555; transition: all 0.2s; }
+        .triptych-btn.is-checked .check-circle { background: #27ae60; border-color: #27ae60; }
+        .triptych-btn.is-checked .check-circle svg { stroke: #ffffff; }
 
-        /* Compteur minimaliste sous le bouton de droite */
-        .footer-info {
-            font-size: 0.65rem;
-            color: #888;
-            margin-top: 2px;
-            text-align: right;
+        .footer-info { font-size: 0.65rem; color: #888; margin-top: 2px; text-align: right; width: 100%; }
+        .footer-info span.counter { color: #ffb700; font-weight: bold; }
+
+        /* PANNEAU DE RÉGLAGE GRILLE (REMPLACE LE PANNEAU DU BAS SANS FLOTTER) */
+        #adjustPanel {
+            display: none; /* Masqué par défaut */
             width: 100%;
-        }
-        .footer-info span.counter {
-            color: #ffb700;
-            font-weight: bold;
-        }
-
-        /* MODALES */
-        .modal {
-            display: none; position: fixed; left: 50%; transform: translateX(-50%); 
-            z-index: 1000; width: 95%; max-width: 420px;
-        }
-        
-        /* MODALE AJUSTER LA GRILLE : ANCRÉE TOUT EN BAS, ULTRA COMPACTE ET DISCRÈTE */
-        #adjustModal {
-            bottom: 8px;
-            top: auto;
-        }
-        #adjustModal .modal-content {
-            background: rgba(18, 18, 18, 0.94);
-            backdrop-filter: blur(6px);
+            max-width: 450px;
+            margin-top: 4px;
+            background: #1e1e1e;
             border: 1px solid #ffb700;
-            padding: 8px 12px;
-            gap: 4px;
+            border-radius: 8px;
+            padding: 10px;
+            box-sizing: border-box;
+            flex-direction: column;
+            gap: 8px;
         }
-        #adjustModal h3 {
-            font-size: 0.85rem;
-            margin-bottom: 2px;
+        #adjustPanel h3 {
+            margin: 0;
+            font-size: 0.95rem;
+            color: #ffb700;
+            text-align: center;
         }
-        /* Disposition en grille sur 2 colonnes pour gagner un max de place en hauteur */
         .adjust-grid-layout {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 4px 10px;
+            gap: 8px 15px;
         }
-        #adjustModal label {
-            font-size: 0.7rem;
-            align-items: center;
+        .adjust-grid-layout label {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.75rem;
+            color: #ccc;
             gap: 4px;
         }
-        #adjustModal input[type="range"] {
-            flex-grow: 1;
-            height: 16px;
+        .adjust-grid-layout input[type="range"] {
+            width: 100%;
             margin: 0;
         }
-        #adjustModal .modal-buttons {
-            margin-top: 2px;
-            gap: 6px;
+        .adjust-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 4px;
         }
-        #adjustModal .modal-buttons button {
-            padding: 5px;
-            font-size: 0.7rem;
+        .adjust-buttons button {
+            flex: 1;
+            padding: 10px;
         }
 
+        /* MODALE LISTES (Celle-ci reste en modale car elle ne nécessite pas de voir le mur en même temps) */
+        .modal {
+            display: none; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); 
+            z-index: 1000; width: 95%; max-width: 350px;
+        }
         .modal-content {
             background: rgba(30, 30, 30, 0.98); padding: 12px; border-radius: 8px; 
             display: flex; flex-direction: column; gap: 8px; border: 1px solid #555; box-shadow: 0 5px 15px rgba(0,0,0,0.8);
         }
         .modal-content h3 { margin: 0; font-size: 1rem; color: #ffb700; text-align: center; }
-        .modal-content label { display: flex; justify-content: space-between; font-size: 0.75rem; color: #ccc; }
         .modal-buttons { display: flex; gap: 8px; margin-top: 5px; }
         .modal-buttons button { flex: 1; padding: 8px; }
         .list-items-container { display: flex; flex-direction: column; gap: 4px; max-height: 150px; overflow-y: auto; }
@@ -503,8 +469,9 @@
         <div id="mainMenu">
             <button id="btnMenu" class="btn-menu">☰</button>
             <div id="dropdownMenu" class="dropdown-content">
-                <button id="btnImport" style="color: #b388ff;">📥 Importer JSON</button>
-                <button id="btnExport" style="color: #2ecc71;">📤 Exporter JSON</button>
+                <button id="btnImport" style="color: #b388ff;">📥 Importer un fichier</button>
+                <button id="btnExportBlocks" style="color: #2ecc71;">📤 Exporter Blocs (Brut)</button>
+                <button id="btnExportBackup" style="color: #3498db;">💾 Sauvegarde complète (Total)</button>
                 <button id="btnPencil" style="color: #f39c12;">✏️ Créer un bloc</button>
                 <button id="btnAdjustGrid" style="color: #aaa;">⚙️ Ajuster la grille</button>
                 <hr>
@@ -561,7 +528,7 @@
         <span id="badgeFootless" class="inline-badge badge-footless">FOOTLESS</span>
     </div>
 
-    <!-- PANNEAU DU BAS -->
+    <!-- PANNEAU DU BAS (Affichage Standard) -->
     <div id="bottomPanel" class="bottom-panel">
         <div class="name-row">
             <button id="btnPrevBottom" class="nav-btn">◀</button>
@@ -572,7 +539,6 @@
         <div class="bottom-triptych">
             <!-- Cotation -->
             <div id="bottomGrade" class="triptych-btn triptych-grade">-</div>
-            
             <!-- Coche Validation -->
             <div id="bottomCheck" class="triptych-btn">
                 <div class="check-circle">
@@ -581,31 +547,26 @@
                     </svg>
                 </div>
             </div>
-            
-            <!-- Ajout / Retrait Liste + Compteur en dessous -->
+            <!-- Ajout Liste -->
             <div class="triptych-container">
                 <div id="bottomListAdd" class="triptych-btn triptych-list">➕</div>
-                <div class="footer-info">
-                    <span id="blockCounter" class="counter">0/0</span>
-                </div>
+                <div class="footer-info"><span id="blockCounter" class="counter">0/0</span></div>
             </div>
         </div>
     </div>
 
-    <!-- MODALE GRILLE (Ancrée en bas, ultra compacte) -->
-    <div id="adjustModal" class="modal">
-        <div class="modal-content">
-            <h3>Ajuster la grille</h3>
-            <div class="adjust-grid-layout">
-                <label>Top <input type="range" id="adjTop" min="0" max="20" step="0.1"></label>
-                <label>Left <input type="range" id="adjLeft" min="0" max="20" step="0.1"></label>
-                <label>Width <input type="range" id="adjWidth" min="50" max="100" step="0.1"></label>
-                <label>Height <input type="range" id="adjHeight" min="50" max="100" step="0.1"></label>
-            </div>
-            <div class="modal-buttons">
-                <button id="btnResetAdjust" class="btn-orange">Défaut</button>
-                <button id="btnCloseAdjust" class="btn-green">OK</button>
-            </div>
+    <!-- PANNEAU DE RÉGLAGE GRILLE (S'affiche à la place du panneau ci-dessus) -->
+    <div id="adjustPanel">
+        <h3>Ajuster la grille</h3>
+        <div class="adjust-grid-layout">
+            <label>Position Verticale (Top) <input type="range" id="adjTop" min="0" max="20" step="0.1"></label>
+            <label>Position Horizontale (Left) <input type="range" id="adjLeft" min="0" max="20" step="0.1"></label>
+            <label>Largeur (Width) <input type="range" id="adjWidth" min="50" max="100" step="0.1"></label>
+            <label>Hauteur (Height) <input type="range" id="adjHeight" min="50" max="100" step="0.1"></label>
+        </div>
+        <div class="adjust-buttons">
+            <button id="btnResetAdjust" class="btn-orange">Valeurs par Défaut</button>
+            <button id="btnCloseAdjust" class="btn-green">Valider & Fermer</button>
         </div>
     </div>
 
@@ -613,11 +574,8 @@
     <div id="listModal" class="modal">
         <div class="modal-content">
             <h3 id="listModalTitle">Ajouter à une liste</h3>
-            
             <div id="existingLists" class="list-items-container"></div>
-            
             <input type="text" id="newListName" placeholder="Nom de la nouvelle liste..." autocomplete="off">
-            
             <div class="modal-buttons">
                 <button id="btnCloseList" class="btn-gray">Fermer</button>
                 <button id="btnCreateList" class="btn-blue">Créer & Ajouter</button>
@@ -848,12 +806,31 @@
             blockData.arrivee.forEach(id => moves.push({ Description: id, isEnd: true }));
         }
 
-        document.getElementById('btnExport').addEventListener('click', () => {
+        /* 1. EXPORT BLOCS (Brut) */
+        document.getElementById('btnExportBlocks').addEventListener('click', () => {
             const data = JSON.stringify(blocks, null, 2);
             const blob = new Blob([data], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = 'minimoon_export.json';
+            a.href = url; a.download = 'minimoon_blocks_export.json';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            dropdownMenu.classList.remove('show');
+        });
+
+        /* 2. EXPORT SAUVEGARDE COMPLÈTE (Total) */
+        document.getElementById('btnExportBackup').addEventListener('click', () => {
+            const backupData = {
+                type: "minimoon_full_backup",
+                blocks: blocks,
+                lists: customLists,
+                gridConfig: JSON.parse(localStorage.getItem('minimoon_grid') || '{}')
+            };
+            const data = JSON.stringify(backupData, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `minimoon_backup_${new Date().toISOString().slice(0,10)}.json`;
             document.body.appendChild(a); a.click(); document.body.removeChild(a);
             URL.revokeObjectURL(url);
             dropdownMenu.classList.remove('show');
@@ -864,6 +841,7 @@
             dropdownMenu.classList.remove('show');
         });
 
+        /* IMPORT UNIFIÉ (Brut ou Sauvegarde complète) */
         document.getElementById('fileImport').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -871,6 +849,28 @@
             reader.onload = ev => {
                 try {
                     let parsed = JSON.parse(ev.target.result);
+                    
+                    // Cas d'une sauvegarde complète
+                    if (parsed && parsed.type === "minimoon_full_backup") {
+                        if (parsed.blocks) {
+                            blocks = parsed.blocks;
+                            localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+                        }
+                        if (parsed.lists) {
+                            customLists = parsed.lists;
+                            localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
+                        }
+                        if (parsed.gridConfig) {
+                            localStorage.setItem('minimoon_grid', JSON.stringify(parsed.gridConfig));
+                            gridConfig = parsed.gridConfig;
+                            applyGridConfig();
+                        }
+                        updateListFilterOptions();
+                        updateBlockSelect();
+                        return alert("Sauvegarde complète restaurée avec succès !");
+                    }
+
+                    // Cas d'un fichier de blocs standard
                     let dataArray = Array.isArray(parsed) ? parsed : 
                                     (Object.keys(parsed).find(k => Array.isArray(parsed[k])) ? parsed[Object.keys(parsed).find(k => Array.isArray(parsed[k]))] : Object.values(parsed));
                     
@@ -882,6 +882,7 @@
                         let routeMethod = route.method || route.Method || "";
                         let routeGrade = route.grade || route.Grade || route.userGrade || route.UserGrade || "?";
                         let isBenchmark = route.isBenchmark === true || route.IsBenchmark === true;
+                        let completed = route.completed === true;
                         let routeMoves = route.moves || route.Moves || [];
                         let depart = [], progression = [], arrivee = [];
                         
@@ -897,8 +898,12 @@
                                 }
                             });
                         }
+                        if (route.depart && Array.isArray(route.depart)) depart = route.depart;
+                        if (route.progression && Array.isArray(route.progression)) progression = route.progression;
+                        if (route.arrivee && Array.isArray(route.arrivee)) arrivee = route.arrivee;
+
                         newBlocks[routeName] = {
-                            depart, progression, arrivee, method: routeMethod, grade: routeGrade, isBenchmark, completed: false
+                            depart, progression, arrivee, method: routeMethod, grade: routeGrade, isBenchmark, completed
                         };
                     });
                     blocks = {...blocks, ...newBlocks};
@@ -912,8 +917,12 @@
         });
 
         document.getElementById('btnClearStorage').addEventListener('click', () => {
-            if(confirm("⚠️ Effacer TOUS les blocs ?")) {
-                blocks = {}; localStorage.removeItem('minimoon_blocks'); updateBlockSelect();
+            if(confirm("⚠️️ Effacer TOUS les blocs et données ?")) {
+                blocks = {}; customLists = {};
+                localStorage.removeItem('minimoon_blocks');
+                localStorage.removeItem('minimoon_lists');
+                updateListFilterOptions();
+                updateBlockSelect();
             }
         });
 
@@ -1141,7 +1150,8 @@
             }
         }, { passive: true });
 
-        const adjustModal = document.getElementById('adjustModal');
+        const adjustPanel = document.getElementById('adjustPanel');
+        const bottomPanel = document.getElementById('bottomPanel');
         const defaultGridConfig = { top: 9, left: 7.5, width: 85, height: 75.5 };
         let gridConfig = JSON.parse(localStorage.getItem('minimoon_grid')) || defaultGridConfig;
 
@@ -1152,20 +1162,31 @@
             document.getElementById('adjWidth').value = gridConfig.width; document.getElementById('adjHeight').value = gridConfig.height;
         }
 
+        /* NOUVELLE LOGIQUE D'AFFICHAGE DU RÉGLAGE DE GRILLE */
         document.getElementById('btnAdjustGrid').addEventListener('click', () => {
             dropdownMenu.classList.remove('show');
-            adjustModal.style.display = 'block'; 
+            // On cache le panneau du bas classique
+            bottomPanel.style.display = 'none';
+            // On affiche le panneau de réglage exactement à sa place
+            adjustPanel.style.display = 'flex'; 
             gridOverlay.classList.add('grid-adjusting');
         });
+        
         document.getElementById('btnCloseAdjust').addEventListener('click', () => {
-            adjustModal.style.display = 'none'; 
+            // On recache le panneau de réglage
+            adjustPanel.style.display = 'none';
+            // On réaffiche le panneau du bas classique
+            bottomPanel.style.display = 'flex'; 
+            
             gridOverlay.classList.remove('grid-adjusting');
             localStorage.setItem('minimoon_grid', JSON.stringify(gridConfig));
             displayBlock(currentBlockName);
         });
+        
         document.getElementById('btnResetAdjust').addEventListener('click', () => {
             gridConfig = {...defaultGridConfig}; applyGridConfig();
         });
+        
         ['adjTop', 'adjLeft', 'adjWidth', 'adjHeight'].forEach(id => {
             document.getElementById(id).addEventListener('input', (e) => {
                 gridConfig[id.replace('adj', '').toLowerCase()] = parseFloat(e.target.value); applyGridConfig();
