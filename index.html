@@ -26,7 +26,7 @@
             align-items: center;
             width: 100%;
             max-width: 450px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             position: relative;
         }
         h1 {
@@ -77,12 +77,12 @@
             align-items: center;
             width: 100%;
             max-width: 450px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         button, select.btn-outline, select.main-select, input {
             border: none;
-            padding: 6px 8px;
+            padding: 5px 8px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.75rem;
@@ -138,7 +138,7 @@
             color: #fff;
             width: 100%;
             box-sizing: border-box;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             display: none;
             font-size: 16px;
         }
@@ -149,23 +149,23 @@
             border: 1px solid #555;
         }
 
-        /* BADGES */
+        /* BADGES (Centrés) */
         .badges-container {
             display: flex;
             gap: 4px;
             align-items: center;
             flex-wrap: wrap;
-            min-height: 22px;
-            justify-content: flex-start;
+            min-height: 20px;
+            justify-content: center;
             width: 100%;
             max-width: 450px;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
         .inline-badge {
             display: none; 
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 900;
-            padding: 3px 6px;
+            padding: 2px 5px;
             border-radius: 4px;
             white-space: nowrap;
         }
@@ -177,10 +177,10 @@
             display: none;
             background-color: #f1c40f;
             color: #000;
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: bold;
             align-items: center;
             justify-content: center;
@@ -196,7 +196,7 @@
             max-width: 450px;
             font-size: 0.75rem;
             color: #ddd;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             padding: 0 2px;
             box-sizing: border-box;
         }
@@ -252,36 +252,36 @@
         .hold.progression { border: 3px solid #00d2ff; box-shadow: 0 0 8px rgba(0, 210, 255, 0.8); }
         .hold.arrivee { border: 3px solid #ff0000; box-shadow: 0 0 8px rgba(255, 0, 0, 0.8); }
 
-        /* NOUVEAU PANNEAU DU BAS (Infos du bloc) */
+        /* PANNEAU DU BAS RÉDUIT DE ~30% */
         .bottom-panel {
             width: 100%;
             max-width: 450px;
-            margin-top: 15px;
+            margin-top: 8px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 6px;
         }
         .bottom-name {
-            font-size: 1.3rem;
+            font-size: 1rem;
             font-weight: bold;
             color: #ffb700;
             text-align: center;
             background: #1e1e1e;
-            padding: 12px 8px;
-            border-radius: 8px;
+            padding: 8px 6px;
+            border-radius: 6px;
             border: 1px solid #333;
             word-wrap: break-word;
         }
         .bottom-triptych {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            gap: 8px;
         }
         .triptych-btn {
             background: #1e1e1e;
             border: 1px solid #333;
-            border-radius: 12px;
-            aspect-ratio: 1;
+            border-radius: 8px;
+            height: 52px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -293,7 +293,7 @@
             transform: scale(0.95);
         }
         .triptych-grade {
-            font-size: 2.2rem;
+            font-size: 1.5rem;
             font-weight: 900;
             color: #e67e22;
             cursor: default;
@@ -301,29 +301,28 @@
         .triptych-grade:active { transform: none; }
         
         .triptych-list {
-            font-size: 2.5rem;
+            font-size: 1.8rem;
             font-weight: bold;
             color: #b388ff;
         }
         
-        /* Coche Ronde Centrale */
+        /* Coche Ronde Centrale Réduite */
         .check-circle {
-            width: 60%;
-            height: 60%;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            border: 3px solid #555;
+            border: 2px solid #555;
             display: flex;
             justify-content: center;
             align-items: center;
             transition: all 0.2s;
         }
         .check-circle svg {
-            width: 65%;
-            height: 65%;
+            width: 20px;
+            height: 20px;
             stroke: #555;
             transition: all 0.2s;
         }
-        /* État coché */
         .triptych-btn.is-checked .check-circle {
             background: #27ae60;
             border-color: #27ae60;
@@ -344,7 +343,7 @@
         .modal-content h3 { margin: 0; font-size: 1rem; color: #ffb700; text-align: center; }
         .modal-content label { display: flex; justify-content: space-between; font-size: 0.75rem; color: #ccc; }
         .modal-buttons { display: flex; gap: 8px; margin-top: 5px; }
-        .modal-buttons button { flex: 1; padding: 10px; }
+        .modal-buttons button { flex: 1; padding: 8px; }
         .list-items-container { display: flex; flex-direction: column; gap: 4px; max-height: 150px; overflow-y: auto; }
     </style>
 </head>
@@ -407,7 +406,7 @@
         </select>
     </div>
 
-    <!-- BADGES AU DESSUS DES STATS -->
+    <!-- BADGES CENTRÉS -->
     <div class="badges-container" id="badgesContainer">
         <span id="badgeBenchmark" class="badge-benchmark" title="Ce bloc est un Benchmark">B</span>
         <span id="badgeNoKb" class="inline-badge badge-nokickboard">NO KICKBOARD</span>
@@ -423,7 +422,7 @@
         
         <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;" title="N'afficher que les Benchmarks">
             <input type="checkbox" id="filterBenchmark">
-            <span style="background-color: #f1c40f; color: #000; font-weight: bold; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; border: 1px solid #d4ac0d;">B</span>
+            <span style="background-color: #f1c40f; color: #000; font-weight: bold; width: 16px; height: 16px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; border: 1px solid #d4ac0d;">B</span>
         </label>
 
         <span id="blockCounter" class="counter">Affiché:0 | Total:0</span>
@@ -435,7 +434,7 @@
         <div class="grid-overlay" id="gridOverlay"></div>
     </div>
 
-    <!-- NOUVEAU PANNEAU DU BAS : Nom du bloc + Triptyque (Cotation, Coche, Liste) -->
+    <!-- PANNEAU DU BAS RÉDUIT -->
     <div id="bottomPanel" class="bottom-panel">
         <div id="bottomBlockName" class="bottom-name">Sélectionnez un bloc</div>
         
@@ -507,7 +506,7 @@
         let isCreating = false;
         let currentCreation = { depart: [], progression: [], arrivee: [] };
 
-        // DOM Elements - Selecteurs
+        // DOM Elements
         const gridOverlay = document.getElementById('gridOverlay');
         const blockSelect = document.getElementById('blockSelect');
         const filterCotation = document.getElementById('filterCotation');
@@ -516,11 +515,9 @@
         const excludeCompletedCheckbox = document.getElementById('excludeCompleted');
         const blockCounter = document.getElementById('blockCounter');
         
-        // DOM Elements - Recherche
         const searchInput = document.getElementById('searchInput');
         const btnSearchToggle = document.getElementById('btnSearchToggle');
 
-        // DOM Elements - Menu et Création
         const mainMenu = document.getElementById('mainMenu');
         const btnMenu = document.getElementById('btnMenu');
         const dropdownMenu = document.getElementById('dropdownMenu');
@@ -529,22 +526,18 @@
         const btnCancelCreate = document.getElementById('btnCancelCreate');
         const btnSaveCreate = document.getElementById('btnSaveCreate');
 
-        // DOM Elements - Panneau du bas
         const bottomPanel = document.getElementById('bottomPanel');
         const bottomBlockName = document.getElementById('bottomBlockName');
         const bottomGrade = document.getElementById('bottomGrade');
         const bottomCheck = document.getElementById('bottomCheck');
         const bottomListAdd = document.getElementById('bottomListAdd');
 
-        // Badges
         const badgeNoKb = document.getElementById('badgeNoKb');
         const badgeMarked = document.getElementById('badgeMarked');
         const badgeFootless = document.getElementById('badgeFootless');
         const badgeBenchmark = document.getElementById('badgeBenchmark');
 
-        // ==========================================
-        // GESTION DES LISTES
-        // ==========================================
+        // Listes Modale
         const listModal = document.getElementById('listModal');
         const btnCloseList = document.getElementById('btnCloseList');
         const btnCreateList = document.getElementById('btnCreateList');
@@ -616,10 +609,6 @@
             updateBlockSelect();
         });
 
-
-        // ==========================================
-        // MENU DÉROULANT (HAMBURGER)
-        // ==========================================
         btnMenu.addEventListener('click', (e) => {
             dropdownMenu.classList.toggle('show');
             e.stopPropagation();
@@ -628,9 +617,6 @@
             if(!e.target.matches('.btn-menu')) dropdownMenu.classList.remove('show');
         });
 
-        // ==========================================
-        // BARRE DE RECHERCHE
-        // ==========================================
         btnSearchToggle.addEventListener('click', () => {
             if (searchInput.style.display === 'none' || searchInput.style.display === '') {
                 searchInput.style.display = 'block';
@@ -643,9 +629,6 @@
         });
         searchInput.addEventListener('input', updateBlockSelect);
 
-        // ==========================================
-        // BLUETOOTH / ENVOI ESP32
-        // ==========================================
         let bluetoothDevice = null;
         const btnConnect = document.getElementById('btnConnect');
 
@@ -677,9 +660,6 @@
             blockData.arrivee.forEach(id => moves.push({ Description: id, isEnd: true }));
         }
 
-        // ==========================================
-        // EXPORTATION JSON
-        // ==========================================
         document.getElementById('btnExport').addEventListener('click', () => {
             const data = JSON.stringify(blocks, null, 2);
             const blob = new Blob([data], { type: 'application/json' });
@@ -694,9 +674,6 @@
             dropdownMenu.classList.remove('show');
         });
 
-        // ==========================================
-        // IMPORTATION JSON
-        // ==========================================
         document.getElementById('btnImport').addEventListener('click', () => {
             document.getElementById('fileImport').click();
             dropdownMenu.classList.remove('show');
@@ -755,9 +732,6 @@
             }
         });
 
-        // ==========================================
-        // GESTION DU MUR ET CREATION
-        // ==========================================
         function initGrid() {
             gridOverlay.innerHTML = '';
             ROWS.forEach(r => {
@@ -799,7 +773,7 @@
             dropdownMenu.classList.remove('show');
             mainMenu.style.display = 'none';
             creationTools.style.display = 'flex';
-            bottomPanel.style.display = 'none'; // Cache le panneau du bas pendant la création
+            bottomPanel.style.display = 'none';
             
             document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
             badgeNoKb.style.display = 'none'; badgeMarked.style.display = 'none';
@@ -859,7 +833,6 @@
                 if (methodLower.includes("footless")) badgeFootless.style.display = 'inline-block';
                 if (block.isBenchmark) badgeBenchmark.style.display = 'inline-flex';
 
-                // MAJ Panneau du bas
                 bottomBlockName.textContent = name;
                 bottomGrade.textContent = block.grade || "?";
                 if (block.completed) {
@@ -918,7 +891,6 @@
             }
         }
 
-        // Action de validation depuis le gros bouton rond
         bottomCheck.addEventListener('click', () => {
             if (currentBlockName && blocks[currentBlockName]) {
                 blocks[currentBlockName].completed = !blocks[currentBlockName].completed;
@@ -938,7 +910,6 @@
             updateBlockSelect();
         });
 
-        // Navigation par fonctions (Swipe)
         function goToPrevBlock() {
             if(blockSelect.selectedIndex > 0) { 
                 blockSelect.selectedIndex--; 
@@ -952,7 +923,6 @@
             }
         }
 
-        // Swipe & Calibrage
         let touchStartX = 0, touchStartY = 0;
         const mainBoardContainer = document.getElementById('mainBoardContainer');
         mainBoardContainer.addEventListener('touchstart', e => {
