@@ -290,7 +290,7 @@
         }
         .badge-nokickboard { color: #ff3333; background-color: rgba(220, 53, 69, 0.2); border-color: #dc3545; }
         .badge-markedholds { color: #2ecc71; background-color: rgba(40, 167, 69, 0.2); border-color: #28a745; }
-        .badge-footless { color: #f1c40f; background-color: rgba(241, 196, 15, 0.2); border-color: #f1c40f; }
+        .badge-footless { color: #f1c40f; background-color: rgba(241, 196, 15, 0.2); border-color: #f1c40f; color: #000; }
         
         .badge-benchmark {
             display: none;
@@ -387,7 +387,7 @@
         .triptych-btn.is-checked .check-circle { background: #27ae60; border-color: #27ae60; }
         .triptych-btn.is-checked .check-circle svg { stroke: #ffffff; }
 
-        /* NOUVELLE BARRE INFOS OUVREUR/ASCENSIONS */
+        /* ZONE INFO (Ouvreur + Ascensions) */
         .block-extra-info {
             display: flex;
             gap: 15px;
@@ -399,7 +399,6 @@
             color: #888;
             margin-top: 2px;
             align-items: center;
-            justify-content: flex-start;
         }
         .block-extra-info span {
             color: #ffb700;
@@ -540,12 +539,13 @@
         <div class="grid-overlay" id="gridOverlay"></div>
     </div>
 
-    <!-- BADGES SOUS LE MUR -->
+    <!-- BADGES SOUS LE MUR (MISE A JOUR) -->
     <div class="badges-container" id="badgesContainer">
         <span id="badgeBenchmark" class="badge-benchmark" title="Ce bloc est un Benchmark">B</span>
         <span id="badgeNoKb" class="inline-badge badge-nokickboard">NO KICKBOARD</span>
-        <span id="badgeMarked" class="inline-badge badge-markedholds">MARKED HOLDS</span>
+        <span id="badgeMarked" class="inline-badge badge-markedholds">ANY MARKED HOLDS</span>
         <span id="badgeFootless" class="inline-badge badge-footless">FOOTLESS</span>
+        <span id="badgeFootlessKb" class="inline-badge badge-footless">FOOTLESS + KICKBOARD</span>
     </div>
 
     <!-- PANNEAU DU BAS (Affichage Standard) -->
@@ -658,9 +658,11 @@
         const infoSetter = document.getElementById('infoSetter');
         const infoAscensions = document.getElementById('infoAscensions');
 
+        // Récupération des badges avec les nouveaux IDs
         const badgeNoKb = document.getElementById('badgeNoKb');
         const badgeMarked = document.getElementById('badgeMarked');
         const badgeFootless = document.getElementById('badgeFootless');
+        const badgeFootlessKb = document.getElementById('badgeFootlessKb');
         const badgeBenchmark = document.getElementById('badgeBenchmark');
 
         const listModal = document.getElementById('listModal');
@@ -935,10 +937,12 @@
                         let routeMethod = route.method || route.Method || "";
                         let routeGrade = route.grade || route.Grade || route.userGrade || route.UserGrade || "?";
                         
-                        // ON PREND EN COMPTE LES DEUX ORTHOGRAPHES POUR BÉNÉFICIER DU BENCHMARK
-                        let isBenchmark = route.benchmark === true || route.isBenchmark === true || route.IsBenchmark === true;
-                        let completed = route.completed === true;
+                        let isBenchmarkVal = false;
+                        if ('benchmark' in route) isBenchmarkVal = (route.benchmark === true || String(route.benchmark).toLowerCase() === 'true');
+                        else if ('isBenchmark' in route) isBenchmarkVal = (route.isBenchmark === true || String(route.isBenchmark).toLowerCase() === 'true');
+                        else if ('IsBenchmark' in route) isBenchmarkVal = (route.IsBenchmark === true || String(route.IsBenchmark).toLowerCase() === 'true');
                         
+                        let completed = route.completed === true;
                         let ascCount = parseInt(route.ascensionCount || route.AscensionCount || 0, 10);
                         let setter = route.setby || route.setter || route.Setter || "Inconnu";
                         
@@ -964,7 +968,7 @@
                         newBlocks[routeName] = {
                             depart, progression, arrivee, 
                             method: routeMethod, grade: routeGrade, 
-                            isBenchmark: isBenchmark, 
+                            isBenchmark: isBenchmarkVal, 
                             ascensionCount: ascCount, 
                             setby: setter,
                             completed: completed
@@ -1035,8 +1039,13 @@
             bottomPanel.style.display = 'none';
             
             document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
-            badgeNoKb.style.display = 'none'; badgeMarked.style.display = 'none';
-            badgeFootless.style.display = 'none'; badgeBenchmark.style.display = 'none';
+            
+            // Masquer tous les badges pendant la création
+            badgeNoKb.style.display = 'none'; 
+            badgeMarked.style.display = 'none';
+            badgeFootless.style.display = 'none'; 
+            badgeFootlessKb.style.display = 'none';
+            badgeBenchmark.style.display = 'none';
             
             currentCreation = { depart: [], progression: [], arrivee: [] };
         });
@@ -1058,7 +1067,7 @@
                 blocks[name] = {
                     depart: currentCreation.depart, progression: currentCreation.progression, arrivee: currentCreation.arrivee,
                     method: "", grade: "6B+", isBenchmark: false, 
-                    ascensionCount: 0, setby: "Utilisateur", completed: false
+                    ascensionCount: 0, setby: "Moi", completed: false
                 };
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 
@@ -1079,8 +1088,13 @@
             let block = blocks[name];
             
             document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
-            badgeNoKb.style.display = 'none'; badgeMarked.style.display = 'none';
-            badgeFootless.style.display = 'none'; badgeBenchmark.style.display = 'none';
+            
+            // Masquer tous les badges par défaut
+            badgeNoKb.style.display = 'none'; 
+            badgeMarked.style.display = 'none';
+            badgeFootless.style.display = 'none'; 
+            badgeFootlessKb.style.display = 'none';
+            badgeBenchmark.style.display = 'none';
             
             if (block) {
                 block.depart.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('depart'); });
@@ -1088,9 +1102,29 @@
                 block.arrivee.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('arrivee'); });
                 
                 let methodLower = (block.method || "").toLowerCase();
-                if (methodLower.includes("no kickboard")) badgeNoKb.style.display = 'inline-block';
-                if (methodLower.includes("marked hold") || methodLower.includes("any marked")) badgeMarked.style.display = 'inline-block';
-                if (methodLower.includes("footless")) badgeFootless.style.display = 'inline-block';
+                
+                // LOGIQUE D'AFFICHAGE DES BADGES DE MÉTHODE
+                
+                // 1. No Kickboard (Rouge)
+                if (methodLower.includes("no kickboard") || methodLower.includes("without kickboard")) {
+                    badgeNoKb.style.display = 'inline-block';
+                }
+                
+                // 2. Any marked holds (Vert - gère aussi la typo "maker old")
+                if (methodLower.includes("marked") || methodLower.includes("maker") || methodLower.includes("any")) {
+                    badgeMarked.style.display = 'inline-block';
+                }
+                
+                // 3. Footless et variantes (Jaune)
+                if (methodLower.includes("footless")) {
+                    if (methodLower.includes("kickboard") && !methodLower.includes("no kickboard")) {
+                        badgeFootlessKb.style.display = 'inline-block'; // Footless + Kickboard
+                    } else {
+                        badgeFootless.style.display = 'inline-block'; // Footless normal
+                    }
+                }
+
+                // 4. Benchmark (Jaune rond)
                 if (block.isBenchmark) badgeBenchmark.style.display = 'inline-flex';
 
                 bottomBlockName.textContent = name;
@@ -1153,7 +1187,7 @@
                     let ascB = parseInt(blocks[b].ascensionCount) || 0;
                     if (ascB !== ascA) return ascB - ascA; 
                 }
-                return a.localeCompare(b);
+                return a.localeCompare(b); 
             });
             
             blockCounter.textContent = `${filteredKeys.length}/${totalBlocksInDB}`;
@@ -1271,6 +1305,7 @@
             });
         });
 
+        // INITIALISATION
         updateListFilterOptions();
         applyGridConfig(); 
         initGrid(); 
