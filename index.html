@@ -392,7 +392,7 @@
 
         /* PANNEAU DE RÉGLAGE GRILLE */
         #adjustPanel {
-            display: none; /* Masqué par défaut */
+            display: none;
             width: 100%;
             max-width: 450px;
             margin-top: 4px;
@@ -474,6 +474,9 @@
                 <button id="btnExportBackup" style="color: #3498db;">💾 Sauvegarde complète (Total)</button>
                 <button id="btnPencil" style="color: #f39c12;">✏️ Créer un bloc</button>
                 <button id="btnAdjustGrid" style="color: #aaa;">⚙️ Ajuster la grille</button>
+                <hr>
+                <!-- NOUVELLE OPTION DE TRI PAR ASCENSIONS -->
+                <label><input type="checkbox" id="sortAscensions"> <span class="menu-icon-badge" style="background-color: #3498db; border-color: #2980b9; color: white;">📈</span> Trier par ascensions</label>
                 <hr>
                 <label><input type="checkbox" id="excludeCompleted"> <span class="menu-icon-check-slash"></span> Masquer réalisés</label>
                 <label><input type="checkbox" id="onlyCompleted"> <span class="menu-icon-check"></span> Uniquement réalisés</label>
@@ -607,6 +610,7 @@
         const filterBenchmark = document.getElementById('filterBenchmark');
         const excludeCompletedCheckbox = document.getElementById('excludeCompleted');
         const onlyCompletedCheckbox = document.getElementById('onlyCompleted');
+        const sortAscensionsCheckbox = document.getElementById('sortAscensions'); // NOUVEAU CHECKBOX DE TRI
         const blockCounter = document.getElementById('blockCounter');
         
         const searchInput = document.getElementById('searchInput');
@@ -806,7 +810,7 @@
             blockData.arrivee.forEach(id => moves.push({ Description: id, isEnd: true }));
         }
 
-        /* ----- NOUVELLE FONCTION D'EXPORT ULTRA ROBUSTE (AVEC PARTAGE NATIF IOS) ----- */
+        /* ----- FONCTION D'EXPORT ROBUSTE (AVEC PARTAGE NATIF IOS) ----- */
         function downloadData(dataObj, filename) {
             const dataStr = JSON.stringify(dataObj, null, 2);
             
@@ -867,7 +871,7 @@
             dropdownMenu.classList.remove('show');
         });
 
-        /* IMPORT UNIFIÉ (Brut ou Sauvegarde complète) */
+        /* IMPORT INTELLIGENT (Gère le nouveau format data, le format brut ou la sauvegarde complète) */
         document.getElementById('fileImport').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -876,27 +880,35 @@
                 try {
                     let parsed = JSON.parse(ev.target.result);
                     
+                    // Cas 1 : Sauvegarde complète
                     if (parsed && parsed.type === "minimoon_full_backup") {
-                        if (parsed.blocks) {
-                            blocks = parsed.blocks;
-                            localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-                        }
-                        if (parsed.lists) {
-                            customLists = parsed.lists;
-                            localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
-                        }
+                        if (parsed.blocks) blocks = parsed.blocks;
+                        if (parsed.lists) customLists = parsed.lists;
                         if (parsed.gridConfig) {
-                            localStorage.setItem('minimoon_grid', JSON.stringify(parsed.gridConfig));
                             gridConfig = parsed.gridConfig;
                             applyGridConfig();
+                            localStorage.setItem('minimoon_grid', JSON.stringify(gridConfig));
                         }
+                        localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+                        localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
                         updateListFilterOptions();
                         updateBlockSelect();
                         return alert("Sauvegarde complète restaurée avec succès !");
                     }
 
-                    let dataArray = Array.isArray(parsed) ? parsed : 
-                                    (Object.keys(parsed).find(k => Array.isArray(parsed[k])) ? parsed[Object.keys(parsed).find(k => Array.isArray(parsed[k]))] : Object.values(parsed));
+                    // Cas 2 : Fichier JSON standard (Ancien format ou Nouveau format avec "data")
+                    let dataArray = [];
+                    if (Array.isArray(parsed)) {
+                        dataArray = parsed;
+                    } else if (parsed.data && Array.isArray(parsed.data)) {
+                        // NOUVEAU FORMAT : C'est ici que l'on capte la nouvelle structure de base de données
+                        dataArray = parsed.data;
+                    } else {
+                        // Format alternatif avec des clés dynamiques
+                        let arrKey = Object.keys(parsed).find(k => Array.isArray(parsed[k]));
+                        if (arrKey) dataArray = parsed[arrKey];
+                        else dataArray = Object.values(parsed);
+                    }
                     
                     if (!dataArray || dataArray.length === 0) return alert("Aucun bloc valide trouvé.");
 
@@ -905,14 +917,18 @@
                         let routeName = route.name || route.Name || `Bloc_Importé_${index + 1}`;
                         let routeMethod = route.method || route.Method || "";
                         let routeGrade = route.grade || route.Grade || route.userGrade || route.UserGrade || "?";
-                        let isBenchmark = route.isBenchmark === true || route.IsBenchmark === true;
+                        
+                        // Capture des nouvelles données de la BDD (benchmark booleen, et ascensionCount)
+                        let isBenchmark = route.benchmark === true || route.isBenchmark === true || route.IsBenchmark === true;
+                        let ascCount = route.ascensionCount || route.AscensionCount || 0;
                         let completed = route.completed === true;
+                        
                         let routeMoves = route.moves || route.Moves || [];
                         let depart = [], progression = [], arrivee = [];
                         
                         if (Array.isArray(routeMoves)) {
                             routeMoves.forEach(m => {
-                                let rawId = m.Description || m.description || m.hold || m.id || m.Id;
+                                let rawId = m.description || m.Description || m.hold || m.id || m.Id;
                                 if (!rawId && typeof m === 'string') rawId = m;
                                 if (rawId && typeof rawId === 'string') {
                                     let id = rawId.toUpperCase();
@@ -922,19 +938,25 @@
                                 }
                             });
                         }
+                        // Gère également le format où les prises sont déjà séparées
                         if (route.depart && Array.isArray(route.depart)) depart = route.depart;
                         if (route.progression && Array.isArray(route.progression)) progression = route.progression;
                         if (route.arrivee && Array.isArray(route.arrivee)) arrivee = route.arrivee;
 
                         newBlocks[routeName] = {
-                            depart, progression, arrivee, method: routeMethod, grade: routeGrade, isBenchmark, completed
+                            depart, progression, arrivee, 
+                            method: routeMethod, grade: routeGrade, 
+                            isBenchmark: isBenchmark, 
+                            ascensionCount: ascCount, // Sauvegarde du nombre d'ascensions
+                            completed: completed
                         };
                     });
+                    
                     blocks = {...blocks, ...newBlocks};
                     localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-                    alert(`${Object.keys(newBlocks).length} blocs importés !`);
+                    alert(`${Object.keys(newBlocks).length} blocs importés avec succès !`);
                     updateBlockSelect(); 
-                } catch(err) { alert("Erreur: Fichier invalide."); }
+                } catch(err) { alert("Erreur: Fichier invalide. Vérifiez le format JSON."); console.error(err); }
             };
             reader.readAsText(file);
             e.target.value = '';
@@ -1016,7 +1038,7 @@
             if (name) {
                 blocks[name] = {
                     depart: currentCreation.depart, progression: currentCreation.progression, arrivee: currentCreation.arrivee,
-                    method: "", grade: "6B+", isBenchmark: false, completed: false
+                    method: "", grade: "6B+", isBenchmark: false, ascensionCount: 0, completed: false
                 };
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 
@@ -1081,6 +1103,7 @@
             let allKeys = Object.keys(blocks);
             let excludeChecked = excludeCompletedCheckbox.checked;
             let onlyChecked = onlyCompletedCheckbox.checked;
+            let sortAscensions = sortAscensionsCheckbox.checked; // État de la checkbox de tri
             let currentGradeFilter = filterCotation.value;
             let currentListFilter = filterList.value;
             let benchmarkOnly = filterBenchmark.checked;
@@ -1099,12 +1122,25 @@
                 return true;
             });
             
-            filteredKeys.sort((a, b) => a.localeCompare(b));
+            // LOGIQUE DE TRI
+            filteredKeys.sort((a, b) => {
+                if (sortAscensions) {
+                    let ascA = blocks[a].ascensionCount || 0;
+                    let ascB = blocks[b].ascensionCount || 0;
+                    if (ascB !== ascA) return ascB - ascA; // Tri décroissant (les plus répétés en haut)
+                }
+                return a.localeCompare(b); // Tri alphabétique par défaut ou si le nb d'ascensions est égal
+            });
+            
             blockCounter.textContent = `${filteredKeys.length}/${totalBlocksInDB}`;
 
+            // CREATION DES OPTIONS DANS LE SELECT
             filteredKeys.forEach(k => {
                 let opt = document.createElement('option');
-                opt.value = k; opt.textContent = `${k} (${blocks[k].grade || '?'})`;
+                opt.value = k; 
+                // Si on a activé le tri par ascensions et que le bloc a été répété, on l'affiche
+                let ascText = (sortAscensions && blocks[k].ascensionCount > 0) ? ` - ${blocks[k].ascensionCount} asc.` : '';
+                opt.textContent = `${k} (${blocks[k].grade || '?'})${ascText}`;
                 blockSelect.appendChild(opt);
             });
 
@@ -1134,6 +1170,8 @@
         });
         
         filterBenchmark.addEventListener('change', updateBlockSelect);
+        sortAscensionsCheckbox.addEventListener('change', updateBlockSelect); // Met à jour le tri au clic
+        
         excludeCompletedCheckbox.addEventListener('change', () => {
             if(excludeCompletedCheckbox.checked) onlyCompletedCheckbox.checked = false;
             updateBlockSelect();
@@ -1175,7 +1213,6 @@
         }, { passive: true });
 
         const adjustPanel = document.getElementById('adjustPanel');
-        /* C'est ICI que j'avais laissé traîner le doublon "const bottomPanel" ! Il est supprimé. */
         const defaultGridConfig = { top: 9, left: 7.5, width: 85, height: 75.5 };
         let gridConfig = JSON.parse(localStorage.getItem('minimoon_grid')) || defaultGridConfig;
 
