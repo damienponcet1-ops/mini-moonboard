@@ -387,6 +387,24 @@
         .triptych-btn.is-checked .check-circle { background: #27ae60; border-color: #27ae60; }
         .triptych-btn.is-checked .check-circle svg { stroke: #ffffff; }
 
+        /* NOUVELLE BARRE INFOS OUVREUR/ASCENSIONS */
+        .block-extra-info {
+            display: flex;
+            gap: 15px;
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 2px;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        .block-extra-info span {
+            color: #ffb700;
+            font-weight: bold;
+        }
         .footer-info { font-size: 0.65rem; color: #888; margin-top: 2px; text-align: right; width: 100%; }
         .footer-info span.counter { color: #ffb700; font-weight: bold; }
 
@@ -475,7 +493,6 @@
                 <button id="btnPencil" style="color: #f39c12;">✏️ Créer un bloc</button>
                 <button id="btnAdjustGrid" style="color: #aaa;">⚙️ Ajuster la grille</button>
                 <hr>
-                <!-- NOUVELLE OPTION DE TRI PAR ASCENSIONS -->
                 <label><input type="checkbox" id="sortAscensions"> <span class="menu-icon-badge" style="background-color: #3498db; border-color: #2980b9; color: white;">📈</span> Trier par ascensions</label>
                 <hr>
                 <label><input type="checkbox" id="excludeCompleted"> <span class="menu-icon-check-slash"></span> Masquer réalisés</label>
@@ -556,6 +573,12 @@
                 <div class="footer-info"><span id="blockCounter" class="counter">0/0</span></div>
             </div>
         </div>
+
+        <!-- ZONE INFO (Ouvreur + Ascensions) -->
+        <div class="block-extra-info">
+            <div>Ouvreur: <span id="infoSetter">-</span></div>
+            <div>Ascensions: <span id="infoAscensions">0</span></div>
+        </div>
     </div>
 
     <!-- PANNEAU DE RÉGLAGE GRILLE -->
@@ -610,7 +633,7 @@
         const filterBenchmark = document.getElementById('filterBenchmark');
         const excludeCompletedCheckbox = document.getElementById('excludeCompleted');
         const onlyCompletedCheckbox = document.getElementById('onlyCompleted');
-        const sortAscensionsCheckbox = document.getElementById('sortAscensions'); // NOUVEAU CHECKBOX DE TRI
+        const sortAscensionsCheckbox = document.getElementById('sortAscensions');
         const blockCounter = document.getElementById('blockCounter');
         
         const searchInput = document.getElementById('searchInput');
@@ -631,6 +654,9 @@
         const bottomListAdd = document.getElementById('bottomListAdd');
         const btnPrevBottom = document.getElementById('btnPrevBottom');
         const btnNextBottom = document.getElementById('btnNextBottom');
+
+        const infoSetter = document.getElementById('infoSetter');
+        const infoAscensions = document.getElementById('infoAscensions');
 
         const badgeNoKb = document.getElementById('badgeNoKb');
         const badgeMarked = document.getElementById('badgeMarked');
@@ -810,7 +836,6 @@
             blockData.arrivee.forEach(id => moves.push({ Description: id, isEnd: true }));
         }
 
-        /* ----- FONCTION D'EXPORT ROBUSTE (AVEC PARTAGE NATIF IOS) ----- */
         function downloadData(dataObj, filename) {
             const dataStr = JSON.stringify(dataObj, null, 2);
             
@@ -849,12 +874,10 @@
             dropdownMenu.classList.remove('show');
         }
 
-        /* 1. EXPORT BLOCS (Brut) */
         document.getElementById('btnExportBlocks').addEventListener('click', () => {
             downloadData(blocks, 'minimoon_blocks_export.json');
         });
 
-        /* 2. EXPORT SAUVEGARDE COMPLÈTE (Total) */
         document.getElementById('btnExportBackup').addEventListener('click', () => {
             const backupData = {
                 type: "minimoon_full_backup",
@@ -864,14 +887,12 @@
             };
             downloadData(backupData, `minimoon_backup_${new Date().toISOString().slice(0,10)}.json`);
         });
-        /* ----------------------------------------------------------------------------- */
 
         document.getElementById('btnImport').addEventListener('click', () => {
             document.getElementById('fileImport').click();
             dropdownMenu.classList.remove('show');
         });
 
-        /* IMPORT INTELLIGENT (Gère le nouveau format data, le format brut ou la sauvegarde complète) */
         document.getElementById('fileImport').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -880,7 +901,6 @@
                 try {
                     let parsed = JSON.parse(ev.target.result);
                     
-                    // Cas 1 : Sauvegarde complète
                     if (parsed && parsed.type === "minimoon_full_backup") {
                         if (parsed.blocks) blocks = parsed.blocks;
                         if (parsed.lists) customLists = parsed.lists;
@@ -896,15 +916,12 @@
                         return alert("Sauvegarde complète restaurée avec succès !");
                     }
 
-                    // Cas 2 : Fichier JSON standard (Ancien format ou Nouveau format avec "data")
                     let dataArray = [];
                     if (Array.isArray(parsed)) {
                         dataArray = parsed;
                     } else if (parsed.data && Array.isArray(parsed.data)) {
-                        // NOUVEAU FORMAT : C'est ici que l'on capte la nouvelle structure de base de données
                         dataArray = parsed.data;
                     } else {
-                        // Format alternatif avec des clés dynamiques
                         let arrKey = Object.keys(parsed).find(k => Array.isArray(parsed[k]));
                         if (arrKey) dataArray = parsed[arrKey];
                         else dataArray = Object.values(parsed);
@@ -918,10 +935,12 @@
                         let routeMethod = route.method || route.Method || "";
                         let routeGrade = route.grade || route.Grade || route.userGrade || route.UserGrade || "?";
                         
-                        // Capture des nouvelles données de la BDD (benchmark booleen, et ascensionCount)
+                        // ON PREND EN COMPTE LES DEUX ORTHOGRAPHES POUR BÉNÉFICIER DU BENCHMARK
                         let isBenchmark = route.benchmark === true || route.isBenchmark === true || route.IsBenchmark === true;
-                        let ascCount = route.ascensionCount || route.AscensionCount || 0;
                         let completed = route.completed === true;
+                        
+                        let ascCount = parseInt(route.ascensionCount || route.AscensionCount || 0, 10);
+                        let setter = route.setby || route.setter || route.Setter || "Inconnu";
                         
                         let routeMoves = route.moves || route.Moves || [];
                         let depart = [], progression = [], arrivee = [];
@@ -938,7 +957,6 @@
                                 }
                             });
                         }
-                        // Gère également le format où les prises sont déjà séparées
                         if (route.depart && Array.isArray(route.depart)) depart = route.depart;
                         if (route.progression && Array.isArray(route.progression)) progression = route.progression;
                         if (route.arrivee && Array.isArray(route.arrivee)) arrivee = route.arrivee;
@@ -947,7 +965,8 @@
                             depart, progression, arrivee, 
                             method: routeMethod, grade: routeGrade, 
                             isBenchmark: isBenchmark, 
-                            ascensionCount: ascCount, // Sauvegarde du nombre d'ascensions
+                            ascensionCount: ascCount, 
+                            setby: setter,
                             completed: completed
                         };
                     });
@@ -1038,7 +1057,8 @@
             if (name) {
                 blocks[name] = {
                     depart: currentCreation.depart, progression: currentCreation.progression, arrivee: currentCreation.arrivee,
-                    method: "", grade: "6B+", isBenchmark: false, ascensionCount: 0, completed: false
+                    method: "", grade: "6B+", isBenchmark: false, 
+                    ascensionCount: 0, setby: "Utilisateur", completed: false
                 };
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 
@@ -1083,6 +1103,9 @@
                 } else {
                     bottomCheck.classList.remove('is-checked');
                 }
+                
+                infoSetter.textContent = block.setby || "Inconnu";
+                infoAscensions.textContent = block.ascensionCount || "0";
 
                 updateListButtonState();
                 sendToESP32(block);
@@ -1091,6 +1114,8 @@
                 bottomGrade.textContent = "-";
                 bottomGrade.style.backgroundColor = "#333333";
                 bottomCheck.classList.remove('is-checked');
+                infoSetter.textContent = "-";
+                infoAscensions.textContent = "-";
                 updateListButtonState();
                 sendToESP32({ depart: [], progression: [], arrivee: [] });
             }
@@ -1103,7 +1128,7 @@
             let allKeys = Object.keys(blocks);
             let excludeChecked = excludeCompletedCheckbox.checked;
             let onlyChecked = onlyCompletedCheckbox.checked;
-            let sortAscensions = sortAscensionsCheckbox.checked; // État de la checkbox de tri
+            let sortAscensions = sortAscensionsCheckbox.checked;
             let currentGradeFilter = filterCotation.value;
             let currentListFilter = filterList.value;
             let benchmarkOnly = filterBenchmark.checked;
@@ -1122,23 +1147,20 @@
                 return true;
             });
             
-            // LOGIQUE DE TRI
             filteredKeys.sort((a, b) => {
                 if (sortAscensions) {
-                    let ascA = blocks[a].ascensionCount || 0;
-                    let ascB = blocks[b].ascensionCount || 0;
-                    if (ascB !== ascA) return ascB - ascA; // Tri décroissant (les plus répétés en haut)
+                    let ascA = parseInt(blocks[a].ascensionCount) || 0;
+                    let ascB = parseInt(blocks[b].ascensionCount) || 0;
+                    if (ascB !== ascA) return ascB - ascA; 
                 }
-                return a.localeCompare(b); // Tri alphabétique par défaut ou si le nb d'ascensions est égal
+                return a.localeCompare(b);
             });
             
             blockCounter.textContent = `${filteredKeys.length}/${totalBlocksInDB}`;
 
-            // CREATION DES OPTIONS DANS LE SELECT
             filteredKeys.forEach(k => {
                 let opt = document.createElement('option');
                 opt.value = k; 
-                // Si on a activé le tri par ascensions et que le bloc a été répété, on l'affiche
                 let ascText = (sortAscensions && blocks[k].ascensionCount > 0) ? ` - ${blocks[k].ascensionCount} asc.` : '';
                 opt.textContent = `${k} (${blocks[k].grade || '?'})${ascText}`;
                 blockSelect.appendChild(opt);
@@ -1170,7 +1192,7 @@
         });
         
         filterBenchmark.addEventListener('change', updateBlockSelect);
-        sortAscensionsCheckbox.addEventListener('change', updateBlockSelect); // Met à jour le tri au clic
+        sortAscensionsCheckbox.addEventListener('change', updateBlockSelect); 
         
         excludeCompletedCheckbox.addEventListener('change', () => {
             if(excludeCompletedCheckbox.checked) onlyCompletedCheckbox.checked = false;
@@ -1249,7 +1271,6 @@
             });
         });
 
-        // INITIALISATION
         updateListFilterOptions();
         applyGridConfig(); 
         initGrid(); 
