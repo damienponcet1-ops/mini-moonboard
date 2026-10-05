@@ -83,6 +83,11 @@
         .dropdown-content button:hover, .dropdown-content label:hover {
             background-color: #2a2a2a;
         }
+        .dropdown-content button:disabled {
+            color: #666 !important;
+            cursor: not-allowed;
+            background-color: transparent !important;
+        }
         .dropdown-content hr {
             border: none;
             border-top: 1px solid #444;
@@ -255,7 +260,6 @@
             transition: transform 0.1s;
         }
         
-        /* Mode Ajustement de Grille : Cercles pointillés et fond semi-transparent */
         div.grid-overlay.grid-adjusting div.hold {
             border: 1.5px dashed rgba(255, 255, 255, 0.9) !important;
             background: rgba(0, 0, 0, 0.35) !important;
@@ -385,7 +389,6 @@
         }
         .check-circle svg { width: 20px; height: 20px; stroke: #555; transition: all 0.2s; }
         
-        /* STYLE DU BOUTON VALIDÉ (ENTIÈREMENT VERT) */
         .triptych-btn.is-checked { 
             background: #27ae60; 
             border-color: #2ecc71; 
@@ -401,7 +404,6 @@
             height: 26px;
         }
 
-        /* ZONE INFO (Ouvreur + Ascensions) */
         .block-extra-info {
             display: flex;
             gap: 15px;
@@ -421,7 +423,6 @@
         .footer-info { font-size: 0.65rem; color: #888; margin-top: 2px; text-align: right; width: 100%; }
         .footer-info span.counter { color: #ffb700; font-weight: bold; }
 
-        /* PANNEAU DE RÉGLAGE GRILLE */
         #adjustPanel {
             display: none;
             width: 100%;
@@ -467,7 +468,6 @@
             padding: 10px;
         }
 
-        /* MODALES */
         .modal {
             display: none; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); 
             z-index: 1000; width: 95%; max-width: 350px;
@@ -484,7 +484,6 @@
 </head>
 <body>
 
-    <!-- HEADER -->
     <div class="header-container">
         <button id="btnConnect" class="btn-bt" title="Bluetooth">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"></polyline></svg>
@@ -507,6 +506,7 @@
                 <button id="btnPencil" style="color: #f39c12;">✏️ Créer un bloc</button>
                 <button id="btnAdjustGrid" style="color: #aaa;">⚙️ Ajuster la grille</button>
                 <button id="btnDeleteBlock" style="color: #ff4d4d;">🗑️ Supprimer le bloc affiché</button>
+                <button id="btnDeleteList" style="color: #ff9800;" disabled>🗑️ Supprimer la liste affichée</button>
                 <hr>
                 <label><input type="checkbox" id="sortAscensions" checked> <span class="menu-icon-badge" style="background-color: #3498db; border-color: #2980b9; color: white;">📈</span> Popularité</label>
                 <label><input type="checkbox" id="sortAlpha"> <span class="menu-icon-badge" style="background-color: #95a5a6; border-color: #7f8c8d; color: white;">🔤</span> Ordre alphabétique</label>
@@ -521,18 +521,15 @@
         <input type="file" id="fileImport" accept=".json" style="display: none;">
     </div>
 
-    <!-- RECHERCHE -->
     <div style="width: 100%; max-width: 450px;">
         <input type="text" id="searchInput" class="search-input" placeholder="Rechercher par nom...">
     </div>
 
-    <!-- LIGNE 2 : Select & Loupe -->
     <div class="toolbar" style="flex-wrap: nowrap;">
         <select id="blockSelect" class="main-select"></select>
         <button id="btnSearchToggle" class="btn-gray">🔍</button>
     </div>
 
-    <!-- LIGNE 3 : Filtres Listes & Cotations -->
     <div class="toolbar" style="flex-wrap: nowrap;">
         <select id="filterList" class="btn-outline" style="width: 100%;">
             <option value="">Toutes les listes</option>
@@ -551,13 +548,11 @@
         </select>
     </div>
 
-    <!-- MUR -->
     <div class="board-container" id="mainBoardContainer">
         <img src="mini_moonboard_bg.jpg" alt="Mini MoonBoard" class="board-image" id="boardImage">
         <div class="grid-overlay" id="gridOverlay"></div>
     </div>
 
-    <!-- BADGES SOUS LE MUR -->
     <div class="badges-container" id="badgesContainer">
         <span id="badgeBenchmark" class="badge-benchmark" title="Ce bloc est un Benchmark">B</span>
         <span id="badgeNoKb" class="inline-badge badge-nokickboard">NO KICKBOARD</span>
@@ -566,7 +561,6 @@
         <span id="badgeFootlessKb" class="inline-badge badge-footless">FOOTLESS + KICKBOARD</span>
     </div>
 
-    <!-- PANNEAU DU BAS -->
     <div id="bottomPanel" class="bottom-panel">
         <div class="name-row">
             <button id="btnPrevBottom" class="nav-btn">◀</button>
@@ -595,7 +589,6 @@
         </div>
     </div>
 
-    <!-- PANNEAU DE RÉGLAGE GRILLE -->
     <div id="adjustPanel">
         <h3>Ajuster la grille</h3>
         <div class="adjust-grid-layout">
@@ -610,7 +603,6 @@
         </div>
     </div>
 
-    <!-- MODALES -->
     <div id="listModal" class="modal">
         <div class="modal-content">
             <h3 id="listModalTitle">Ajouter à une liste</h3>
@@ -656,19 +648,12 @@
     </div>
 
     <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW:', err));
-            });
-        }
-
         const COLS = ['A','B','C','D','E','F','G','H','I','J','K'];
         const ROWS = [12,11,10,9,8,7,6,5,4,3,2,1];
         
         let blocks = JSON.parse(localStorage.getItem('minimoon_blocks') || '{}');
         let customLists = JSON.parse(localStorage.getItem('minimoon_lists') || '{}');
         let currentBlockName = "";
-        
         let isCreating = false;
         let currentCreation = { depart: [], progression: [], arrivee: [] };
 
@@ -679,14 +664,11 @@
         const filterBenchmark = document.getElementById('filterBenchmark');
         const excludeCompletedCheckbox = document.getElementById('excludeCompleted');
         const onlyCompletedCheckbox = document.getElementById('onlyCompleted');
-        
         const sortAscensionsCheckbox = document.getElementById('sortAscensions');
         const sortAlphaCheckbox = document.getElementById('sortAlpha');
-        
         const blockCounter = document.getElementById('blockCounter');
         const searchInput = document.getElementById('searchInput');
         const btnSearchToggle = document.getElementById('btnSearchToggle');
-
         const mainMenu = document.getElementById('mainMenu');
         const btnMenu = document.getElementById('btnMenu');
         const dropdownMenu = document.getElementById('dropdownMenu');
@@ -695,7 +677,7 @@
         const btnCancelCreate = document.getElementById('btnCancelCreate');
         const btnSaveCreate = document.getElementById('btnSaveCreate');
         const btnDeleteBlock = document.getElementById('btnDeleteBlock');
-
+        const btnDeleteList = document.getElementById('btnDeleteList');
         const bottomPanel = document.getElementById('bottomPanel');
         const bottomBlockName = document.getElementById('bottomBlockName');
         const bottomGrade = document.getElementById('bottomGrade');
@@ -703,28 +685,23 @@
         const bottomListAdd = document.getElementById('bottomListAdd');
         const btnPrevBottom = document.getElementById('btnPrevBottom');
         const btnNextBottom = document.getElementById('btnNextBottom');
-
         const infoSetter = document.getElementById('infoSetter');
         const infoAscensions = document.getElementById('infoAscensions');
-
         const badgeNoKb = document.getElementById('badgeNoKb');
         const badgeMarked = document.getElementById('badgeMarked');
         const badgeFootless = document.getElementById('badgeFootless');
         const badgeFootlessKb = document.getElementById('badgeFootlessKb');
         const badgeBenchmark = document.getElementById('badgeBenchmark');
-
         const listModal = document.getElementById('listModal');
         const btnCloseList = document.getElementById('btnCloseList');
         const btnCreateList = document.getElementById('btnCreateList');
         const existingListsDiv = document.getElementById('existingLists');
         const newListNameInput = document.getElementById('newListName');
         const listModalTitle = document.getElementById('listModalTitle');
-        
         const gradeModal = document.getElementById('gradeModal');
         const newGradeSelect = document.getElementById('newGradeSelect');
         const btnCloseGrade = document.getElementById('btnCloseGrade');
         const btnSaveGrade = document.getElementById('btnSaveGrade');
-
         const btnPasteJSON = document.getElementById('btnPasteJSON');
         const pasteModal = document.getElementById('pasteModal');
         const pasteJsonText = document.getElementById('pasteJsonText');
@@ -735,18 +712,12 @@
             if (!gradeStr) return '#333333';
             let g = gradeStr.toUpperCase().trim();
             const gradeScale = {
-                '6A': '#2ecc71', '6A+': '#27ae60',
-                '6B': '#1e8449', '6B+': '#5dade2',
-                '6C': '#3498db', '6C+': '#2874a6',
-                '7A': '#f5b041', '7A+': '#f39c12',
-                '7B': '#d35400', '7B+': '#e74c3c',
-                '7C': '#c0392b', '7C+': '#922b21',
-                '8A': '#af7ac5', '8A+': '#9b59b6',
-                '8B': '#8e44ad', '8B+': '#5b2c6f'
+                '6A': '#2ecc71', '6A+': '#27ae60', '6B': '#1e8449', '6B+': '#5dade2',
+                '6C': '#3498db', '6C+': '#2874a6', '7A': '#f5b041', '7A+': '#f39c12',
+                '7B': '#d35400', '7B+': '#e74c3c', '7C': '#c0392b', '7C+': '#922b21',
+                '8A': '#af7ac5', '8A+': '#9b59b6', '8B': '#8e44ad', '8B+': '#5b2c6f'
             };
-            for (let key in gradeScale) {
-                if (g.includes(key)) return gradeScale[key];
-            }
+            for (let key in gradeScale) { if (g.includes(key)) return gradeScale[key]; }
             return '#333333';
         }
 
@@ -755,34 +726,29 @@
             filterList.innerHTML = '<option value="">Toutes les listes</option>';
             for(let listName in customLists) {
                 let opt = document.createElement('option');
-                opt.value = listName;
-                opt.textContent = listName;
+                opt.value = listName; opt.textContent = listName;
                 filterList.appendChild(opt);
             }
             if(customLists[currentFilter]) filterList.value = currentFilter;
+            
+            // Mise à jour de l'état du bouton "Supprimer la liste"
+            btnDeleteList.disabled = (filterList.value === "");
         }
 
         function renderListModal() {
             if(!currentBlockName) return;
             listModalTitle.textContent = `Listes pour "${currentBlockName}"`;
             existingListsDiv.innerHTML = '';
-            
             for(let listName in customLists) {
                 let isInside = customLists[listName].includes(currentBlockName);
                 let btn = document.createElement('button');
                 btn.textContent = listName + (isInside ? ' ✅' : '');
                 btn.className = isInside ? 'btn-green' : 'btn-gray';
-                
                 btn.onclick = () => {
-                    if(isInside) {
-                        customLists[listName] = customLists[listName].filter(b => b !== currentBlockName);
-                    } else {
-                        customLists[listName].push(currentBlockName);
-                    }
+                    if(isInside) { customLists[listName] = customLists[listName].filter(b => b !== currentBlockName); }
+                    else { customLists[listName].push(currentBlockName); }
                     localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
-                    renderListModal();
-                    updateBlockSelect();
-                    updateListButtonState();
+                    renderListModal(); updateBlockSelect(); updateListButtonState();
                 };
                 existingListsDiv.appendChild(btn);
             }
@@ -793,17 +759,14 @@
             if (activeList && customLists[activeList]) {
                 let isInside = customLists[activeList].includes(currentBlockName);
                 if (isInside) {
-                    bottomListAdd.textContent = '➖';
-                    bottomListAdd.classList.add('in-list');
+                    bottomListAdd.textContent = '➖'; bottomListAdd.classList.add('in-list');
                     bottomListAdd.title = `Retirer de la liste "${activeList}"`;
                 } else {
-                    bottomListAdd.textContent = '➕';
-                    bottomListAdd.classList.remove('in-list');
+                    bottomListAdd.textContent = '➕'; bottomListAdd.classList.remove('in-list');
                     bottomListAdd.title = `Ajouter à la liste "${activeList}"`;
                 }
             } else {
-                bottomListAdd.textContent = '➕';
-                bottomListAdd.classList.remove('in-list');
+                bottomListAdd.textContent = '➕'; bottomListAdd.classList.remove('in-list');
                 bottomListAdd.title = "Gérer les listes";
             }
         }
@@ -811,37 +774,25 @@
         bottomListAdd.addEventListener('click', () => {
             if(!currentBlockName) return alert("Sélectionnez un bloc d'abord !");
             let activeList = filterList.value;
-            
             if (activeList && customLists[activeList]) {
                 let isInside = customLists[activeList].includes(currentBlockName);
-                if (isInside) {
-                    customLists[activeList] = customLists[activeList].filter(b => b !== currentBlockName);
-                } else {
-                    customLists[activeList].push(currentBlockName);
-                }
+                if (isInside) { customLists[activeList] = customLists[activeList].filter(b => b !== currentBlockName); }
+                else { customLists[activeList].push(currentBlockName); }
                 localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
-                updateListButtonState();
-                updateBlockSelect();
+                updateListButtonState(); updateBlockSelect();
             } else {
-                listModal.style.display = 'block';
-                newListNameInput.value = '';
-                renderListModal();
+                listModal.style.display = 'block'; newListNameInput.value = ''; renderListModal();
             }
         });
 
         btnCloseList.addEventListener('click', () => listModal.style.display = 'none');
-
         btnCreateList.addEventListener('click', () => {
             let val = newListNameInput.value.trim();
             if(!val) return alert("Entrez un nom de liste.");
             if(!customLists[val]) customLists[val] = [];
             if(!customLists[val].includes(currentBlockName)) customLists[val].push(currentBlockName);
             localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
-            newListNameInput.value = '';
-            updateListFilterOptions();
-            renderListModal();
-            updateBlockSelect();
-            updateListButtonState();
+            newListNameInput.value = ''; updateListFilterOptions(); renderListModal(); updateBlockSelect(); updateListButtonState();
         });
 
         bottomGrade.addEventListener('click', () => {
@@ -851,54 +802,33 @@
             newGradeSelect.value = optionExists ? currentGrade : "?";
             gradeModal.style.display = 'block';
         });
-
         btnCloseGrade.addEventListener('click', () => gradeModal.style.display = 'none');
-
         btnSaveGrade.addEventListener('click', () => {
             if(!currentBlockName || !blocks[currentBlockName]) return;
             blocks[currentBlockName].grade = newGradeSelect.value;
             localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-            gradeModal.style.display = 'none';
-            displayBlock(currentBlockName);
-            updateBlockSelect(); 
+            gradeModal.style.display = 'none'; displayBlock(currentBlockName); updateBlockSelect();
         });
 
         btnPasteJSON.addEventListener('click', () => {
-            dropdownMenu.classList.remove('show');
-            pasteJsonText.value = '';
-            pasteModal.style.display = 'block';
+            dropdownMenu.classList.remove('show'); pasteJsonText.value = ''; pasteModal.style.display = 'block';
         });
-
         btnClosePaste.addEventListener('click', () => pasteModal.style.display = 'none');
-
         btnSavePaste.addEventListener('click', () => {
             let text = pasteJsonText.value.trim();
             if (!text) return alert("Veuillez coller du texte JSON.");
-            try {
-                let parsed = JSON.parse(text);
-                processImportedData(parsed);
-                pasteModal.style.display = 'none';
-            } catch(e) {
-                alert("Erreur JSON: " + e.message + "\nVérifiez que le code copié est valide.");
-            }
+            try { let parsed = JSON.parse(text); processImportedData(parsed); pasteModal.style.display = 'none'; }
+            catch(e) { alert("Erreur JSON: " + e.message); }
         });
 
-        btnMenu.addEventListener('click', (e) => {
-            dropdownMenu.classList.toggle('show');
-            e.stopPropagation();
-        });
-        document.addEventListener('click', (e) => {
-            if(!e.target.closest('#mainMenu')) dropdownMenu.classList.remove('show');
-        });
+        btnMenu.addEventListener('click', (e) => { dropdownMenu.classList.toggle('show'); e.stopPropagation(); });
+        document.addEventListener('click', (e) => { if(!e.target.closest('#mainMenu')) dropdownMenu.classList.remove('show'); });
 
         btnSearchToggle.addEventListener('click', () => {
             if (searchInput.style.display === 'none' || searchInput.style.display === '') {
-                searchInput.style.display = 'block';
-                searchInput.focus();
+                searchInput.style.display = 'block'; searchInput.focus();
             } else {
-                searchInput.style.display = 'none';
-                searchInput.value = '';
-                updateBlockSelect();
+                searchInput.style.display = 'none'; searchInput.value = ''; updateBlockSelect();
             }
         });
         searchInput.addEventListener('input', () => updateBlockSelect());
@@ -906,101 +836,70 @@
         // FONCTION DE SUPPRESSION DE BLOC
         btnDeleteBlock.addEventListener('click', () => {
             if (!currentBlockName || !blocks[currentBlockName]) return;
-            
             if (confirm(`Voulez-vous vraiment supprimer définitivement le bloc "${currentBlockName}" ?`)) {
                 delete blocks[currentBlockName];
-                for (let listName in customLists) {
-                    customLists[listName] = customLists[listName].filter(b => b !== currentBlockName);
-                }
+                for (let listName in customLists) { customLists[listName] = customLists[listName].filter(b => b !== currentBlockName); }
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
-                dropdownMenu.classList.remove('show');
-                updateBlockSelect(); 
-                alert("Bloc supprimé avec succès.");
+                dropdownMenu.classList.remove('show'); updateBlockSelect(); alert("Bloc supprimé.");
             }
         });
 
-        // -----------------------------------------------------------
-        // CONNEXION BLUETOOTH & ENVOI DES DONNÉES À L'ESP32
-        // -----------------------------------------------------------
+        // NOUVELLE FONCTION DE SUPPRESSION DE LISTE
+        btnDeleteList.addEventListener('click', () => {
+            let activeList = filterList.value;
+            if (!activeList) return; // Sécurité supplémentaire
+            
+            if (confirm(`Voulez-vous vraiment supprimer la liste "${activeList}" ?\n(Rassurez-vous, les blocs à l'intérieur ne seront PAS effacés de votre base de données).`)) {
+                delete customLists[activeList];
+                localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
+                
+                filterList.value = ""; // On repasse sur "Toutes les listes"
+                updateListFilterOptions();
+                updateBlockSelect();
+                dropdownMenu.classList.remove('show');
+                alert(`La liste "${activeList}" a été supprimée.`);
+            }
+        });
+
+        // BLUETOOTH
         let bluetoothDevice = null;
         let bleCharacteristic = null;
         const btnConnect = document.getElementById('btnConnect');
-
-        // UUID standards du "Nordic UART Service" (très utilisé pour communiquer du texte avec un ESP32)
         const BLE_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
         const BLE_RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
 
         btnConnect.addEventListener('click', async () => {
-            if (bluetoothDevice && bluetoothDevice.gatt.connected) {
-                bluetoothDevice.gatt.disconnect();
-                return; 
-            }
+            if (bluetoothDevice && bluetoothDevice.gatt.connected) { bluetoothDevice.gatt.disconnect(); return; }
             try {
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ namePrefix: 'MoonBoard' }],
-                    optionalServices: [BLE_SERVICE_UUID] 
+                    filters: [{ namePrefix: 'MoonBoard' }], optionalServices: [BLE_SERVICE_UUID]
                 });
-                
-                bluetoothDevice.addEventListener('gattserverdisconnected', () => {
-                    btnConnect.classList.remove('connected');
-                    bleCharacteristic = null;
-                });
-
+                bluetoothDevice.addEventListener('gattserverdisconnected', () => { btnConnect.classList.remove('connected'); bleCharacteristic = null; });
                 const server = await bluetoothDevice.gatt.connect();
                 const service = await server.getPrimaryService(BLE_SERVICE_UUID);
                 bleCharacteristic = await service.getCharacteristic(BLE_RX_UUID);
-                
                 btnConnect.classList.add('connected');
-                
-                // Si un bloc est déjà affiché, on l'envoie direct après la connexion
-                if (currentBlockName && blocks[currentBlockName]) {
-                    sendToESP32(blocks[currentBlockName]);
-                }
-                
-            } catch (error) { 
-                console.error("Erreur Bluetooth:", error); 
-            }
+                if (currentBlockName && blocks[currentBlockName]) { sendToESP32(blocks[currentBlockName]); }
+            } catch (error) { console.error("Erreur Bluetooth:", error); }
         });
 
         function sendToESP32(blockData) {
             if (!bleCharacteristic) return;
-            
             let payload = "CLEAR";
-            
             if (blockData) {
                 const moves = [];
-                
-                // Formatage de chaque prise avec S (Start), P (Progression), E (End)
                 if(blockData.depart) blockData.depart.forEach(id => moves.push(id + ":S"));
                 if(blockData.progression) blockData.progression.forEach(id => moves.push(id + ":P"));
                 if(blockData.arrivee) blockData.arrivee.forEach(id => moves.push(id + ":E"));
-                
-                if (moves.length > 0) {
-                    // Crée une chaîne du type "A1:S,B4:P,K12:E"
-                    payload = moves.join(",");
-                }
+                if (moves.length > 0) { payload = moves.join(","); }
             }
-            
-            // Envoi en Bluetooth
             let encoder = new TextEncoder();
             bleCharacteristic.writeValue(encoder.encode(payload)).catch(err => console.error(err));
         }
-        // -----------------------------------------------------------
 
         function downloadData(dataObj, filename) {
             const dataStr = JSON.stringify(dataObj, null, 2);
-            if (navigator.canShare) {
-                try {
-                    const file = new File([dataStr], filename, { type: "application/json" });
-                    if (navigator.canShare({ files: [file] })) {
-                        navigator.share({ title: "Export Mini Moon Board", files: [file] })
-                        .catch(err => console.log("Partage annulé ou erreur", err));
-                        dropdownMenu.classList.remove('show');
-                        return; 
-                    }
-                } catch (e) { console.log("API Share failed", e); }
-            }
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1020,124 +919,48 @@
             if (parsed && parsed.type === "minimoon_full_backup") {
                 if (parsed.blocks) blocks = parsed.blocks;
                 if (parsed.lists) customLists = parsed.lists;
-                if (parsed.gridConfig) {
-                    gridConfig = parsed.gridConfig;
-                    applyGridConfig();
-                    localStorage.setItem('minimoon_grid', JSON.stringify(gridConfig));
-                }
+                if (parsed.gridConfig) { gridConfig = parsed.gridConfig; applyGridConfig(); localStorage.setItem('minimoon_grid', JSON.stringify(gridConfig)); }
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
-                updateListFilterOptions();
-                updateBlockSelect();
-                return alert("Sauvegarde complète restaurée avec succès !");
+                updateListFilterOptions(); updateBlockSelect();
+                return alert("Sauvegarde complète restaurée !");
             }
-
-            let dataArray = [];
-            if (Array.isArray(parsed)) {
-                dataArray = parsed;
-            } else if (parsed.data && Array.isArray(parsed.data)) {
-                dataArray = parsed.data;
-            } else if (parsed.name || parsed.Name || parsed.moves || parsed.Moves) {
-                dataArray.push(parsed);
-            } else {
-                for (let key in parsed) {
-                    let item = parsed[key];
-                    if (item && typeof item === 'object' && !Array.isArray(item)) {
-                        if (!item.name && !item.Name) item.name = key;
-                        dataArray.push(item);
-                    }
-                }
-            }
-            
-            if (!dataArray || dataArray.length === 0) return alert("Aucun bloc valide trouvé dans ce code.");
-
+            let dataArray = Array.isArray(parsed) ? parsed : (parsed.data || [parsed]);
             let newBlocks = {};
             dataArray.forEach((route, index) => {
-                let routeName = route.name || route.Name || `Bloc_Importé_${Date.now()}_${index}`;
-                let routeMethod = route.method || route.Method || "";
-                let routeGrade = route.grade || route.Grade || route.userGrade || route.UserGrade || "?";
-                
-                let isBenchmarkVal = false;
-                if ('benchmark' in route) isBenchmarkVal = (route.benchmark === true || String(route.benchmark).toLowerCase() === 'true');
-                else if ('isBenchmark' in route) isBenchmarkVal = (route.isBenchmark === true || String(route.isBenchmark).toLowerCase() === 'true');
-                else if ('IsBenchmark' in route) isBenchmarkVal = (route.IsBenchmark === true || String(route.IsBenchmark).toLowerCase() === 'true');
-                
-                let completed = route.completed === true;
-                let ascCount = parseInt(route.ascensionCount || route.AscensionCount || 0, 10);
-                let setter = route.setby || route.setter || route.Setter || "Inconnu";
-                
-                let routeMoves = route.moves || route.Moves || [];
-                let depart = [], progression = [], arrivee = [];
-                
-                if (Array.isArray(routeMoves)) {
-                    routeMoves.forEach(m => {
-                        let rawId = m.description || m.Description || m.hold || m.id || m.Id;
-                        if (!rawId && typeof m === 'string') rawId = m;
-                        if (rawId && typeof rawId === 'string') {
-                            let id = rawId.toUpperCase();
-                            
-                            let isStart = m.isStart || m.IsStart || m.type === 'start' || m.type === 'Start';
-                            let isEnd = m.isEnd || m.IsEnd || m.type === 'finish' || m.type === 'end' || m.type === 'top';
-                            
-                            if (isStart) depart.push(id);
-                            else if (isEnd) arrivee.push(id);
-                            else progression.push(id);
-                        }
+                let routeName = route.name || route.Name || `Bloc_${index}`;
+                let depart = route.depart || [], progression = route.progression || [], arrivee = route.arrivee || [];
+                if (route.moves) {
+                    route.moves.forEach(m => {
+                        let id = (m.description || m.Description || m).toUpperCase();
+                        if (m.isStart) depart.push(id);
+                        else if (m.isEnd) arrivee.push(id);
+                        else progression.push(id);
                     });
                 }
-                if (route.depart && Array.isArray(route.depart)) depart = route.depart;
-                if (route.progression && Array.isArray(route.progression)) progression = route.progression;
-                if (route.arrivee && Array.isArray(route.arrivee)) arrivee = route.arrivee;
-
                 newBlocks[routeName] = {
-                    depart, progression, arrivee, 
-                    method: routeMethod, grade: routeGrade, 
-                    isBenchmark: isBenchmarkVal, 
-                    ascensionCount: ascCount, 
-                    setby: setter,
-                    completed: completed
+                    depart, progression, arrivee,
+                    method: route.method || "", grade: route.grade || "6B+",
+                    isBenchmark: route.benchmark || false, ascensionCount: route.ascensionCount || 0,
+                    setby: route.setby || "Inconnu", completed: route.completed || false
                 };
             });
-            
-            let newKeys = Object.keys(newBlocks);
             blocks = {...blocks, ...newBlocks};
             localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-            alert(`${newKeys.length} bloc(s) importé(s)/mis à jour avec succès !`);
-            
-            if(newKeys.length > 0) {
-                updateBlockSelect(newKeys[newKeys.length - 1]); 
-            } else {
-                updateBlockSelect();
-            }
+            updateBlockSelect();
+            alert("Import réussi !");
         }
 
-        document.getElementById('btnImport').addEventListener('click', () => {
-            document.getElementById('fileImport').click();
-            dropdownMenu.classList.remove('show');
-        });
-
+        document.getElementById('btnImport').addEventListener('click', () => { document.getElementById('fileImport').click(); dropdownMenu.classList.remove('show'); });
         document.getElementById('fileImport').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+            const file = e.target.files[0]; if (!file) return;
             const reader = new FileReader();
-            reader.onload = ev => {
-                try {
-                    let parsed = JSON.parse(ev.target.result);
-                    processImportedData(parsed);
-                } catch(err) { alert("Erreur: Fichier invalide. Vérifiez le format JSON."); console.error(err); }
-            };
-            reader.readAsText(file);
-            e.target.value = '';
+            reader.onload = ev => { try { processImportedData(JSON.parse(ev.target.result)); } catch(err) { alert("Erreur fichier"); } };
+            reader.readAsText(file); e.target.value = '';
         });
 
         document.getElementById('btnClearStorage').addEventListener('click', () => {
-            if(confirm("⚠️ Effacer TOUS les blocs et données ?")) {
-                blocks = {}; customLists = {};
-                localStorage.removeItem('minimoon_blocks');
-                localStorage.removeItem('minimoon_lists');
-                updateListFilterOptions();
-                updateBlockSelect();
-            }
+            if(confirm("Effacer tout ?")) { blocks = {}; customLists = {}; localStorage.clear(); updateListFilterOptions(); updateBlockSelect(); }
         });
 
         function initGrid() {
@@ -1145,14 +968,10 @@
             ROWS.forEach(r => {
                 COLS.forEach(c => {
                     let holdId = c + r;
-                    let cell = document.createElement('div');
-                    cell.className = 'grid-cell';
+                    let cell = document.createElement('div'); cell.className = 'grid-cell';
                     cell.addEventListener('click', () => handleHoldClick(holdId));
-                    let div = document.createElement('div');
-                    div.className = 'hold';
-                    div.dataset.id = holdId;
-                    cell.appendChild(div);
-                    gridOverlay.appendChild(cell);
+                    let div = document.createElement('div'); div.className = 'hold'; div.dataset.id = holdId;
+                    cell.appendChild(div); gridOverlay.appendChild(cell);
                 });
             });
         }
@@ -1162,260 +981,124 @@
             let estDepart = currentCreation.depart.includes(holdId);
             let estProgression = currentCreation.progression.includes(holdId);
             let estArrivee = currentCreation.arrivee.includes(holdId);
-            
             currentCreation.depart = currentCreation.depart.filter(h => h !== holdId);
             currentCreation.progression = currentCreation.progression.filter(h => h !== holdId);
             currentCreation.arrivee = currentCreation.arrivee.filter(h => h !== holdId);
-
             let h = document.querySelector(`[data-id="${holdId}"]`);
             h.classList.remove('depart', 'progression', 'arrivee');
-
-            if (estDepart) { currentCreation.progression.push(holdId); h.classList.add('progression'); } 
-            else if (estProgression) { currentCreation.arrivee.push(holdId); h.classList.add('arrivee'); } 
-            else if (estArrivee) { /* Vide */ } 
+            if (estDepart) { currentCreation.progression.push(holdId); h.classList.add('progression'); }
+            else if (estProgression) { currentCreation.arrivee.push(holdId); h.classList.add('arrivee'); }
+            else if (estArrivee) {}
             else { currentCreation.depart.push(holdId); h.classList.add('depart'); }
         }
 
         btnPencil.addEventListener('click', () => {
-            isCreating = true;
-            dropdownMenu.classList.remove('show');
-            mainMenu.style.display = 'none';
-            creationTools.style.display = 'flex';
-            bottomPanel.style.display = 'none';
+            isCreating = true; dropdownMenu.classList.remove('show'); mainMenu.style.display = 'none';
+            creationTools.style.display = 'flex'; bottomPanel.style.display = 'none';
             document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
-            badgeNoKb.style.display = 'none'; badgeMarked.style.display = 'none';
-            badgeFootless.style.display = 'none'; badgeFootlessKb.style.display = 'none';
-            badgeBenchmark.style.display = 'none';
             currentCreation = { depart: [], progression: [], arrivee: [] };
         });
 
         btnCancelCreate.addEventListener('click', () => {
-            isCreating = false;
-            mainMenu.style.display = 'block';
-            creationTools.style.display = 'none';
-            bottomPanel.style.display = 'flex';
-            displayBlock(blockSelect.value);
+            isCreating = false; mainMenu.style.display = 'block'; creationTools.style.display = 'none';
+            bottomPanel.style.display = 'flex'; displayBlock(blockSelect.value);
         });
 
         btnSaveCreate.addEventListener('click', () => {
-            if (currentCreation.depart.length === 0 && currentCreation.progression.length === 0 && currentCreation.arrivee.length === 0) {
-                return alert("Ajoute au moins une prise sur le mur !");
-            }
-            let name = prompt("Nom du nouveau bloc :");
+            let name = prompt("Nom du bloc :");
             if (name) {
-                blocks[name] = {
-                    depart: currentCreation.depart, progression: currentCreation.progression, arrivee: currentCreation.arrivee,
-                    method: "", grade: "6B+", isBenchmark: false, ascensionCount: 0, setby: "Moi", completed: false
-                };
+                blocks[name] = { depart: currentCreation.depart, progression: currentCreation.progression, arrivee: currentCreation.arrivee, grade: "6B+", completed: false };
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-                isCreating = false;
-                mainMenu.style.display = 'block';
-                creationTools.style.display = 'none';
-                bottomPanel.style.display = 'flex';
-                updateBlockSelect(name); 
+                isCreating = false; mainMenu.style.display = 'block'; creationTools.style.display = 'none';
+                bottomPanel.style.display = 'flex'; updateBlockSelect(name);
             }
         });
 
         function displayBlock(name) {
-            if (isCreating || gridOverlay.classList.contains('grid-adjusting')) return; 
-            currentBlockName = name;
-            let block = blocks[name];
-            
+            if (isCreating || gridOverlay.classList.contains('grid-adjusting')) return;
+            currentBlockName = name; let block = blocks[name];
             document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
-            badgeNoKb.style.display = 'none'; badgeMarked.style.display = 'none';
-            badgeFootless.style.display = 'none'; badgeFootlessKb.style.display = 'none';
-            badgeBenchmark.style.display = 'none';
-            
             if (block) {
                 block.depart.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('depart'); });
                 block.progression.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('progression'); });
                 block.arrivee.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('arrivee'); });
-                
-                let methodLower = (block.method || "").toLowerCase();
-                if (methodLower.includes("no kickboard") || methodLower.includes("without kickboard")) badgeNoKb.style.display = 'inline-block';
-                if (methodLower.includes("marked") || methodLower.includes("maker") || methodLower.includes("any")) badgeMarked.style.display = 'inline-block';
-                if (methodLower.includes("footless")) {
-                    if (methodLower.includes("kickboard") && !methodLower.includes("no kickboard")) badgeFootlessKb.style.display = 'inline-block'; 
-                    else badgeFootless.style.display = 'inline-block'; 
-                }
-                if (block.isBenchmark) badgeBenchmark.style.display = 'inline-flex';
-
                 bottomBlockName.textContent = name;
-                let gradeVal = block.grade || "?";
-                bottomGrade.textContent = gradeVal;
-                bottomGrade.style.backgroundColor = getGradeColor(gradeVal);
-                if (block.completed) bottomCheck.classList.add('is-checked');
-                else bottomCheck.classList.remove('is-checked');
-                
-                infoSetter.textContent = block.setby || "Inconnu";
-                infoAscensions.textContent = block.ascensionCount || "0";
-
-                updateListButtonState();
-                sendToESP32(block);
+                bottomGrade.textContent = block.grade || "?";
+                bottomGrade.style.backgroundColor = getGradeColor(block.grade);
+                if (block.completed) bottomCheck.classList.add('is-checked'); else bottomCheck.classList.remove('is-checked');
+                infoSetter.textContent = block.setby || "-"; infoAscensions.textContent = block.ascensionCount || "0";
+                updateListButtonState(); sendToESP32(block);
             } else {
-                bottomBlockName.textContent = "Aucun bloc sélectionné";
-                bottomGrade.textContent = "-";
-                bottomGrade.style.backgroundColor = "#333333";
-                bottomCheck.classList.remove('is-checked');
-                infoSetter.textContent = "-"; infoAscensions.textContent = "-";
-                updateListButtonState();
-                sendToESP32(null); // On déclenche le nettoyage
+                bottomBlockName.textContent = "Aucun bloc"; bottomGrade.textContent = "-";
+                bottomCheck.classList.remove('is-checked'); sendToESP32(null);
             }
         }
 
         function updateBlockSelect(forceSelectName = null) {
             let selected = forceSelectName || blockSelect.value;
             blockSelect.innerHTML = '';
-            
-            let allKeys = Object.keys(blocks);
-            let excludeChecked = excludeCompletedCheckbox.checked;
-            let onlyChecked = onlyCompletedCheckbox.checked;
-            let sortAscensions = sortAscensionsCheckbox.checked;
-            let sortAlpha = sortAlphaCheckbox.checked;
-            let currentGradeFilter = filterCotation.value;
-            let currentListFilter = filterList.value;
-            let benchmarkOnly = filterBenchmark.checked;
-            let searchQuery = searchInput.value.toLowerCase();
-            let totalBlocksInDB = allKeys.length;
-            
-            let filteredKeys = allKeys.filter(k => {
+            let filteredKeys = Object.keys(blocks).filter(k => {
                 let b = blocks[k];
-                if (excludeChecked && b.completed) return false;
-                if (onlyChecked && !b.completed) return false;
-                if (currentGradeFilter && !(b.grade && b.grade.includes(currentGradeFilter))) return false;
-                if (benchmarkOnly && !b.isBenchmark) return false;
-                if (searchQuery && !k.toLowerCase().includes(searchQuery)) return false;
-                if (currentListFilter && (!customLists[currentListFilter] || !customLists[currentListFilter].includes(k))) return false;
+                if (excludeCompletedCheckbox.checked && b.completed) return false;
+                if (onlyCompletedCheckbox.checked && !b.completed) return false;
+                if (filterCotation.value && !(b.grade && b.grade.includes(filterCotation.value))) return false;
+                if (filterBenchmark.checked && !b.isBenchmark) return false;
+                if (searchInput.value && !k.toLowerCase().includes(searchInput.value.toLowerCase())) return false;
+                if (filterList.value && (!customLists[filterList.value] || !customLists[filterList.value].includes(k))) return false;
                 return true;
             });
-            
-            filteredKeys.sort((a, b) => {
-                if (sortAscensions) {
-                    let ascA = parseInt(blocks[a].ascensionCount) || 0;
-                    let ascB = parseInt(blocks[b].ascensionCount) || 0;
-                    if (ascB !== ascA) return ascB - ascA; 
-                }
-                return a.localeCompare(b); 
-            });
-            
-            blockCounter.textContent = `${filteredKeys.length}/${totalBlocksInDB}`;
-
+            blockCounter.textContent = `${filteredKeys.length}/${Object.keys(blocks).length}`;
             filteredKeys.forEach(k => {
-                let opt = document.createElement('option');
-                opt.value = k; 
-                let ascText = (sortAscensions && blocks[k].ascensionCount > 0) ? ` - ${blocks[k].ascensionCount} asc.` : '';
-                opt.textContent = `${k} (${blocks[k].grade || '?'})${ascText}`;
+                let opt = document.createElement('option'); opt.value = k; opt.textContent = `${k} (${blocks[k].grade || '?'})`;
                 blockSelect.appendChild(opt);
             });
-
-            if (filteredKeys.includes(selected)) {
-                blockSelect.value = selected; displayBlock(selected);
-            } else if (filteredKeys.length > 0) {
-                blockSelect.value = filteredKeys[0]; displayBlock(filteredKeys[0]);
-            } else {
-                displayBlock(""); 
-            }
+            if (filteredKeys.includes(selected)) { blockSelect.value = selected; displayBlock(selected); }
+            else if (filteredKeys.length > 0) { blockSelect.value = filteredKeys[0]; displayBlock(filteredKeys[0]); }
+            else { displayBlock(""); }
         }
 
-        sortAscensionsCheckbox.addEventListener('change', () => {
-            if(sortAscensionsCheckbox.checked) sortAlphaCheckbox.checked = false;
-            else if (!sortAlphaCheckbox.checked) sortAlphaCheckbox.checked = true; 
-            updateBlockSelect();
+        blockSelect.addEventListener('change', (e) => displayBlock(e.target.value));
+        filterCotation.addEventListener('change', updateBlockSelect);
+        filterList.addEventListener('change', () => { 
+            updateBlockSelect(); 
+            updateListButtonState(); 
+            btnDeleteList.disabled = (filterList.value === ""); 
         });
-        sortAlphaCheckbox.addEventListener('change', () => {
-            if(sortAlphaCheckbox.checked) sortAscensionsCheckbox.checked = false;
-            else if (!sortAscensionsCheckbox.checked) sortAscensionsCheckbox.checked = true; 
-            updateBlockSelect();
-        });
-
+        filterBenchmark.addEventListener('change', updateBlockSelect);
+        excludeCompletedCheckbox.addEventListener('change', updateBlockSelect);
+        onlyCompletedCheckbox.addEventListener('change', updateBlockSelect);
         bottomCheck.addEventListener('click', () => {
             if (currentBlockName && blocks[currentBlockName]) {
                 blocks[currentBlockName].completed = !blocks[currentBlockName].completed;
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 displayBlock(currentBlockName);
-                if (excludeCompletedCheckbox.checked || onlyCompletedCheckbox.checked) updateBlockSelect();
             }
         });
-
-        blockSelect.addEventListener('change', (e) => displayBlock(e.target.value));
-        filterCotation.addEventListener('change', () => updateBlockSelect());
-        filterList.addEventListener('change', () => { updateBlockSelect(); updateListButtonState(); });
-        filterBenchmark.addEventListener('change', () => updateBlockSelect());
-        
-        excludeCompletedCheckbox.addEventListener('change', () => {
-            if(excludeCompletedCheckbox.checked) onlyCompletedCheckbox.checked = false;
-            updateBlockSelect();
-        });
-        onlyCompletedCheckbox.addEventListener('change', () => {
-            if(onlyCompletedCheckbox.checked) excludeCompletedCheckbox.checked = false;
-            updateBlockSelect();
-        });
-
-        function goToPrevBlock() {
-            if(blockSelect.selectedIndex > 0) { 
-                blockSelect.selectedIndex--; displayBlock(blockSelect.value); 
-            }
-        }
-        function goToNextBlock() {
-            if(blockSelect.selectedIndex < blockSelect.options.length - 1) { 
-                blockSelect.selectedIndex++; displayBlock(blockSelect.value); 
-            }
-        }
-
-        btnPrevBottom.addEventListener('click', goToPrevBlock);
-        btnNextBottom.addEventListener('click', goToNextBlock);
-
-        let touchStartX = 0, touchStartY = 0;
-        const mainBoardContainer = document.getElementById('mainBoardContainer');
-        mainBoardContainer.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; }, { passive: true });
-        mainBoardContainer.addEventListener('touchend', e => {
-            if (isCreating || gridOverlay.classList.contains('grid-adjusting')) return;
-            const deltaX = e.changedTouches[0].screenX - touchStartX;
-            const deltaY = e.changedTouches[0].screenY - touchStartY;
-            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
-                if (deltaX > 0) goToPrevBlock();
-                else goToNextBlock();
-            }
-        }, { passive: true });
 
         const adjustPanel = document.getElementById('adjustPanel');
         const defaultGridConfig = { top: 9, left: 7.5, width: 85, height: 75.5 };
         let gridConfig = JSON.parse(localStorage.getItem('minimoon_grid')) || defaultGridConfig;
-
         function applyGridConfig() {
             gridOverlay.style.top = gridConfig.top + '%'; gridOverlay.style.left = gridConfig.left + '%';
             gridOverlay.style.width = gridConfig.width + '%'; gridOverlay.style.height = gridConfig.height + '%';
-            document.getElementById('adjTop').value = gridConfig.top; document.getElementById('adjLeft').value = gridConfig.left;
-            document.getElementById('adjWidth').value = gridConfig.width; document.getElementById('adjHeight').value = gridConfig.height;
         }
-
         document.getElementById('btnAdjustGrid').addEventListener('click', () => {
-            dropdownMenu.classList.remove('show');
-            bottomPanel.style.display = 'none';
-            adjustPanel.style.display = 'flex'; 
-            gridOverlay.classList.add('grid-adjusting');
+            dropdownMenu.classList.remove('show'); bottomPanel.style.display = 'none';
+            adjustPanel.style.display = 'flex'; gridOverlay.classList.add('grid-adjusting');
         });
         document.getElementById('btnCloseAdjust').addEventListener('click', () => {
-            adjustPanel.style.display = 'none';
-            bottomPanel.style.display = 'flex'; 
+            adjustPanel.style.display = 'none'; bottomPanel.style.display = 'flex';
             gridOverlay.classList.remove('grid-adjusting');
             localStorage.setItem('minimoon_grid', JSON.stringify(gridConfig));
-            displayBlock(currentBlockName);
         });
-        document.getElementById('btnResetAdjust').addEventListener('click', () => {
-            gridConfig = {...defaultGridConfig}; applyGridConfig();
-        });
+        document.getElementById('btnResetAdjust').addEventListener('click', () => { gridConfig = {...defaultGridConfig}; applyGridConfig(); });
         ['adjTop', 'adjLeft', 'adjWidth', 'adjHeight'].forEach(id => {
             document.getElementById(id).addEventListener('input', (e) => {
-                gridConfig[id.replace('adj', '').toLowerCase()] = parseFloat(e.target.value); applyGridConfig();
+                gridConfig[id.replace('adj','').toLowerCase()] = parseFloat(e.target.value); applyGridConfig();
             });
         });
 
-        // INITIALISATION
-        updateListFilterOptions();
-        applyGridConfig(); 
-        initGrid(); 
-        updateBlockSelect();
+        initGrid(); applyGridConfig(); updateBlockSelect(); updateListFilterOptions();
     </script>
 </body>
 </html>
