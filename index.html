@@ -492,7 +492,9 @@
                 <button id="btnPencil" style="color: #f39c12;">✏️ Créer un bloc</button>
                 <button id="btnAdjustGrid" style="color: #aaa;">⚙️ Ajuster la grille</button>
                 <hr>
-                <label><input type="checkbox" id="sortAscensions"> <span class="menu-icon-badge" style="background-color: #3498db; border-color: #2980b9; color: white;">📈</span> Trier par ascensions</label>
+                <!-- NOUVELLES CASES DE TRI EXCLUSIVES -->
+                <label><input type="checkbox" id="sortAscensions" checked> <span class="menu-icon-badge" style="background-color: #3498db; border-color: #2980b9; color: white;">📈</span> Popularité</label>
+                <label><input type="checkbox" id="sortAlpha"> <span class="menu-icon-badge" style="background-color: #95a5a6; border-color: #7f8c8d; color: white;">🔤</span> Ordre alphabétique</label>
                 <hr>
                 <label><input type="checkbox" id="excludeCompleted"> <span class="menu-icon-check-slash"></span> Masquer réalisés</label>
                 <label><input type="checkbox" id="onlyCompleted"> <span class="menu-icon-check"></span> Uniquement réalisés</label>
@@ -539,7 +541,7 @@
         <div class="grid-overlay" id="gridOverlay"></div>
     </div>
 
-    <!-- BADGES SOUS LE MUR (MISE A JOUR) -->
+    <!-- BADGES SOUS LE MUR -->
     <div class="badges-container" id="badgesContainer">
         <span id="badgeBenchmark" class="badge-benchmark" title="Ce bloc est un Benchmark">B</span>
         <span id="badgeNoKb" class="inline-badge badge-nokickboard">NO KICKBOARD</span>
@@ -633,9 +635,12 @@
         const filterBenchmark = document.getElementById('filterBenchmark');
         const excludeCompletedCheckbox = document.getElementById('excludeCompleted');
         const onlyCompletedCheckbox = document.getElementById('onlyCompleted');
-        const sortAscensionsCheckbox = document.getElementById('sortAscensions');
-        const blockCounter = document.getElementById('blockCounter');
         
+        // Coche de tris (mutuellement exclusives)
+        const sortAscensionsCheckbox = document.getElementById('sortAscensions');
+        const sortAlphaCheckbox = document.getElementById('sortAlpha');
+        
+        const blockCounter = document.getElementById('blockCounter');
         const searchInput = document.getElementById('searchInput');
         const btnSearchToggle = document.getElementById('btnSearchToggle');
 
@@ -658,7 +663,6 @@
         const infoSetter = document.getElementById('infoSetter');
         const infoAscensions = document.getElementById('infoAscensions');
 
-        // Récupération des badges avec les nouveaux IDs
         const badgeNoKb = document.getElementById('badgeNoKb');
         const badgeMarked = document.getElementById('badgeMarked');
         const badgeFootless = document.getElementById('badgeFootless');
@@ -1040,7 +1044,6 @@
             
             document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
             
-            // Masquer tous les badges pendant la création
             badgeNoKb.style.display = 'none'; 
             badgeMarked.style.display = 'none';
             badgeFootless.style.display = 'none'; 
@@ -1089,7 +1092,6 @@
             
             document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
             
-            // Masquer tous les badges par défaut
             badgeNoKb.style.display = 'none'; 
             badgeMarked.style.display = 'none';
             badgeFootless.style.display = 'none'; 
@@ -1103,28 +1105,20 @@
                 
                 let methodLower = (block.method || "").toLowerCase();
                 
-                // LOGIQUE D'AFFICHAGE DES BADGES DE MÉTHODE
-                
-                // 1. No Kickboard (Rouge)
                 if (methodLower.includes("no kickboard") || methodLower.includes("without kickboard")) {
                     badgeNoKb.style.display = 'inline-block';
                 }
-                
-                // 2. Any marked holds (Vert - gère aussi la typo "maker old")
                 if (methodLower.includes("marked") || methodLower.includes("maker") || methodLower.includes("any")) {
                     badgeMarked.style.display = 'inline-block';
                 }
-                
-                // 3. Footless et variantes (Jaune)
                 if (methodLower.includes("footless")) {
                     if (methodLower.includes("kickboard") && !methodLower.includes("no kickboard")) {
-                        badgeFootlessKb.style.display = 'inline-block'; // Footless + Kickboard
+                        badgeFootlessKb.style.display = 'inline-block'; 
                     } else {
-                        badgeFootless.style.display = 'inline-block'; // Footless normal
+                        badgeFootless.style.display = 'inline-block'; 
                     }
                 }
 
-                // 4. Benchmark (Jaune rond)
                 if (block.isBenchmark) badgeBenchmark.style.display = 'inline-flex';
 
                 bottomBlockName.textContent = name;
@@ -1162,7 +1156,11 @@
             let allKeys = Object.keys(blocks);
             let excludeChecked = excludeCompletedCheckbox.checked;
             let onlyChecked = onlyCompletedCheckbox.checked;
+            
+            // On vérifie quel tri est activé
             let sortAscensions = sortAscensionsCheckbox.checked;
+            let sortAlpha = sortAlphaCheckbox.checked;
+            
             let currentGradeFilter = filterCotation.value;
             let currentListFilter = filterList.value;
             let benchmarkOnly = filterBenchmark.checked;
@@ -1181,12 +1179,14 @@
                 return true;
             });
             
+            // LOGIQUE DE TRI
             filteredKeys.sort((a, b) => {
                 if (sortAscensions) {
                     let ascA = parseInt(blocks[a].ascensionCount) || 0;
                     let ascB = parseInt(blocks[b].ascensionCount) || 0;
-                    if (ascB !== ascA) return ascB - ascA; 
+                    if (ascB !== ascA) return ascB - ascA; // Ordre décroissant
                 }
+                // Tri alphabétique (par défaut ou si ordre alphabétique est coché explicitement)
                 return a.localeCompare(b); 
             });
             
@@ -1209,6 +1209,25 @@
             }
         }
 
+        // GESTION DES CASES À COCHER (Radios)
+        sortAscensionsCheckbox.addEventListener('change', () => {
+            if(sortAscensionsCheckbox.checked) {
+                sortAlphaCheckbox.checked = false;
+            } else if (!sortAlphaCheckbox.checked) {
+                sortAlphaCheckbox.checked = true; // Empêche de tout décocher
+            }
+            updateBlockSelect();
+        });
+
+        sortAlphaCheckbox.addEventListener('change', () => {
+            if(sortAlphaCheckbox.checked) {
+                sortAscensionsCheckbox.checked = false;
+            } else if (!sortAscensionsCheckbox.checked) {
+                sortAscensionsCheckbox.checked = true; // Empêche de tout décocher
+            }
+            updateBlockSelect();
+        });
+
         bottomCheck.addEventListener('click', () => {
             if (currentBlockName && blocks[currentBlockName]) {
                 blocks[currentBlockName].completed = !blocks[currentBlockName].completed;
@@ -1226,7 +1245,6 @@
         });
         
         filterBenchmark.addEventListener('change', updateBlockSelect);
-        sortAscensionsCheckbox.addEventListener('change', updateBlockSelect); 
         
         excludeCompletedCheckbox.addEventListener('change', () => {
             if(excludeCompletedCheckbox.checked) onlyCompletedCheckbox.checked = false;
