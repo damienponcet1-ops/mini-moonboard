@@ -368,8 +368,7 @@
             transition: all 0.2s;
         }
         .triptych-btn:active { transform: scale(0.95); }
-        .triptych-grade { font-size: 1.4rem; font-weight: 900; color: #ffffff; cursor: default; }
-        .triptych-grade:active { transform: none; }
+        .triptych-grade { font-size: 1.4rem; font-weight: 900; color: #ffffff; }
         .triptych-list { font-size: 1.8rem; font-weight: bold; color: #b388ff; }
         .triptych-list.in-list { background-color: #dc3545; border-color: #bd2130; color: #ffffff; }
         
@@ -398,7 +397,7 @@
         }
         .triptych-btn.is-checked .check-circle svg { 
             stroke: #ffffff; 
-            width: 26px; /* La coche est légèrement plus grande */
+            width: 26px; 
             height: 26px;
         }
 
@@ -468,7 +467,7 @@
             padding: 10px;
         }
 
-        /* MODALE LISTES */
+        /* MODALE LISTES ET COTATION */
         .modal {
             display: none; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); 
             z-index: 1000; width: 95%; max-width: 350px;
@@ -574,8 +573,8 @@
         </div>
         
         <div class="bottom-triptych">
-            <!-- Cotation -->
-            <div id="bottomGrade" class="triptych-btn triptych-grade">-</div>
+            <!-- Cotation (Désormais cliquable) -->
+            <div id="bottomGrade" class="triptych-btn triptych-grade" title="Modifier la cotation">-</div>
             <!-- Coche Validation -->
             <div id="bottomCheck" class="triptych-btn">
                 <div class="check-circle">
@@ -622,6 +621,28 @@
             <div class="modal-buttons">
                 <button id="btnCloseList" class="btn-gray">Fermer</button>
                 <button id="btnCreateList" class="btn-blue">Créer & Ajouter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE MODIFICATION COTATION -->
+    <div id="gradeModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 10px;">Modifier la cotation</h3>
+            <select id="newGradeSelect" class="main-select" style="width: 100%; padding: 10px; font-size: 1rem;">
+                <option value="?">Non coté (?)</option>
+                <option value="6A">6A</option> <option value="6A+">6A+</option>
+                <option value="6B">6B</option> <option value="6B+">6B+</option>
+                <option value="6C">6C</option> <option value="6C+">6C+</option>
+                <option value="7A">7A</option> <option value="7A+">7A+</option>
+                <option value="7B">7B</option> <option value="7B+">7B+</option>
+                <option value="7C">7C</option> <option value="7C+">7C+</option>
+                <option value="8A">8A</option> <option value="8A+">8A+</option>
+                <option value="8B">8B</option> <option value="8B+">8B+</option>
+            </select>
+            <div class="modal-buttons" style="margin-top: 15px;">
+                <button id="btnCloseGrade" class="btn-gray">Annuler</button>
+                <button id="btnSaveGrade" class="btn-green">Enregistrer</button>
             </div>
         </div>
     </div>
@@ -684,12 +705,19 @@
         const badgeFootlessKb = document.getElementById('badgeFootlessKb');
         const badgeBenchmark = document.getElementById('badgeBenchmark');
 
+        // Modales
         const listModal = document.getElementById('listModal');
         const btnCloseList = document.getElementById('btnCloseList');
         const btnCreateList = document.getElementById('btnCreateList');
         const existingListsDiv = document.getElementById('existingLists');
         const newListNameInput = document.getElementById('newListName');
         const listModalTitle = document.getElementById('listModalTitle');
+        
+        // Modale Cotation
+        const gradeModal = document.getElementById('gradeModal');
+        const newGradeSelect = document.getElementById('newGradeSelect');
+        const btnCloseGrade = document.getElementById('btnCloseGrade');
+        const btnSaveGrade = document.getElementById('btnSaveGrade');
 
         // NOUVELLE ÉCHELLE DE COULEUR ÉQUILIBRÉE (Vert -> Bleu -> Orange -> Rouge -> Violet)
         function getGradeColor(gradeStr) {
@@ -815,6 +843,29 @@
             renderListModal();
             updateBlockSelect();
             updateListButtonState();
+        });
+
+        // OUVERTURE MODALE COTATION
+        bottomGrade.addEventListener('click', () => {
+            if(!currentBlockName || !blocks[currentBlockName]) return;
+            let currentGrade = blocks[currentBlockName].grade || "?";
+            
+            // On s'assure que si la valeur n'existe pas dans le select, on met sur "?"
+            let optionExists = Array.from(newGradeSelect.options).some(opt => opt.value === currentGrade);
+            newGradeSelect.value = optionExists ? currentGrade : "?";
+            
+            gradeModal.style.display = 'block';
+        });
+
+        btnCloseGrade.addEventListener('click', () => gradeModal.style.display = 'none');
+
+        btnSaveGrade.addEventListener('click', () => {
+            if(!currentBlockName || !blocks[currentBlockName]) return;
+            blocks[currentBlockName].grade = newGradeSelect.value;
+            localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+            gradeModal.style.display = 'none';
+            displayBlock(currentBlockName);
+            updateBlockSelect(); 
         });
 
         btnMenu.addEventListener('click', (e) => {
