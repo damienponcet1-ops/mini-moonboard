@@ -353,6 +353,7 @@
             flex-direction: column;
             align-items: flex-end;
         }
+        
         .triptych-btn {
             background: #1e1e1e;
             border: 1px solid #333;
@@ -384,8 +385,22 @@
             background: transparent;
         }
         .check-circle svg { width: 20px; height: 20px; stroke: #555; transition: all 0.2s; }
-        .triptych-btn.is-checked .check-circle { background: #27ae60; border-color: #27ae60; }
-        .triptych-btn.is-checked .check-circle svg { stroke: #ffffff; }
+        
+        /* STYLE DU BOUTON VALIDÉ (ENTIÈREMENT VERT) */
+        .triptych-btn.is-checked { 
+            background: #27ae60; 
+            border-color: #2ecc71; 
+            box-shadow: 0 0 10px rgba(39, 174, 96, 0.4);
+        }
+        .triptych-btn.is-checked .check-circle { 
+            border-color: transparent; 
+            background: transparent;
+        }
+        .triptych-btn.is-checked .check-circle svg { 
+            stroke: #ffffff; 
+            width: 26px; /* La coche est légèrement plus grande */
+            height: 26px;
+        }
 
         /* ZONE INFO (Ouvreur + Ascensions) */
         .block-extra-info {
@@ -492,7 +507,7 @@
                 <button id="btnPencil" style="color: #f39c12;">✏️ Créer un bloc</button>
                 <button id="btnAdjustGrid" style="color: #aaa;">⚙️ Ajuster la grille</button>
                 <hr>
-                <!-- NOUVELLES CASES DE TRI EXCLUSIVES -->
+                <!-- CASES DE TRI EXCLUSIVES -->
                 <label><input type="checkbox" id="sortAscensions" checked> <span class="menu-icon-badge" style="background-color: #3498db; border-color: #2980b9; color: white;">📈</span> Popularité</label>
                 <label><input type="checkbox" id="sortAlpha"> <span class="menu-icon-badge" style="background-color: #95a5a6; border-color: #7f8c8d; color: white;">🔤</span> Ordre alphabétique</label>
                 <hr>
@@ -676,18 +691,27 @@
         const newListNameInput = document.getElementById('newListName');
         const listModalTitle = document.getElementById('listModalTitle');
 
+        // NOUVELLE ÉCHELLE DE COULEUR ÉQUILIBRÉE (Vert -> Bleu -> Orange -> Rouge -> Violet)
         function getGradeColor(gradeStr) {
             if (!gradeStr) return '#333333';
             let g = gradeStr.toUpperCase().trim();
             const gradeScale = {
-                '6A': '#27ae60', '6A+': '#2ecc71',
-                '6B': '#3498db', '6B+': '#2980b9',
-                '6C': '#1abc9c', '6C+': '#16a085',
-                '7A': '#f39c12', '7A+': '#e67e22',
-                '7B': '#d35400', '7B+': '#e74c3c',
-                '7C': '#c0392b', '7C+': '#8e44ad',
-                '8A': '#9b59b6', '8A+': '#8e44ad',
-                '8B': '#6c5ce7', '8B+': '#4834d4'
+                '6A': '#2ecc71',  // Vert clair
+                '6A+': '#27ae60', // Vert moyen
+                '6B': '#1e8449',  // Vert foncé
+                '6B+': '#5dade2', // Bleu clair
+                '6C': '#3498db',  // Bleu moyen
+                '6C+': '#2874a6', // Bleu foncé
+                '7A': '#f5b041',  // Orange clair/Jaune
+                '7A+': '#f39c12', // Orange moyen
+                '7B': '#d35400',  // Orange foncé
+                '7B+': '#e74c3c', // Rouge clair
+                '7C': '#c0392b',  // Rouge moyen
+                '7C+': '#922b21', // Rouge foncé
+                '8A': '#af7ac5',  // Violet clair
+                '8A+': '#9b59b6', // Violet moyen
+                '8B': '#8e44ad',  // Violet foncé
+                '8B+': '#5b2c6f'  // Violet très foncé
             };
             for (let key in gradeScale) {
                 if (g.includes(key)) return gradeScale[key];
@@ -1184,9 +1208,8 @@
                 if (sortAscensions) {
                     let ascA = parseInt(blocks[a].ascensionCount) || 0;
                     let ascB = parseInt(blocks[b].ascensionCount) || 0;
-                    if (ascB !== ascA) return ascB - ascA; // Ordre décroissant
+                    if (ascB !== ascA) return ascB - ascA; 
                 }
-                // Tri alphabétique (par défaut ou si ordre alphabétique est coché explicitement)
                 return a.localeCompare(b); 
             });
             
@@ -1214,7 +1237,7 @@
             if(sortAscensionsCheckbox.checked) {
                 sortAlphaCheckbox.checked = false;
             } else if (!sortAlphaCheckbox.checked) {
-                sortAlphaCheckbox.checked = true; // Empêche de tout décocher
+                sortAlphaCheckbox.checked = true; 
             }
             updateBlockSelect();
         });
@@ -1223,7 +1246,7 @@
             if(sortAlphaCheckbox.checked) {
                 sortAscensionsCheckbox.checked = false;
             } else if (!sortAscensionsCheckbox.checked) {
-                sortAscensionsCheckbox.checked = true; // Empêche de tout décocher
+                sortAscensionsCheckbox.checked = true; 
             }
             updateBlockSelect();
         });
