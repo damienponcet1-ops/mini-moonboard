@@ -467,7 +467,7 @@
             padding: 10px;
         }
 
-        /* MODALE LISTES ET COTATION */
+        /* MODALES */
         .modal {
             display: none; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); 
             z-index: 1000; width: 95%; max-width: 350px;
@@ -501,6 +501,7 @@
             <button id="btnMenu" class="btn-menu">☰</button>
             <div id="dropdownMenu" class="dropdown-content">
                 <button id="btnImport" style="color: #b388ff;">📥 Importer un fichier</button>
+                <button id="btnPasteJSON" style="color: #e67e22;">📋 Coller un JSON</button>
                 <button id="btnExportBlocks" style="color: #2ecc71;">📤 Exporter Blocs (Brut)</button>
                 <button id="btnExportBackup" style="color: #3498db;">💾 Sauvegarde complète (Total)</button>
                 <button id="btnPencil" style="color: #f39c12;">✏️ Créer un bloc</button>
@@ -647,6 +648,18 @@
         </div>
     </div>
 
+    <!-- MODALE COLLER JSON -->
+    <div id="pasteModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 10px;">Coller un JSON (Nouveaux blocs)</h3>
+            <textarea id="pasteJsonText" rows="8" style="width: 100%; background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 8px; font-size: 0.85rem; box-sizing: border-box; resize: none;" placeholder='Collez votre code JSON ici...'></textarea>
+            <div class="modal-buttons" style="margin-top: 15px;">
+                <button id="btnClosePaste" class="btn-gray">Annuler</button>
+                <button id="btnSavePaste" class="btn-blue">Importer</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -719,27 +732,26 @@
         const btnCloseGrade = document.getElementById('btnCloseGrade');
         const btnSaveGrade = document.getElementById('btnSaveGrade');
 
-        // NOUVELLE ÉCHELLE DE COULEUR ÉQUILIBRÉE (Vert -> Bleu -> Orange -> Rouge -> Violet)
+        // Modale Paste JSON
+        const btnPasteJSON = document.getElementById('btnPasteJSON');
+        const pasteModal = document.getElementById('pasteModal');
+        const pasteJsonText = document.getElementById('pasteJsonText');
+        const btnClosePaste = document.getElementById('btnClosePaste');
+        const btnSavePaste = document.getElementById('btnSavePaste');
+
+        // ÉCHELLE DE COULEUR ÉQUILIBRÉE
         function getGradeColor(gradeStr) {
             if (!gradeStr) return '#333333';
             let g = gradeStr.toUpperCase().trim();
             const gradeScale = {
-                '6A': '#2ecc71',  // Vert clair
-                '6A+': '#27ae60', // Vert moyen
-                '6B': '#1e8449',  // Vert foncé
-                '6B+': '#5dade2', // Bleu clair
-                '6C': '#3498db',  // Bleu moyen
-                '6C+': '#2874a6', // Bleu foncé
-                '7A': '#f5b041',  // Orange clair/Jaune
-                '7A+': '#f39c12', // Orange moyen
-                '7B': '#d35400',  // Orange foncé
-                '7B+': '#e74c3c', // Rouge clair
-                '7C': '#c0392b',  // Rouge moyen
-                '7C+': '#922b21', // Rouge foncé
-                '8A': '#af7ac5',  // Violet clair
-                '8A+': '#9b59b6', // Violet moyen
-                '8B': '#8e44ad',  // Violet foncé
-                '8B+': '#5b2c6f'  // Violet très foncé
+                '6A': '#2ecc71', '6A+': '#27ae60',
+                '6B': '#1e8449', '6B+': '#5dade2',
+                '6C': '#3498db', '6C+': '#2874a6',
+                '7A': '#f5b041', '7A+': '#f39c12',
+                '7B': '#d35400', '7B+': '#e74c3c',
+                '7C': '#c0392b', '7C+': '#922b21',
+                '8A': '#af7ac5', '8A+': '#9b59b6',
+                '8B': '#8e44ad', '8B+': '#5b2c6f'
             };
             for (let key in gradeScale) {
                 if (g.includes(key)) return gradeScale[key];
@@ -850,7 +862,6 @@
             if(!currentBlockName || !blocks[currentBlockName]) return;
             let currentGrade = blocks[currentBlockName].grade || "?";
             
-            // On s'assure que si la valeur n'existe pas dans le select, on met sur "?"
             let optionExists = Array.from(newGradeSelect.options).some(opt => opt.value === currentGrade);
             newGradeSelect.value = optionExists ? currentGrade : "?";
             
@@ -866,6 +877,27 @@
             gradeModal.style.display = 'none';
             displayBlock(currentBlockName);
             updateBlockSelect(); 
+        });
+
+        // GESTION COLLER JSON
+        btnPasteJSON.addEventListener('click', () => {
+            dropdownMenu.classList.remove('show');
+            pasteJsonText.value = '';
+            pasteModal.style.display = 'block';
+        });
+
+        btnClosePaste.addEventListener('click', () => pasteModal.style.display = 'none');
+
+        btnSavePaste.addEventListener('click', () => {
+            let text = pasteJsonText.value.trim();
+            if (!text) return alert("Veuillez coller du texte JSON.");
+            try {
+                let parsed = JSON.parse(text);
+                processImportedData(parsed);
+                pasteModal.style.display = 'none';
+            } catch(e) {
+                alert("Erreur JSON: " + e.message + "\nVérifiez que le code copié est valide.");
+            }
         });
 
         btnMenu.addEventListener('click', (e) => {
@@ -969,6 +1001,93 @@
             downloadData(backupData, `minimoon_backup_${new Date().toISOString().slice(0,10)}.json`);
         });
 
+        // FONCTION CENTRALE D'IMPORTATION (Fichier OU Coller JSON)
+        function processImportedData(parsed) {
+            if (parsed && parsed.type === "minimoon_full_backup") {
+                if (parsed.blocks) blocks = parsed.blocks;
+                if (parsed.lists) customLists = parsed.lists;
+                if (parsed.gridConfig) {
+                    gridConfig = parsed.gridConfig;
+                    applyGridConfig();
+                    localStorage.setItem('minimoon_grid', JSON.stringify(gridConfig));
+                }
+                localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+                localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
+                updateListFilterOptions();
+                updateBlockSelect();
+                return alert("Sauvegarde complète restaurée avec succès !");
+            }
+
+            let dataArray = [];
+            if (Array.isArray(parsed)) {
+                dataArray = parsed;
+            } else if (parsed.data && Array.isArray(parsed.data)) {
+                dataArray = parsed.data;
+            } else {
+                // RÉCUPÉRATION ROBUSTE DES CLÉS (Correction de la perte de nom)
+                for (let key in parsed) {
+                    let item = parsed[key];
+                    if (item && typeof item === 'object' && !Array.isArray(item)) {
+                        if (!item.name && !item.Name) {
+                            item.name = key; // On réinjecte la clé comme nom
+                        }
+                        dataArray.push(item);
+                    }
+                }
+            }
+            
+            if (!dataArray || dataArray.length === 0) return alert("Aucun bloc valide trouvé.");
+
+            let newBlocks = {};
+            dataArray.forEach((route, index) => {
+                let routeName = route.name || route.Name || `Bloc_Importé_${index + 1}`;
+                let routeMethod = route.method || route.Method || "";
+                let routeGrade = route.grade || route.Grade || route.userGrade || route.UserGrade || "?";
+                
+                let isBenchmarkVal = false;
+                if ('benchmark' in route) isBenchmarkVal = (route.benchmark === true || String(route.benchmark).toLowerCase() === 'true');
+                else if ('isBenchmark' in route) isBenchmarkVal = (route.isBenchmark === true || String(route.isBenchmark).toLowerCase() === 'true');
+                else if ('IsBenchmark' in route) isBenchmarkVal = (route.IsBenchmark === true || String(route.IsBenchmark).toLowerCase() === 'true');
+                
+                let completed = route.completed === true;
+                let ascCount = parseInt(route.ascensionCount || route.AscensionCount || 0, 10);
+                let setter = route.setby || route.setter || route.Setter || "Inconnu";
+                
+                let routeMoves = route.moves || route.Moves || [];
+                let depart = [], progression = [], arrivee = [];
+                
+                if (Array.isArray(routeMoves)) {
+                    routeMoves.forEach(m => {
+                        let rawId = m.description || m.Description || m.hold || m.id || m.Id;
+                        if (!rawId && typeof m === 'string') rawId = m;
+                        if (rawId && typeof rawId === 'string') {
+                            let id = rawId.toUpperCase();
+                            if (m.isStart || m.IsStart) depart.push(id);
+                            else if (m.isEnd || m.IsEnd) arrivee.push(id);
+                            else progression.push(id);
+                        }
+                    });
+                }
+                if (route.depart && Array.isArray(route.depart)) depart = route.depart;
+                if (route.progression && Array.isArray(route.progression)) progression = route.progression;
+                if (route.arrivee && Array.isArray(route.arrivee)) arrivee = route.arrivee;
+
+                newBlocks[routeName] = {
+                    depart, progression, arrivee, 
+                    method: routeMethod, grade: routeGrade, 
+                    isBenchmark: isBenchmarkVal, 
+                    ascensionCount: ascCount, 
+                    setby: setter,
+                    completed: completed
+                };
+            });
+            
+            blocks = {...blocks, ...newBlocks};
+            localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+            alert(`${Object.keys(newBlocks).length} blocs ajoutés/mis à jour avec succès !`);
+            updateBlockSelect(); 
+        }
+
         document.getElementById('btnImport').addEventListener('click', () => {
             document.getElementById('fileImport').click();
             dropdownMenu.classList.remove('show');
@@ -981,83 +1100,7 @@
             reader.onload = ev => {
                 try {
                     let parsed = JSON.parse(ev.target.result);
-                    
-                    if (parsed && parsed.type === "minimoon_full_backup") {
-                        if (parsed.blocks) blocks = parsed.blocks;
-                        if (parsed.lists) customLists = parsed.lists;
-                        if (parsed.gridConfig) {
-                            gridConfig = parsed.gridConfig;
-                            applyGridConfig();
-                            localStorage.setItem('minimoon_grid', JSON.stringify(gridConfig));
-                        }
-                        localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-                        localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
-                        updateListFilterOptions();
-                        updateBlockSelect();
-                        return alert("Sauvegarde complète restaurée avec succès !");
-                    }
-
-                    let dataArray = [];
-                    if (Array.isArray(parsed)) {
-                        dataArray = parsed;
-                    } else if (parsed.data && Array.isArray(parsed.data)) {
-                        dataArray = parsed.data;
-                    } else {
-                        let arrKey = Object.keys(parsed).find(k => Array.isArray(parsed[k]));
-                        if (arrKey) dataArray = parsed[arrKey];
-                        else dataArray = Object.values(parsed);
-                    }
-                    
-                    if (!dataArray || dataArray.length === 0) return alert("Aucun bloc valide trouvé.");
-
-                    let newBlocks = {};
-                    dataArray.forEach((route, index) => {
-                        let routeName = route.name || route.Name || `Bloc_Importé_${index + 1}`;
-                        let routeMethod = route.method || route.Method || "";
-                        let routeGrade = route.grade || route.Grade || route.userGrade || route.UserGrade || "?";
-                        
-                        let isBenchmarkVal = false;
-                        if ('benchmark' in route) isBenchmarkVal = (route.benchmark === true || String(route.benchmark).toLowerCase() === 'true');
-                        else if ('isBenchmark' in route) isBenchmarkVal = (route.isBenchmark === true || String(route.isBenchmark).toLowerCase() === 'true');
-                        else if ('IsBenchmark' in route) isBenchmarkVal = (route.IsBenchmark === true || String(route.IsBenchmark).toLowerCase() === 'true');
-                        
-                        let completed = route.completed === true;
-                        let ascCount = parseInt(route.ascensionCount || route.AscensionCount || 0, 10);
-                        let setter = route.setby || route.setter || route.Setter || "Inconnu";
-                        
-                        let routeMoves = route.moves || route.Moves || [];
-                        let depart = [], progression = [], arrivee = [];
-                        
-                        if (Array.isArray(routeMoves)) {
-                            routeMoves.forEach(m => {
-                                let rawId = m.description || m.Description || m.hold || m.id || m.Id;
-                                if (!rawId && typeof m === 'string') rawId = m;
-                                if (rawId && typeof rawId === 'string') {
-                                    let id = rawId.toUpperCase();
-                                    if (m.isStart || m.IsStart) depart.push(id);
-                                    else if (m.isEnd || m.IsEnd) arrivee.push(id);
-                                    else progression.push(id);
-                                }
-                            });
-                        }
-                        if (route.depart && Array.isArray(route.depart)) depart = route.depart;
-                        if (route.progression && Array.isArray(route.progression)) progression = route.progression;
-                        if (route.arrivee && Array.isArray(route.arrivee)) arrivee = route.arrivee;
-
-                        newBlocks[routeName] = {
-                            depart, progression, arrivee, 
-                            method: routeMethod, grade: routeGrade, 
-                            isBenchmark: isBenchmarkVal, 
-                            ascensionCount: ascCount, 
-                            setby: setter,
-                            completed: completed
-                        };
-                    });
-                    
-                    blocks = {...blocks, ...newBlocks};
-                    localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-                    alert(`${Object.keys(newBlocks).length} blocs importés avec succès !`);
-                    updateBlockSelect(); 
+                    processImportedData(parsed);
                 } catch(err) { alert("Erreur: Fichier invalide. Vérifiez le format JSON."); console.error(err); }
             };
             reader.readAsText(file);
@@ -1232,7 +1275,6 @@
             let excludeChecked = excludeCompletedCheckbox.checked;
             let onlyChecked = onlyCompletedCheckbox.checked;
             
-            // On vérifie quel tri est activé
             let sortAscensions = sortAscensionsCheckbox.checked;
             let sortAlpha = sortAlphaCheckbox.checked;
             
@@ -1254,7 +1296,6 @@
                 return true;
             });
             
-            // LOGIQUE DE TRI
             filteredKeys.sort((a, b) => {
                 if (sortAscensions) {
                     let ascA = parseInt(blocks[a].ascensionCount) || 0;
@@ -1283,7 +1324,6 @@
             }
         }
 
-        // GESTION DES CASES À COCHER (Radios)
         sortAscensionsCheckbox.addEventListener('change', () => {
             if(sortAscensionsCheckbox.checked) {
                 sortAlphaCheckbox.checked = false;
