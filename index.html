@@ -306,7 +306,7 @@
             border: 1px solid #d4ac0d;
         }
 
-        /* PANNEAU DU BAS (STANDARD) */
+        /* PANNEAU DU BAS */
         .bottom-panel {
             width: 100%;
             max-width: 450px;
@@ -506,6 +506,7 @@
                 <button id="btnExportBackup" style="color: #3498db;">💾 Sauvegarde complète (Total)</button>
                 <button id="btnPencil" style="color: #f39c12;">✏️ Créer un bloc</button>
                 <button id="btnAdjustGrid" style="color: #aaa;">⚙️ Ajuster la grille</button>
+                <button id="btnDeleteBlock" style="color: #ff4d4d;">🗑️ Supprimer le bloc affiché</button>
                 <hr>
                 <label><input type="checkbox" id="sortAscensions" checked> <span class="menu-icon-badge" style="background-color: #3498db; border-color: #2980b9; color: white;">📈</span> Popularité</label>
                 <label><input type="checkbox" id="sortAlpha"> <span class="menu-icon-badge" style="background-color: #95a5a6; border-color: #7f8c8d; color: white;">🔤</span> Ordre alphabétique</label>
@@ -693,6 +694,7 @@
         const btnPencil = document.getElementById('btnPencil');
         const btnCancelCreate = document.getElementById('btnCancelCreate');
         const btnSaveCreate = document.getElementById('btnSaveCreate');
+        const btnDeleteBlock = document.getElementById('btnDeleteBlock');
 
         const bottomPanel = document.getElementById('bottomPanel');
         const bottomBlockName = document.getElementById('bottomBlockName');
@@ -901,6 +903,30 @@
         });
         searchInput.addEventListener('input', () => updateBlockSelect());
 
+        // FONCTION DE SUPPRESSION DE BLOC
+        btnDeleteBlock.addEventListener('click', () => {
+            if (!currentBlockName || !blocks[currentBlockName]) return;
+            
+            if (confirm(`Voulez-vous vraiment supprimer définitivement le bloc "${currentBlockName}" ?`)) {
+                // 1. Supprimer le bloc de la base de données
+                delete blocks[currentBlockName];
+                
+                // 2. Supprimer le bloc de toutes les listes personnalisées pour garder le cache propre
+                for (let listName in customLists) {
+                    customLists[listName] = customLists[listName].filter(b => b !== currentBlockName);
+                }
+                
+                // 3. Sauvegarder les modifications
+                localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+                localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
+                
+                // 4. Fermer le menu et rafraîchir l'interface
+                dropdownMenu.classList.remove('show');
+                updateBlockSelect(); // Ça va automatiquement charger le bloc suivant ou vider l'écran
+                alert("Bloc supprimé avec succès.");
+            }
+        });
+
         let bluetoothDevice = null;
         const btnConnect = document.getElementById('btnConnect');
 
@@ -980,10 +1006,8 @@
             } else if (parsed.data && Array.isArray(parsed.data)) {
                 dataArray = parsed.data;
             } else if (parsed.name || parsed.Name || parsed.moves || parsed.Moves) {
-                // SOLUTION : L'objet collé est UN SEUL bloc direct !
                 dataArray.push(parsed);
             } else {
-                // Dictionnaire { "Bloc1": {...}, "Bloc2": {...} }
                 for (let key in parsed) {
                     let item = parsed[key];
                     if (item && typeof item === 'object' && !Array.isArray(item)) {
@@ -1020,7 +1044,6 @@
                         if (rawId && typeof rawId === 'string') {
                             let id = rawId.toUpperCase();
                             
-                            // SOLUTION : Prise en compte du format 'type': 'start' / 'finish'
                             let isStart = m.isStart || m.IsStart || m.type === 'start' || m.type === 'Start';
                             let isEnd = m.isEnd || m.IsEnd || m.type === 'finish' || m.type === 'end' || m.type === 'top';
                             
@@ -1049,7 +1072,6 @@
             localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
             alert(`${newKeys.length} bloc(s) importé(s)/mis à jour avec succès !`);
             
-            // SOLUTION : On force la sélection visuelle sur le dernier bloc importé
             if(newKeys.length > 0) {
                 updateBlockSelect(newKeys[newKeys.length - 1]); 
             } else {
@@ -1158,7 +1180,7 @@
                 mainMenu.style.display = 'block';
                 creationTools.style.display = 'none';
                 bottomPanel.style.display = 'flex';
-                updateBlockSelect(name); // Auto sélection après création
+                updateBlockSelect(name); 
             }
         });
 
@@ -1209,7 +1231,6 @@
             }
         }
 
-        // Modification : Ajout d'un paramètre optionnel forceSelectName
         function updateBlockSelect(forceSelectName = null) {
             let selected = forceSelectName || blockSelect.value;
             blockSelect.innerHTML = '';
