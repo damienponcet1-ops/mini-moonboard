@@ -908,27 +908,28 @@
             if (!currentBlockName || !blocks[currentBlockName]) return;
             
             if (confirm(`Voulez-vous vraiment supprimer définitivement le bloc "${currentBlockName}" ?`)) {
-                // 1. Supprimer le bloc de la base de données
                 delete blocks[currentBlockName];
-                
-                // 2. Supprimer le bloc de toutes les listes personnalisées pour garder le cache propre
                 for (let listName in customLists) {
                     customLists[listName] = customLists[listName].filter(b => b !== currentBlockName);
                 }
-                
-                // 3. Sauvegarder les modifications
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
-                
-                // 4. Fermer le menu et rafraîchir l'interface
                 dropdownMenu.classList.remove('show');
-                updateBlockSelect(); // Ça va automatiquement charger le bloc suivant ou vider l'écran
+                updateBlockSelect(); 
                 alert("Bloc supprimé avec succès.");
             }
         });
 
+        // -----------------------------------------------------------
+        // CONNEXION BLUETOOTH & ENVOI DES DONNÉES À L'ESP32
+        // -----------------------------------------------------------
         let bluetoothDevice = null;
+        let bleCharacteristic = null;
         const btnConnect = document.getElementById('btnConnect');
+
+        // UUID standards du "Nordic UART Service" (très utilisé pour communiquer du texte avec un ESP32)
+        const BLE_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+        const BLE_RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
 
         btnConnect.addEventListener('click', async () => {
             if (bluetoothDevice && bluetoothDevice.gatt.connected) {
@@ -937,24 +938,55 @@
             }
             try {
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true,
-                    optionalServices: ['generic_access'] 
+                    filters: [{ namePrefix: 'MoonBoard' }],
+                    optionalServices: [BLE_SERVICE_UUID] 
                 });
+                
                 bluetoothDevice.addEventListener('gattserverdisconnected', () => {
                     btnConnect.classList.remove('connected');
+                    bleCharacteristic = null;
                 });
-                await bluetoothDevice.gatt.connect();
+
+                const server = await bluetoothDevice.gatt.connect();
+                const service = await server.getPrimaryService(BLE_SERVICE_UUID);
+                bleCharacteristic = await service.getCharacteristic(BLE_RX_UUID);
+                
                 btnConnect.classList.add('connected');
-            } catch (error) { console.error(error); }
+                
+                // Si un bloc est déjà affiché, on l'envoie direct après la connexion
+                if (currentBlockName && blocks[currentBlockName]) {
+                    sendToESP32(blocks[currentBlockName]);
+                }
+                
+            } catch (error) { 
+                console.error("Erreur Bluetooth:", error); 
+            }
         });
 
         function sendToESP32(blockData) {
-            if (!blockData) return;
-            const moves = [];
-            blockData.depart.forEach(id => moves.push({ Description: id, isStart: true }));
-            blockData.progression.forEach(id => moves.push({ Description: id }));
-            blockData.arrivee.forEach(id => moves.push({ Description: id, isEnd: true }));
+            if (!bleCharacteristic) return;
+            
+            let payload = "CLEAR";
+            
+            if (blockData) {
+                const moves = [];
+                
+                // Formatage de chaque prise avec S (Start), P (Progression), E (End)
+                if(blockData.depart) blockData.depart.forEach(id => moves.push(id + ":S"));
+                if(blockData.progression) blockData.progression.forEach(id => moves.push(id + ":P"));
+                if(blockData.arrivee) blockData.arrivee.forEach(id => moves.push(id + ":E"));
+                
+                if (moves.length > 0) {
+                    // Crée une chaîne du type "A1:S,B4:P,K12:E"
+                    payload = moves.join(",");
+                }
+            }
+            
+            // Envoi en Bluetooth
+            let encoder = new TextEncoder();
+            bleCharacteristic.writeValue(encoder.encode(payload)).catch(err => console.error(err));
         }
+        // -----------------------------------------------------------
 
         function downloadData(dataObj, filename) {
             const dataStr = JSON.stringify(dataObj, null, 2);
@@ -1227,7 +1259,7 @@
                 bottomCheck.classList.remove('is-checked');
                 infoSetter.textContent = "-"; infoAscensions.textContent = "-";
                 updateListButtonState();
-                sendToESP32({ depart: [], progression: [], arrivee: [] });
+                sendToESP32(null); // On déclenche le nettoyage
             }
         }
 
