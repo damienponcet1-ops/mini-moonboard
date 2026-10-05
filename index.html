@@ -507,7 +507,6 @@
                 <button id="btnPencil" style="color: #f39c12;">✏️ Créer un bloc</button>
                 <button id="btnAdjustGrid" style="color: #aaa;">⚙️ Ajuster la grille</button>
                 <hr>
-                <!-- CASES DE TRI EXCLUSIVES -->
                 <label><input type="checkbox" id="sortAscensions" checked> <span class="menu-icon-badge" style="background-color: #3498db; border-color: #2980b9; color: white;">📈</span> Popularité</label>
                 <label><input type="checkbox" id="sortAlpha"> <span class="menu-icon-badge" style="background-color: #95a5a6; border-color: #7f8c8d; color: white;">🔤</span> Ordre alphabétique</label>
                 <hr>
@@ -566,7 +565,7 @@
         <span id="badgeFootlessKb" class="inline-badge badge-footless">FOOTLESS + KICKBOARD</span>
     </div>
 
-    <!-- PANNEAU DU BAS (Affichage Standard) -->
+    <!-- PANNEAU DU BAS -->
     <div id="bottomPanel" class="bottom-panel">
         <div class="name-row">
             <button id="btnPrevBottom" class="nav-btn">◀</button>
@@ -575,9 +574,7 @@
         </div>
         
         <div class="bottom-triptych">
-            <!-- Cotation (Désormais cliquable) -->
             <div id="bottomGrade" class="triptych-btn triptych-grade" title="Modifier la cotation">-</div>
-            <!-- Coche Validation -->
             <div id="bottomCheck" class="triptych-btn">
                 <div class="check-circle">
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -585,14 +582,12 @@
                     </svg>
                 </div>
             </div>
-            <!-- Ajout Liste -->
             <div class="triptych-container">
                 <div id="bottomListAdd" class="triptych-btn triptych-list">➕</div>
                 <div class="footer-info"><span id="blockCounter" class="counter">0/0</span></div>
             </div>
         </div>
 
-        <!-- ZONE INFO (Ouvreur + Ascensions) -->
         <div class="block-extra-info">
             <div>Ouvreur: <span id="infoSetter">-</span></div>
             <div>Ascensions: <span id="infoAscensions">0</span></div>
@@ -614,7 +609,7 @@
         </div>
     </div>
 
-    <!-- MODALE LISTES -->
+    <!-- MODALES -->
     <div id="listModal" class="modal">
         <div class="modal-content">
             <h3 id="listModalTitle">Ajouter à une liste</h3>
@@ -627,7 +622,6 @@
         </div>
     </div>
 
-    <!-- MODALE MODIFICATION COTATION -->
     <div id="gradeModal" class="modal">
         <div class="modal-content">
             <h3 style="margin-bottom: 10px;">Modifier la cotation</h3>
@@ -649,10 +643,9 @@
         </div>
     </div>
 
-    <!-- MODALE COLLER JSON -->
     <div id="pasteModal" class="modal">
         <div class="modal-content">
-            <h3 style="margin-bottom: 10px;">Coller un JSON (Nouveaux blocs)</h3>
+            <h3 style="margin-bottom: 10px;">Coller un JSON</h3>
             <textarea id="pasteJsonText" rows="8" style="width: 100%; background: #222; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 8px; font-size: 0.85rem; box-sizing: border-box; resize: none;" placeholder='Collez votre code JSON ici...'></textarea>
             <div class="modal-buttons" style="margin-top: 15px;">
                 <button id="btnClosePaste" class="btn-gray">Annuler</button>
@@ -686,7 +679,6 @@
         const excludeCompletedCheckbox = document.getElementById('excludeCompleted');
         const onlyCompletedCheckbox = document.getElementById('onlyCompleted');
         
-        // Coche de tris (mutuellement exclusives)
         const sortAscensionsCheckbox = document.getElementById('sortAscensions');
         const sortAlphaCheckbox = document.getElementById('sortAlpha');
         
@@ -719,7 +711,6 @@
         const badgeFootlessKb = document.getElementById('badgeFootlessKb');
         const badgeBenchmark = document.getElementById('badgeBenchmark');
 
-        // Modales
         const listModal = document.getElementById('listModal');
         const btnCloseList = document.getElementById('btnCloseList');
         const btnCreateList = document.getElementById('btnCreateList');
@@ -727,20 +718,17 @@
         const newListNameInput = document.getElementById('newListName');
         const listModalTitle = document.getElementById('listModalTitle');
         
-        // Modale Cotation
         const gradeModal = document.getElementById('gradeModal');
         const newGradeSelect = document.getElementById('newGradeSelect');
         const btnCloseGrade = document.getElementById('btnCloseGrade');
         const btnSaveGrade = document.getElementById('btnSaveGrade');
 
-        // Modale Paste JSON
         const btnPasteJSON = document.getElementById('btnPasteJSON');
         const pasteModal = document.getElementById('pasteModal');
         const pasteJsonText = document.getElementById('pasteJsonText');
         const btnClosePaste = document.getElementById('btnClosePaste');
         const btnSavePaste = document.getElementById('btnSavePaste');
 
-        // ÉCHELLE DE COULEUR ÉQUILIBRÉE
         function getGradeColor(gradeStr) {
             if (!gradeStr) return '#333333';
             let g = gradeStr.toUpperCase().trim();
@@ -845,11 +833,7 @@
             let val = newListNameInput.value.trim();
             if(!val) return alert("Entrez un nom de liste.");
             if(!customLists[val]) customLists[val] = [];
-            
-            if(!customLists[val].includes(currentBlockName)) {
-                customLists[val].push(currentBlockName);
-            }
-            
+            if(!customLists[val].includes(currentBlockName)) customLists[val].push(currentBlockName);
             localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
             newListNameInput.value = '';
             updateListFilterOptions();
@@ -858,14 +842,11 @@
             updateListButtonState();
         });
 
-        // OUVERTURE MODALE COTATION
         bottomGrade.addEventListener('click', () => {
             if(!currentBlockName || !blocks[currentBlockName]) return;
             let currentGrade = blocks[currentBlockName].grade || "?";
-            
             let optionExists = Array.from(newGradeSelect.options).some(opt => opt.value === currentGrade);
             newGradeSelect.value = optionExists ? currentGrade : "?";
-            
             gradeModal.style.display = 'block';
         });
 
@@ -880,7 +861,6 @@
             updateBlockSelect(); 
         });
 
-        // GESTION COLLER JSON
         btnPasteJSON.addEventListener('click', () => {
             dropdownMenu.classList.remove('show');
             pasteJsonText.value = '';
@@ -919,7 +899,7 @@
                 updateBlockSelect();
             }
         });
-        searchInput.addEventListener('input', updateBlockSelect);
+        searchInput.addEventListener('input', () => updateBlockSelect());
 
         let bluetoothDevice = null;
         const btnConnect = document.getElementById('btnConnect');
@@ -952,57 +932,32 @@
 
         function downloadData(dataObj, filename) {
             const dataStr = JSON.stringify(dataObj, null, 2);
-            
             if (navigator.canShare) {
                 try {
                     const file = new File([dataStr], filename, { type: "application/json" });
                     if (navigator.canShare({ files: [file] })) {
-                        navigator.share({
-                            title: "Export Mini Moon Board",
-                            files: [file]
-                        }).then(() => {
-                            console.log("Fichier partagé avec succès");
-                        }).catch(err => console.log("Partage annulé ou erreur", err));
-                        
+                        navigator.share({ title: "Export Mini Moon Board", files: [file] })
+                        .catch(err => console.log("Partage annulé ou erreur", err));
                         dropdownMenu.classList.remove('show');
                         return; 
                     }
-                } catch (e) { console.log("L'API Share a échoué, passage à la méthode classique.", e); }
+                } catch (e) { console.log("API Share failed", e); }
             }
-
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = filename;
-            
-            document.body.appendChild(a);
-            a.click(); 
-            
-            setTimeout(() => {
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            }, 100);
-
+            a.style.display = 'none'; a.href = url; a.download = filename;
+            document.body.appendChild(a); a.click(); 
+            setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 100);
             dropdownMenu.classList.remove('show');
         }
 
-        document.getElementById('btnExportBlocks').addEventListener('click', () => {
-            downloadData(blocks, 'minimoon_blocks_export.json');
-        });
-
+        document.getElementById('btnExportBlocks').addEventListener('click', () => { downloadData(blocks, 'minimoon_blocks_export.json'); });
         document.getElementById('btnExportBackup').addEventListener('click', () => {
-            const backupData = {
-                type: "minimoon_full_backup",
-                blocks: blocks,
-                lists: customLists,
-                gridConfig: JSON.parse(localStorage.getItem('minimoon_grid') || '{}')
-            };
+            const backupData = { type: "minimoon_full_backup", blocks: blocks, lists: customLists, gridConfig: JSON.parse(localStorage.getItem('minimoon_grid') || '{}') };
             downloadData(backupData, `minimoon_backup_${new Date().toISOString().slice(0,10)}.json`);
         });
 
-        // FONCTION CENTRALE D'IMPORTATION (Fichier OU Coller JSON)
         function processImportedData(parsed) {
             if (parsed && parsed.type === "minimoon_full_backup") {
                 if (parsed.blocks) blocks = parsed.blocks;
@@ -1024,24 +979,25 @@
                 dataArray = parsed;
             } else if (parsed.data && Array.isArray(parsed.data)) {
                 dataArray = parsed.data;
+            } else if (parsed.name || parsed.Name || parsed.moves || parsed.Moves) {
+                // SOLUTION : L'objet collé est UN SEUL bloc direct !
+                dataArray.push(parsed);
             } else {
-                // RÉCUPÉRATION ROBUSTE DES CLÉS (Correction de la perte de nom)
+                // Dictionnaire { "Bloc1": {...}, "Bloc2": {...} }
                 for (let key in parsed) {
                     let item = parsed[key];
                     if (item && typeof item === 'object' && !Array.isArray(item)) {
-                        if (!item.name && !item.Name) {
-                            item.name = key; // On réinjecte la clé comme nom
-                        }
+                        if (!item.name && !item.Name) item.name = key;
                         dataArray.push(item);
                     }
                 }
             }
             
-            if (!dataArray || dataArray.length === 0) return alert("Aucun bloc valide trouvé.");
+            if (!dataArray || dataArray.length === 0) return alert("Aucun bloc valide trouvé dans ce code.");
 
             let newBlocks = {};
             dataArray.forEach((route, index) => {
-                let routeName = route.name || route.Name || `Bloc_Importé_${index + 1}`;
+                let routeName = route.name || route.Name || `Bloc_Importé_${Date.now()}_${index}`;
                 let routeMethod = route.method || route.Method || "";
                 let routeGrade = route.grade || route.Grade || route.userGrade || route.UserGrade || "?";
                 
@@ -1063,8 +1019,13 @@
                         if (!rawId && typeof m === 'string') rawId = m;
                         if (rawId && typeof rawId === 'string') {
                             let id = rawId.toUpperCase();
-                            if (m.isStart || m.IsStart) depart.push(id);
-                            else if (m.isEnd || m.IsEnd) arrivee.push(id);
+                            
+                            // SOLUTION : Prise en compte du format 'type': 'start' / 'finish'
+                            let isStart = m.isStart || m.IsStart || m.type === 'start' || m.type === 'Start';
+                            let isEnd = m.isEnd || m.IsEnd || m.type === 'finish' || m.type === 'end' || m.type === 'top';
+                            
+                            if (isStart) depart.push(id);
+                            else if (isEnd) arrivee.push(id);
                             else progression.push(id);
                         }
                     });
@@ -1083,10 +1044,17 @@
                 };
             });
             
+            let newKeys = Object.keys(newBlocks);
             blocks = {...blocks, ...newBlocks};
             localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-            alert(`${Object.keys(newBlocks).length} blocs ajoutés/mis à jour avec succès !`);
-            updateBlockSelect(); 
+            alert(`${newKeys.length} bloc(s) importé(s)/mis à jour avec succès !`);
+            
+            // SOLUTION : On force la sélection visuelle sur le dernier bloc importé
+            if(newKeys.length > 0) {
+                updateBlockSelect(newKeys[newKeys.length - 1]); 
+            } else {
+                updateBlockSelect();
+            }
         }
 
         document.getElementById('btnImport').addEventListener('click', () => {
@@ -1160,15 +1128,10 @@
             mainMenu.style.display = 'none';
             creationTools.style.display = 'flex';
             bottomPanel.style.display = 'none';
-            
             document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
-            
-            badgeNoKb.style.display = 'none'; 
-            badgeMarked.style.display = 'none';
-            badgeFootless.style.display = 'none'; 
-            badgeFootlessKb.style.display = 'none';
+            badgeNoKb.style.display = 'none'; badgeMarked.style.display = 'none';
+            badgeFootless.style.display = 'none'; badgeFootlessKb.style.display = 'none';
             badgeBenchmark.style.display = 'none';
-            
             currentCreation = { depart: [], progression: [], arrivee: [] };
         });
 
@@ -1188,19 +1151,14 @@
             if (name) {
                 blocks[name] = {
                     depart: currentCreation.depart, progression: currentCreation.progression, arrivee: currentCreation.arrivee,
-                    method: "", grade: "6B+", isBenchmark: false, 
-                    ascensionCount: 0, setby: "Moi", completed: false
+                    method: "", grade: "6B+", isBenchmark: false, ascensionCount: 0, setby: "Moi", completed: false
                 };
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-                
                 isCreating = false;
                 mainMenu.style.display = 'block';
                 creationTools.style.display = 'none';
                 bottomPanel.style.display = 'flex';
-                
-                updateBlockSelect();
-                blockSelect.value = name;
-                displayBlock(name);
+                updateBlockSelect(name); // Auto sélection après création
             }
         });
 
@@ -1210,11 +1168,8 @@
             let block = blocks[name];
             
             document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
-            
-            badgeNoKb.style.display = 'none'; 
-            badgeMarked.style.display = 'none';
-            badgeFootless.style.display = 'none'; 
-            badgeFootlessKb.style.display = 'none';
+            badgeNoKb.style.display = 'none'; badgeMarked.style.display = 'none';
+            badgeFootless.style.display = 'none'; badgeFootlessKb.style.display = 'none';
             badgeBenchmark.style.display = 'none';
             
             if (block) {
@@ -1223,33 +1178,20 @@
                 block.arrivee.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('arrivee'); });
                 
                 let methodLower = (block.method || "").toLowerCase();
-                
-                if (methodLower.includes("no kickboard") || methodLower.includes("without kickboard")) {
-                    badgeNoKb.style.display = 'inline-block';
-                }
-                if (methodLower.includes("marked") || methodLower.includes("maker") || methodLower.includes("any")) {
-                    badgeMarked.style.display = 'inline-block';
-                }
+                if (methodLower.includes("no kickboard") || methodLower.includes("without kickboard")) badgeNoKb.style.display = 'inline-block';
+                if (methodLower.includes("marked") || methodLower.includes("maker") || methodLower.includes("any")) badgeMarked.style.display = 'inline-block';
                 if (methodLower.includes("footless")) {
-                    if (methodLower.includes("kickboard") && !methodLower.includes("no kickboard")) {
-                        badgeFootlessKb.style.display = 'inline-block'; 
-                    } else {
-                        badgeFootless.style.display = 'inline-block'; 
-                    }
+                    if (methodLower.includes("kickboard") && !methodLower.includes("no kickboard")) badgeFootlessKb.style.display = 'inline-block'; 
+                    else badgeFootless.style.display = 'inline-block'; 
                 }
-
                 if (block.isBenchmark) badgeBenchmark.style.display = 'inline-flex';
 
                 bottomBlockName.textContent = name;
                 let gradeVal = block.grade || "?";
                 bottomGrade.textContent = gradeVal;
                 bottomGrade.style.backgroundColor = getGradeColor(gradeVal);
-
-                if (block.completed) {
-                    bottomCheck.classList.add('is-checked');
-                } else {
-                    bottomCheck.classList.remove('is-checked');
-                }
+                if (block.completed) bottomCheck.classList.add('is-checked');
+                else bottomCheck.classList.remove('is-checked');
                 
                 infoSetter.textContent = block.setby || "Inconnu";
                 infoAscensions.textContent = block.ascensionCount || "0";
@@ -1261,29 +1203,26 @@
                 bottomGrade.textContent = "-";
                 bottomGrade.style.backgroundColor = "#333333";
                 bottomCheck.classList.remove('is-checked');
-                infoSetter.textContent = "-";
-                infoAscensions.textContent = "-";
+                infoSetter.textContent = "-"; infoAscensions.textContent = "-";
                 updateListButtonState();
                 sendToESP32({ depart: [], progression: [], arrivee: [] });
             }
         }
 
-        function updateBlockSelect() {
-            let selected = blockSelect.value;
+        // Modification : Ajout d'un paramètre optionnel forceSelectName
+        function updateBlockSelect(forceSelectName = null) {
+            let selected = forceSelectName || blockSelect.value;
             blockSelect.innerHTML = '';
             
             let allKeys = Object.keys(blocks);
             let excludeChecked = excludeCompletedCheckbox.checked;
             let onlyChecked = onlyCompletedCheckbox.checked;
-            
             let sortAscensions = sortAscensionsCheckbox.checked;
             let sortAlpha = sortAlphaCheckbox.checked;
-            
             let currentGradeFilter = filterCotation.value;
             let currentListFilter = filterList.value;
             let benchmarkOnly = filterBenchmark.checked;
             let searchQuery = searchInput.value.toLowerCase();
-
             let totalBlocksInDB = allKeys.length;
             
             let filteredKeys = allKeys.filter(k => {
@@ -1326,20 +1265,13 @@
         }
 
         sortAscensionsCheckbox.addEventListener('change', () => {
-            if(sortAscensionsCheckbox.checked) {
-                sortAlphaCheckbox.checked = false;
-            } else if (!sortAlphaCheckbox.checked) {
-                sortAlphaCheckbox.checked = true; 
-            }
+            if(sortAscensionsCheckbox.checked) sortAlphaCheckbox.checked = false;
+            else if (!sortAlphaCheckbox.checked) sortAlphaCheckbox.checked = true; 
             updateBlockSelect();
         });
-
         sortAlphaCheckbox.addEventListener('change', () => {
-            if(sortAlphaCheckbox.checked) {
-                sortAscensionsCheckbox.checked = false;
-            } else if (!sortAscensionsCheckbox.checked) {
-                sortAscensionsCheckbox.checked = true; 
-            }
+            if(sortAlphaCheckbox.checked) sortAscensionsCheckbox.checked = false;
+            else if (!sortAscensionsCheckbox.checked) sortAscensionsCheckbox.checked = true; 
             updateBlockSelect();
         });
 
@@ -1353,13 +1285,9 @@
         });
 
         blockSelect.addEventListener('change', (e) => displayBlock(e.target.value));
-        filterCotation.addEventListener('change', updateBlockSelect);
-        filterList.addEventListener('change', (e) => {
-            updateBlockSelect();
-            updateListButtonState();
-        });
-        
-        filterBenchmark.addEventListener('change', updateBlockSelect);
+        filterCotation.addEventListener('change', () => updateBlockSelect());
+        filterList.addEventListener('change', () => { updateBlockSelect(); updateListButtonState(); });
+        filterBenchmark.addEventListener('change', () => updateBlockSelect());
         
         excludeCompletedCheckbox.addEventListener('change', () => {
             if(excludeCompletedCheckbox.checked) onlyCompletedCheckbox.checked = false;
@@ -1372,14 +1300,12 @@
 
         function goToPrevBlock() {
             if(blockSelect.selectedIndex > 0) { 
-                blockSelect.selectedIndex--; 
-                displayBlock(blockSelect.value); 
+                blockSelect.selectedIndex--; displayBlock(blockSelect.value); 
             }
         }
         function goToNextBlock() {
             if(blockSelect.selectedIndex < blockSelect.options.length - 1) { 
-                blockSelect.selectedIndex++; 
-                displayBlock(blockSelect.value); 
+                blockSelect.selectedIndex++; displayBlock(blockSelect.value); 
             }
         }
 
@@ -1388,9 +1314,7 @@
 
         let touchStartX = 0, touchStartY = 0;
         const mainBoardContainer = document.getElementById('mainBoardContainer');
-        mainBoardContainer.addEventListener('touchstart', e => {
-            touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY;
-        }, { passive: true });
+        mainBoardContainer.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; }, { passive: true });
         mainBoardContainer.addEventListener('touchend', e => {
             if (isCreating || gridOverlay.classList.contains('grid-adjusting')) return;
             const deltaX = e.changedTouches[0].screenX - touchStartX;
@@ -1418,20 +1342,16 @@
             adjustPanel.style.display = 'flex'; 
             gridOverlay.classList.add('grid-adjusting');
         });
-        
         document.getElementById('btnCloseAdjust').addEventListener('click', () => {
             adjustPanel.style.display = 'none';
             bottomPanel.style.display = 'flex'; 
-            
             gridOverlay.classList.remove('grid-adjusting');
             localStorage.setItem('minimoon_grid', JSON.stringify(gridConfig));
             displayBlock(currentBlockName);
         });
-        
         document.getElementById('btnResetAdjust').addEventListener('click', () => {
             gridConfig = {...defaultGridConfig}; applyGridConfig();
         });
-        
         ['adjTop', 'adjLeft', 'adjWidth', 'adjHeight'].forEach(id => {
             document.getElementById(id).addEventListener('input', (e) => {
                 gridConfig[id.replace('adj', '').toLowerCase()] = parseFloat(e.target.value); applyGridConfig();
