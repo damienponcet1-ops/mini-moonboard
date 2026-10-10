@@ -350,7 +350,8 @@
 
         .bottom-triptych {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            /* MODIFICATION ICI : On affine les côtés (0.8) et on élargit le centre (1.4) */
+            grid-template-columns: 0.8fr 1.4fr 0.8fr;
             gap: 8px;
         }
         .triptych-container {
@@ -390,7 +391,7 @@
         }
         .check-circle svg { width: 20px; height: 20px; stroke: #555; transition: all 0.2s; }
         
-        /* Bouton validé avec flex pour le petit + */
+        /* Bouton validé avec flex pour les contrôles de répétitions */
         .triptych-btn.is-checked { 
             background: #27ae60; 
             border-color: #2ecc71; 
@@ -521,7 +522,8 @@
                 <label><input type="checkbox" id="sortAscensions" checked> <span class="menu-icon-badge" style="background-color: #3498db; border-color: #2980b9; color: white;">📈</span> Popularité</label>
                 <label><input type="checkbox" id="sortAlpha"> <span class="menu-icon-badge" style="background-color: #95a5a6; border-color: #7f8c8d; color: white;">🔤</span> Ordre alphabétique</label>
                 <hr>
-                <label><input type="checkbox" id="excludeCompleted"> <span class="menu-icon-check-slash"></span> Masquer réalisés</label>
+                <!-- MODIFICATION : La case est pré-cochée ("checked") -->
+                <label><input type="checkbox" id="excludeCompleted" checked> <span class="menu-icon-check-slash"></span> Masquer réalisés</label>
                 <label><input type="checkbox" id="onlyCompleted"> <span class="menu-icon-check"></span> Uniquement réalisés</label>
                 <label><input type="checkbox" id="filterBenchmark"> <span class="menu-icon-badge">B</span> Uniquement Benchmarks</label>
                 <hr>
@@ -588,17 +590,18 @@
         <div class="bottom-triptych">
             <div id="bottomGrade" class="triptych-btn triptych-grade" title="Modifier la cotation">-</div>
             
-            <!-- CONTENEUR DU BOUTON VALIDÉ MODIFIÉ POUR LES RÉPÉTITIONS -->
+            <!-- CONTENEUR DU BOUTON VALIDÉ MODIFIÉ (Ajout du '-' et layout horizontal) -->
             <div id="bottomCheckWrapper" class="triptych-btn" style="flex-direction: row; gap: 8px;">
                 <div id="bottomCheck" class="check-circle" style="flex-shrink: 0;">
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                 </div>
-                <!-- Mini contrôles de répétitions (affichés uniquement si validé) -->
-                <div id="repControls" style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 4px;">
+                <!-- Mini contrôles de répétitions -->
+                <div id="repControls" style="display: none; flex-direction: row; align-items: center; justify-content: center; gap: 6px;">
+                    <button id="btnSubRep" title="Enlever une répétition" style="background: rgba(255,255,255,0.25); border: 1px solid #fff; color: #fff; border-radius: 50%; width: 22px; height: 22px; font-size: 16px; font-weight:bold; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; cursor: pointer;">-</button>
+                    <span id="repCount" style="font-size: 0.85rem; font-weight: bold; color: #fff; min-width: 20px; text-align: center;">x1</span>
                     <button id="btnAddRep" title="Ajouter une répétition" style="background: rgba(255,255,255,0.25); border: 1px solid #fff; color: #fff; border-radius: 50%; width: 22px; height: 22px; font-size: 16px; font-weight:bold; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; cursor: pointer;">+</button>
-                    <span id="repCount" style="font-size: 0.75rem; font-weight: bold; color: #fff;">x1</span>
                 </div>
             </div>
 
@@ -738,10 +741,11 @@
         const bottomPanel = document.getElementById('bottomPanel');
         const bottomBlockName = document.getElementById('bottomBlockName');
         const bottomGrade = document.getElementById('bottomGrade');
-        const bottomCheckWrapper = document.getElementById('bottomCheckWrapper'); // Wrapper modifié
-        const btnAddRep = document.getElementById('btnAddRep'); // Nouveau bouton +
-        const repControls = document.getElementById('repControls'); // Conteneur du bouton +
-        const repCount = document.getElementById('repCount'); // Texte x1, x2...
+        const bottomCheckWrapper = document.getElementById('bottomCheckWrapper'); 
+        const btnAddRep = document.getElementById('btnAddRep'); 
+        const btnSubRep = document.getElementById('btnSubRep'); // Nouveau bouton -
+        const repControls = document.getElementById('repControls'); 
+        const repCount = document.getElementById('repCount'); 
         const bottomListAdd = document.getElementById('bottomListAdd');
         const btnPrevBottom = document.getElementById('btnPrevBottom');
         const btnNextBottom = document.getElementById('btnNextBottom');
@@ -1119,9 +1123,8 @@
                 
                 let completed = route.completed === true;
                 let completedDate = route.completedDate || null; 
-                let ascentsLog = route.ascentsLog || []; // Récupération de l'historique si existant
+                let ascentsLog = route.ascentsLog || [];
                 
-                // Rétrocompatibilité lors de l'import
                 if (completed && ascentsLog.length === 0) {
                     ascentsLog = [completedDate || "1970-01-01"];
                 }
@@ -1159,7 +1162,7 @@
                     setby: setter,
                     completed: completed,
                     completedDate: completedDate,
-                    ascentsLog: ascentsLog // Sauvegarde de l'historique personnel
+                    ascentsLog: ascentsLog 
                 };
             });
             
@@ -1291,7 +1294,6 @@
                     bottomCheckWrapper.classList.add('is-checked');
                     repControls.style.display = 'flex';
                     
-                    // Sécurité pour anciens blocs sans ascentsLog
                     if (!block.ascentsLog || block.ascentsLog.length === 0) {
                         block.ascentsLog = [block.completedDate || getTodayString()];
                     }
@@ -1378,17 +1380,15 @@
             updateBlockSelect();
         });
 
-        // --- LOGIQUE DE VALIDATION ET DE RÉPÉTITION (NOUVEAU) ---
+        // --- LOGIQUE DE VALIDATION ET DE RÉPÉTITION ---
 
-        // Clic sur le bouton principal (Coher/Décocher le bloc entier)
         bottomCheckWrapper.addEventListener('click', () => {
             if (currentBlockName && blocks[currentBlockName]) {
                 let b = blocks[currentBlockName];
                 
-                // Sécurité : demander confirmation avant d'effacer un bloc avec plusieurs répétitions
                 if (b.completed && b.ascentsLog && b.ascentsLog.length > 1) {
-                    if (!confirm(`Tu as enregistré ${b.ascentsLog.length} ascensions pour ce bloc.\nVoulez-vous vraiment le décocher et effacer ton historique personnel ?`)) {
-                        return; // Annulation, on ne fait rien
+                    if (!confirm(`Tu as enregistré ${b.ascentsLog.length} ascensions pour ce bloc.\nVoulez-vous vraiment le décocher et effacer cet historique ?`)) {
+                        return; 
                     }
                 }
                 
@@ -1396,10 +1396,10 @@
                 
                 if (b.completed) {
                     b.completedDate = getTodayString();
-                    b.ascentsLog = [getTodayString()]; // Initialise la première ascension
+                    b.ascentsLog = [getTodayString()]; 
                 } else {
                     b.completedDate = null;
-                    b.ascentsLog = []; // Efface l'historique
+                    b.ascentsLog = []; 
                 }
                 
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
@@ -1408,20 +1408,33 @@
             }
         });
 
-        // Clic sur le petit bouton "+" (Ajouter une répétition)
         btnAddRep.addEventListener('click', (e) => {
-            e.stopPropagation(); // Indispensable pour ne pas déclencher le clic du gros bouton derrière !
-            
+            e.stopPropagation(); 
+            if (currentBlockName && blocks[currentBlockName] && blocks[currentBlockName].completed) {
+                let b = blocks[currentBlockName];
+                if (!b.ascentsLog) b.ascentsLog = [b.completedDate || getTodayString()];
+                
+                b.ascentsLog.push(getTodayString()); 
+                b.completedDate = getTodayString(); 
+                
+                localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+                displayBlock(currentBlockName); 
+            }
+        });
+
+        // NOUVEAU BOUTON "-" POUR ENLEVER UNE REPETITION
+        btnSubRep.addEventListener('click', (e) => {
+            e.stopPropagation(); 
             if (currentBlockName && blocks[currentBlockName] && blocks[currentBlockName].completed) {
                 let b = blocks[currentBlockName];
                 
-                if (!b.ascentsLog) b.ascentsLog = [b.completedDate || getTodayString()];
-                
-                b.ascentsLog.push(getTodayString()); // Ajoute une répétition pour aujourd'hui
-                b.completedDate = getTodayString(); // Met à jour la dernière date d'ascension
-                
-                localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-                displayBlock(currentBlockName); // Rafraîchit l'affichage pour montrer "x2", "x3"...
+                if (b.ascentsLog && b.ascentsLog.length > 1) {
+                    b.ascentsLog.pop(); // Retire la dernière ascension de l'historique
+                    b.completedDate = b.ascentsLog[b.ascentsLog.length - 1]; // Met à jour la date
+                    
+                    localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+                    displayBlock(currentBlockName); 
+                }
             }
         });
 
@@ -1476,7 +1489,7 @@
             document.getElementById(id).addEventListener('input', (e) => { gridConfig[id.replace('adj', '').toLowerCase()] = parseFloat(e.target.value); applyGridConfig(); });
         });
 
-        // --- LOGIQUE DES STATISTIQUES (MISE A JOUR) ---
+        // --- LOGIQUE DES STATISTIQUES ---
         
         btnStats.addEventListener('click', () => {
             dropdownMenu.classList.remove('show');
@@ -1507,14 +1520,11 @@
                     let g = b.grade || "?";
                     if (!gradeOrder.includes(g)) g = "?";
                     
-                    // Rétrocompatibilité : S'il est validé mais sans historique, on simule une ascension
                     if (!b.ascentsLog || b.ascentsLog.length === 0) b.ascentsLog = [b.completedDate || "1970-01-01"];
                     
-                    // DE TOUT TEMPS : On compte 1 par bloc UNIQUE réussi
                     statsAll[g]++;
                     totalAll++;
                     
-                    // AUJOURD'HUI : On compte le nombre exact d'ascensions faites ce jour précis (première fois + les répétitions via le '+')
                     let todayReps = b.ascentsLog.filter(d => d === todayStr).length;
                     if (todayReps > 0) {
                         statsToday[g] += todayReps;
