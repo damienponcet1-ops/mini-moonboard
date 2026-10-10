@@ -83,6 +83,11 @@
         .dropdown-content button:hover, .dropdown-content label:hover {
             background-color: #2a2a2a;
         }
+        .dropdown-content button:disabled {
+            color: #666 !important;
+            cursor: not-allowed;
+            background-color: transparent !important;
+        }
         .dropdown-content hr {
             border: none;
             border-top: 1px solid #444;
@@ -255,7 +260,7 @@
             transition: transform 0.1s;
         }
         
-        /* Mode Ajustement de Grille : Cercles pointillés et fond semi-transparent */
+        /* Mode Ajustement de Grille */
         div.grid-overlay.grid-adjusting div.hold {
             border: 1.5px dashed rgba(255, 255, 255, 0.9) !important;
             background: rgba(0, 0, 0, 0.35) !important;
@@ -385,7 +390,6 @@
         }
         .check-circle svg { width: 20px; height: 20px; stroke: #555; transition: all 0.2s; }
         
-        /* STYLE DU BOUTON VALIDÉ (ENTIÈREMENT VERT) */
         .triptych-btn.is-checked { 
             background: #27ae60; 
             border-color: #2ecc71; 
@@ -401,7 +405,6 @@
             height: 26px;
         }
 
-        /* ZONE INFO (Ouvreur + Ascensions) */
         .block-extra-info {
             display: flex;
             gap: 15px;
@@ -480,6 +483,11 @@
         .modal-buttons { display: flex; gap: 8px; margin-top: 5px; }
         .modal-buttons button { flex: 1; padding: 8px; }
         .list-items-container { display: flex; flex-direction: column; gap: 4px; max-height: 150px; overflow-y: auto; }
+        
+        /* Styles spécifiques pour la modale de statistiques */
+        .stat-row { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 6px 10px; border-radius: 4px; margin-bottom: 4px; }
+        .stat-grade { font-weight: bold; padding: 2px 6px; border-radius: 4px; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); min-width: 30px; text-align: center; }
+        .stat-count { font-weight: bold; color: #ffb700; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -507,6 +515,7 @@
                 <button id="btnPencil" style="color: #f39c12;">✏️ Créer un bloc</button>
                 <button id="btnAdjustGrid" style="color: #aaa;">⚙️ Ajuster la grille</button>
                 <button id="btnDeleteBlock" style="color: #ff4d4d;">🗑️ Supprimer le bloc affiché</button>
+                <button id="btnDeleteList" style="color: #ff9800;" disabled>🗑️ Supprimer la liste affichée</button>
                 <hr>
                 <label><input type="checkbox" id="sortAscensions" checked> <span class="menu-icon-badge" style="background-color: #3498db; border-color: #2980b9; color: white;">📈</span> Popularité</label>
                 <label><input type="checkbox" id="sortAlpha"> <span class="menu-icon-badge" style="background-color: #95a5a6; border-color: #7f8c8d; color: white;">🔤</span> Ordre alphabétique</label>
@@ -515,6 +524,7 @@
                 <label><input type="checkbox" id="onlyCompleted"> <span class="menu-icon-check"></span> Uniquement réalisés</label>
                 <label><input type="checkbox" id="filterBenchmark"> <span class="menu-icon-badge">B</span> Uniquement Benchmarks</label>
                 <hr>
+                <button id="btnStats" style="color: #1abc9c;">📊 Statistiques</button>
                 <button id="btnClearStorage" style="color: #e74c3c;">⚠️ Vider la base</button>
             </div>
         </div>
@@ -655,6 +665,25 @@
         </div>
     </div>
 
+    <!-- MODALE STATISTIQUES -->
+    <div id="statsModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 10px;">📊 Statistiques de réalisation</h3>
+            
+            <div style="display:flex; justify-content:space-between; margin-bottom: 10px;">
+                <button id="tabStatsAll" class="btn-blue" style="flex:1; margin-right:5px; padding:8px; font-size:0.8rem;">De tout temps</button>
+                <button id="tabStatsToday" class="btn-gray" style="flex:1; margin-left:5px; padding:8px; font-size:0.8rem;">Aujourd'hui</button>
+            </div>
+            
+            <div id="statsViewAll" class="list-items-container" style="display:flex; max-height: 300px; padding-right:5px;"></div>
+            <div id="statsViewToday" class="list-items-container" style="display:none; max-height: 300px; padding-right:5px;"></div>
+            
+            <div class="modal-buttons" style="margin-top: 15px;">
+                <button id="btnCloseStats" class="btn-gray">Fermer</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -695,6 +724,7 @@
         const btnCancelCreate = document.getElementById('btnCancelCreate');
         const btnSaveCreate = document.getElementById('btnSaveCreate');
         const btnDeleteBlock = document.getElementById('btnDeleteBlock');
+        const btnDeleteList = document.getElementById('btnDeleteList');
 
         const bottomPanel = document.getElementById('bottomPanel');
         const bottomBlockName = document.getElementById('bottomBlockName');
@@ -731,6 +761,20 @@
         const btnClosePaste = document.getElementById('btnClosePaste');
         const btnSavePaste = document.getElementById('btnSavePaste');
 
+        const btnStats = document.getElementById('btnStats');
+        const statsModal = document.getElementById('statsModal');
+        const btnCloseStats = document.getElementById('btnCloseStats');
+        const tabStatsAll = document.getElementById('tabStatsAll');
+        const tabStatsToday = document.getElementById('tabStatsToday');
+        const statsViewAll = document.getElementById('statsViewAll');
+        const statsViewToday = document.getElementById('statsViewToday');
+        const gradeOrder = ['?', '6A', '6A+', '6B', '6B+', '6C', '6C+', '7A', '7A+', '7B', '7B+', '7C', '7C+', '8A', '8A+', '8B', '8B+'];
+
+        function getTodayString() {
+            let d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
         function getGradeColor(gradeStr) {
             if (!gradeStr) return '#333333';
             let g = gradeStr.toUpperCase().trim();
@@ -760,6 +804,7 @@
                 filterList.appendChild(opt);
             }
             if(customLists[currentFilter]) filterList.value = currentFilter;
+            btnDeleteList.disabled = (filterList.value === "");
         }
 
         function renderListModal() {
@@ -903,7 +948,6 @@
         });
         searchInput.addEventListener('input', () => updateBlockSelect());
 
-        // FONCTION DE SUPPRESSION DE BLOC
         btnDeleteBlock.addEventListener('click', () => {
             if (!currentBlockName || !blocks[currentBlockName]) return;
             
@@ -919,15 +963,27 @@
                 alert("Bloc supprimé avec succès.");
             }
         });
+        
+        btnDeleteList.addEventListener('click', () => {
+            let activeList = filterList.value;
+            if (!activeList) return; 
+            
+            if (confirm(`Voulez-vous vraiment supprimer la liste "${activeList}" ?\n(Rassurez-vous, les blocs à l'intérieur ne seront PAS effacés de votre base de données).`)) {
+                delete customLists[activeList];
+                localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
+                
+                filterList.value = ""; 
+                updateListFilterOptions();
+                updateBlockSelect();
+                dropdownMenu.classList.remove('show');
+                alert(`La liste "${activeList}" a été supprimée.`);
+            }
+        });
 
-        // -----------------------------------------------------------
-        // CONNEXION BLUETOOTH & ENVOI DES DONNÉES À L'ESP32
-        // -----------------------------------------------------------
         let bluetoothDevice = null;
         let bleCharacteristic = null;
         const btnConnect = document.getElementById('btnConnect');
 
-        // UUID standards du "Nordic UART Service" (très utilisé pour communiquer du texte avec un ESP32)
         const BLE_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
         const BLE_RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
 
@@ -953,7 +1009,6 @@
                 
                 btnConnect.classList.add('connected');
                 
-                // Si un bloc est déjà affiché, on l'envoie direct après la connexion
                 if (currentBlockName && blocks[currentBlockName]) {
                     sendToESP32(blocks[currentBlockName]);
                 }
@@ -971,22 +1026,18 @@
             if (blockData) {
                 const moves = [];
                 
-                // Formatage de chaque prise avec S (Start), P (Progression), E (End)
                 if(blockData.depart) blockData.depart.forEach(id => moves.push(id + ":S"));
                 if(blockData.progression) blockData.progression.forEach(id => moves.push(id + ":P"));
                 if(blockData.arrivee) blockData.arrivee.forEach(id => moves.push(id + ":E"));
                 
                 if (moves.length > 0) {
-                    // Crée une chaîne du type "A1:S,B4:P,K12:E"
                     payload = moves.join(",");
                 }
             }
             
-            // Envoi en Bluetooth
             let encoder = new TextEncoder();
             bleCharacteristic.writeValue(encoder.encode(payload)).catch(err => console.error(err));
         }
-        // -----------------------------------------------------------
 
         function downloadData(dataObj, filename) {
             const dataStr = JSON.stringify(dataObj, null, 2);
@@ -1063,6 +1114,7 @@
                 else if ('IsBenchmark' in route) isBenchmarkVal = (route.IsBenchmark === true || String(route.IsBenchmark).toLowerCase() === 'true');
                 
                 let completed = route.completed === true;
+                let completedDate = route.completedDate || null; 
                 let ascCount = parseInt(route.ascensionCount || route.AscensionCount || 0, 10);
                 let setter = route.setby || route.setter || route.Setter || "Inconnu";
                 
@@ -1097,6 +1149,7 @@
                     setby: setter,
                     completed: completed
                 };
+                if (completedDate) newBlocks[routeName].completedDate = completedDate; 
             });
             
             let newKeys = Object.keys(newBlocks);
@@ -1259,7 +1312,7 @@
                 bottomCheck.classList.remove('is-checked');
                 infoSetter.textContent = "-"; infoAscensions.textContent = "-";
                 updateListButtonState();
-                sendToESP32(null); // On déclenche le nettoyage
+                sendToESP32(null); 
             }
         }
 
@@ -1322,15 +1375,24 @@
             else if (!sortAlphaCheckbox.checked) sortAlphaCheckbox.checked = true; 
             updateBlockSelect();
         });
+        
         sortAlphaCheckbox.addEventListener('change', () => {
             if(sortAlphaCheckbox.checked) sortAscensionsCheckbox.checked = false;
             else if (!sortAscensionsCheckbox.checked) sortAscensionsCheckbox.checked = true; 
             updateBlockSelect();
         });
 
+        // ENREGISTREMENT DE LA DATE DE VALIDATION
         bottomCheck.addEventListener('click', () => {
             if (currentBlockName && blocks[currentBlockName]) {
                 blocks[currentBlockName].completed = !blocks[currentBlockName].completed;
+                
+                if (blocks[currentBlockName].completed) {
+                    blocks[currentBlockName].completedDate = getTodayString();
+                } else {
+                    blocks[currentBlockName].completedDate = null;
+                }
+                
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
                 displayBlock(currentBlockName);
                 if (excludeCompletedCheckbox.checked || onlyCompletedCheckbox.checked) updateBlockSelect();
@@ -1410,6 +1472,80 @@
                 gridConfig[id.replace('adj', '').toLowerCase()] = parseFloat(e.target.value); applyGridConfig();
             });
         });
+
+        // -----------------------------------------------------------
+        // LOGIQUE DES STATISTIQUES
+        // -----------------------------------------------------------
+        btnStats.addEventListener('click', () => {
+            dropdownMenu.classList.remove('show');
+            renderStats(); 
+            statsModal.style.display = 'block';
+        });
+
+        btnCloseStats.addEventListener('click', () => {
+            statsModal.style.display = 'none';
+        });
+
+        tabStatsAll.addEventListener('click', () => {
+            tabStatsAll.className = 'btn-blue';
+            tabStatsToday.className = 'btn-gray';
+            statsViewAll.style.display = 'flex';
+            statsViewToday.style.display = 'none';
+        });
+
+        tabStatsToday.addEventListener('click', () => {
+            tabStatsToday.className = 'btn-blue';
+            tabStatsAll.className = 'btn-gray';
+            statsViewToday.style.display = 'flex';
+            statsViewAll.style.display = 'none';
+        });
+
+        function renderStats() {
+            let statsAll = {};
+            let statsToday = {};
+            let totalAll = 0;
+            let totalToday = 0;
+            let todayStr = getTodayString();
+
+            gradeOrder.forEach(g => { statsAll[g] = 0; statsToday[g] = 0; });
+
+            for (let key in blocks) {
+                let b = blocks[key];
+                if (b.completed) {
+                    let g = b.grade || "?";
+                    if (!gradeOrder.includes(g)) g = "?";
+                    
+                    statsAll[g]++;
+                    totalAll++;
+                    
+                    if (b.completedDate === todayStr) {
+                        statsToday[g]++;
+                        totalToday++;
+                    }
+                }
+            }
+
+            function buildHtml(statsObj, total) {
+                if (total === 0) return `<div style="text-align:center; color:#888; padding:10px;">Aucun bloc réalisé</div>`;
+                
+                let html = `<div style="text-align:center; margin-bottom:8px; color:#ffb700; font-weight:bold;">Total : ${total} blocs</div>`;
+                
+                gradeOrder.forEach(g => {
+                    if (statsObj[g] > 0) {
+                        let bgColor = getGradeColor(g);
+                        html += `
+                        <div class="stat-row">
+                            <span class="stat-grade" style="background-color: ${bgColor};">${g}</span>
+                            <span class="stat-count">${statsObj[g]}</span>
+                        </div>`;
+                    }
+                });
+                return html;
+            }
+
+            statsViewAll.innerHTML = buildHtml(statsAll, totalAll);
+            statsViewToday.innerHTML = buildHtml(statsToday, totalToday);
+        }
 
         // INITIALISATION
         updateListFilterOptions();
