@@ -372,7 +372,7 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        .triptych-btn:active { transform: scale(0.95); }
+        .triptych-btn:active { transform: scale(0.98); }
         .triptych-grade { font-size: 1.4rem; font-weight: 900; color: #ffffff; }
         .triptych-list { font-size: 1.8rem; font-weight: bold; color: #b388ff; }
         .triptych-list.in-list { background-color: #dc3545; border-color: #bd2130; color: #ffffff; }
@@ -390,6 +390,7 @@
         }
         .check-circle svg { width: 20px; height: 20px; stroke: #555; transition: all 0.2s; }
         
+        /* Bouton validé avec flex pour le petit + */
         .triptych-btn.is-checked { 
             background: #27ae60; 
             border-color: #2ecc71; 
@@ -586,13 +587,21 @@
         
         <div class="bottom-triptych">
             <div id="bottomGrade" class="triptych-btn triptych-grade" title="Modifier la cotation">-</div>
-            <div id="bottomCheck" class="triptych-btn">
-                <div class="check-circle">
+            
+            <!-- CONTENEUR DU BOUTON VALIDÉ MODIFIÉ POUR LES RÉPÉTITIONS -->
+            <div id="bottomCheckWrapper" class="triptych-btn" style="flex-direction: row; gap: 8px;">
+                <div id="bottomCheck" class="check-circle" style="flex-shrink: 0;">
                     <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                 </div>
+                <!-- Mini contrôles de répétitions (affichés uniquement si validé) -->
+                <div id="repControls" style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 4px;">
+                    <button id="btnAddRep" title="Ajouter une répétition" style="background: rgba(255,255,255,0.25); border: 1px solid #fff; color: #fff; border-radius: 50%; width: 22px; height: 22px; font-size: 16px; font-weight:bold; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; cursor: pointer;">+</button>
+                    <span id="repCount" style="font-size: 0.75rem; font-weight: bold; color: #fff;">x1</span>
+                </div>
             </div>
+
             <div class="triptych-container">
                 <div id="bottomListAdd" class="triptych-btn triptych-list">➕</div>
                 <div class="footer-info"><span id="blockCounter" class="counter">0/0</span></div>
@@ -729,7 +738,10 @@
         const bottomPanel = document.getElementById('bottomPanel');
         const bottomBlockName = document.getElementById('bottomBlockName');
         const bottomGrade = document.getElementById('bottomGrade');
-        const bottomCheck = document.getElementById('bottomCheck');
+        const bottomCheckWrapper = document.getElementById('bottomCheckWrapper'); // Wrapper modifié
+        const btnAddRep = document.getElementById('btnAddRep'); // Nouveau bouton +
+        const repControls = document.getElementById('repControls'); // Conteneur du bouton +
+        const repCount = document.getElementById('repCount'); // Texte x1, x2...
         const bottomListAdd = document.getElementById('bottomListAdd');
         const btnPrevBottom = document.getElementById('btnPrevBottom');
         const btnNextBottom = document.getElementById('btnNextBottom');
@@ -770,6 +782,8 @@
         const statsViewToday = document.getElementById('statsViewToday');
         const gradeOrder = ['?', '6A', '6A+', '6B', '6B+', '6C', '6C+', '7A', '7A+', '7B', '7B+', '7C', '7C+', '8A', '8A+', '8B', '8B+'];
 
+        // --- OUTILS & FILTRES ---
+        
         function getTodayString() {
             let d = new Date();
             return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -806,6 +820,8 @@
             if(customLists[currentFilter]) filterList.value = currentFilter;
             btnDeleteList.disabled = (filterList.value === "");
         }
+
+        // --- GESTION DES LISTES ---
 
         function renderListModal() {
             if(!currentBlockName) return;
@@ -889,6 +905,8 @@
             updateListButtonState();
         });
 
+        // --- GESTION DES COTATIONS ---
+
         bottomGrade.addEventListener('click', () => {
             if(!currentBlockName || !blocks[currentBlockName]) return;
             let currentGrade = blocks[currentBlockName].grade || "?";
@@ -908,14 +926,14 @@
             updateBlockSelect(); 
         });
 
+        // --- GESTION IMPORT / EXPORT / SUPPRESSION ---
+
         btnPasteJSON.addEventListener('click', () => {
             dropdownMenu.classList.remove('show');
             pasteJsonText.value = '';
             pasteModal.style.display = 'block';
         });
-
         btnClosePaste.addEventListener('click', () => pasteModal.style.display = 'none');
-
         btnSavePaste.addEventListener('click', () => {
             let text = pasteJsonText.value.trim();
             if (!text) return alert("Veuillez coller du texte JSON.");
@@ -950,7 +968,6 @@
 
         btnDeleteBlock.addEventListener('click', () => {
             if (!currentBlockName || !blocks[currentBlockName]) return;
-            
             if (confirm(`Voulez-vous vraiment supprimer définitivement le bloc "${currentBlockName}" ?`)) {
                 delete blocks[currentBlockName];
                 for (let listName in customLists) {
@@ -967,11 +984,9 @@
         btnDeleteList.addEventListener('click', () => {
             let activeList = filterList.value;
             if (!activeList) return; 
-            
             if (confirm(`Voulez-vous vraiment supprimer la liste "${activeList}" ?\n(Rassurez-vous, les blocs à l'intérieur ne seront PAS effacés de votre base de données).`)) {
                 delete customLists[activeList];
                 localStorage.setItem('minimoon_lists', JSON.stringify(customLists));
-                
                 filterList.value = ""; 
                 updateListFilterOptions();
                 updateBlockSelect();
@@ -980,10 +995,11 @@
             }
         });
 
+        // --- BLUETOOTH ---
+
         let bluetoothDevice = null;
         let bleCharacteristic = null;
         const btnConnect = document.getElementById('btnConnect');
-
         const BLE_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
         const BLE_RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
 
@@ -1009,10 +1025,7 @@
                 
                 btnConnect.classList.add('connected');
                 
-                if (currentBlockName && blocks[currentBlockName]) {
-                    sendToESP32(blocks[currentBlockName]);
-                }
-                
+                if (currentBlockName && blocks[currentBlockName]) sendToESP32(blocks[currentBlockName]);
             } catch (error) { 
                 console.error("Erreur Bluetooth:", error); 
             }
@@ -1020,24 +1033,19 @@
 
         function sendToESP32(blockData) {
             if (!bleCharacteristic) return;
-            
             let payload = "CLEAR";
-            
             if (blockData) {
                 const moves = [];
-                
                 if(blockData.depart) blockData.depart.forEach(id => moves.push(id + ":S"));
                 if(blockData.progression) blockData.progression.forEach(id => moves.push(id + ":P"));
                 if(blockData.arrivee) blockData.arrivee.forEach(id => moves.push(id + ":E"));
-                
-                if (moves.length > 0) {
-                    payload = moves.join(",");
-                }
+                if (moves.length > 0) payload = moves.join(",");
             }
-            
             let encoder = new TextEncoder();
             bleCharacteristic.writeValue(encoder.encode(payload)).catch(err => console.error(err));
         }
+
+        // --- EXPORT & RESTAURATION ---
 
         function downloadData(dataObj, filename) {
             const dataStr = JSON.stringify(dataObj, null, 2);
@@ -1084,13 +1092,10 @@
             }
 
             let dataArray = [];
-            if (Array.isArray(parsed)) {
-                dataArray = parsed;
-            } else if (parsed.data && Array.isArray(parsed.data)) {
-                dataArray = parsed.data;
-            } else if (parsed.name || parsed.Name || parsed.moves || parsed.Moves) {
-                dataArray.push(parsed);
-            } else {
+            if (Array.isArray(parsed)) dataArray = parsed;
+            else if (parsed.data && Array.isArray(parsed.data)) dataArray = parsed.data;
+            else if (parsed.name || parsed.Name || parsed.moves || parsed.Moves) dataArray.push(parsed);
+            else {
                 for (let key in parsed) {
                     let item = parsed[key];
                     if (item && typeof item === 'object' && !Array.isArray(item)) {
@@ -1111,10 +1116,16 @@
                 let isBenchmarkVal = false;
                 if ('benchmark' in route) isBenchmarkVal = (route.benchmark === true || String(route.benchmark).toLowerCase() === 'true');
                 else if ('isBenchmark' in route) isBenchmarkVal = (route.isBenchmark === true || String(route.isBenchmark).toLowerCase() === 'true');
-                else if ('IsBenchmark' in route) isBenchmarkVal = (route.IsBenchmark === true || String(route.IsBenchmark).toLowerCase() === 'true');
                 
                 let completed = route.completed === true;
                 let completedDate = route.completedDate || null; 
+                let ascentsLog = route.ascentsLog || []; // Récupération de l'historique si existant
+                
+                // Rétrocompatibilité lors de l'import
+                if (completed && ascentsLog.length === 0) {
+                    ascentsLog = [completedDate || "1970-01-01"];
+                }
+                
                 let ascCount = parseInt(route.ascensionCount || route.AscensionCount || 0, 10);
                 let setter = route.setby || route.setter || route.Setter || "Inconnu";
                 
@@ -1127,7 +1138,6 @@
                         if (!rawId && typeof m === 'string') rawId = m;
                         if (rawId && typeof rawId === 'string') {
                             let id = rawId.toUpperCase();
-                            
                             let isStart = m.isStart || m.IsStart || m.type === 'start' || m.type === 'Start';
                             let isEnd = m.isEnd || m.IsEnd || m.type === 'finish' || m.type === 'end' || m.type === 'top';
                             
@@ -1147,9 +1157,10 @@
                     isBenchmark: isBenchmarkVal, 
                     ascensionCount: ascCount, 
                     setby: setter,
-                    completed: completed
+                    completed: completed,
+                    completedDate: completedDate,
+                    ascentsLog: ascentsLog // Sauvegarde de l'historique personnel
                 };
-                if (completedDate) newBlocks[routeName].completedDate = completedDate; 
             });
             
             let newKeys = Object.keys(newBlocks);
@@ -1157,41 +1168,31 @@
             localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
             alert(`${newKeys.length} bloc(s) importé(s)/mis à jour avec succès !`);
             
-            if(newKeys.length > 0) {
-                updateBlockSelect(newKeys[newKeys.length - 1]); 
-            } else {
-                updateBlockSelect();
-            }
+            if(newKeys.length > 0) updateBlockSelect(newKeys[newKeys.length - 1]); 
+            else updateBlockSelect();
         }
 
-        document.getElementById('btnImport').addEventListener('click', () => {
-            document.getElementById('fileImport').click();
-            dropdownMenu.classList.remove('show');
-        });
-
+        document.getElementById('btnImport').addEventListener('click', () => { document.getElementById('fileImport').click(); dropdownMenu.classList.remove('show'); });
         document.getElementById('fileImport').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = ev => {
-                try {
-                    let parsed = JSON.parse(ev.target.result);
-                    processImportedData(parsed);
-                } catch(err) { alert("Erreur: Fichier invalide. Vérifiez le format JSON."); console.error(err); }
+                try { processImportedData(JSON.parse(ev.target.result)); } 
+                catch(err) { alert("Erreur: Fichier invalide. Vérifiez le format JSON."); console.error(err); }
             };
-            reader.readAsText(file);
-            e.target.value = '';
+            reader.readAsText(file); e.target.value = '';
         });
 
         document.getElementById('btnClearStorage').addEventListener('click', () => {
             if(confirm("⚠️ Effacer TOUS les blocs et données ?")) {
                 blocks = {}; customLists = {};
-                localStorage.removeItem('minimoon_blocks');
-                localStorage.removeItem('minimoon_lists');
-                updateListFilterOptions();
-                updateBlockSelect();
+                localStorage.removeItem('minimoon_blocks'); localStorage.removeItem('minimoon_lists');
+                updateListFilterOptions(); updateBlockSelect();
             }
         });
+
+        // --- GESTION DE LA GRILLE ET CRÉATION DE BLOCS ---
 
         function initGrid() {
             gridOverlay.innerHTML = '';
@@ -1202,10 +1203,8 @@
                     cell.className = 'grid-cell';
                     cell.addEventListener('click', () => handleHoldClick(holdId));
                     let div = document.createElement('div');
-                    div.className = 'hold';
-                    div.dataset.id = holdId;
-                    cell.appendChild(div);
-                    gridOverlay.appendChild(cell);
+                    div.className = 'hold'; div.dataset.id = holdId;
+                    cell.appendChild(div); gridOverlay.appendChild(cell);
                 });
             });
         }
@@ -1230,30 +1229,21 @@
         }
 
         btnPencil.addEventListener('click', () => {
-            isCreating = true;
-            dropdownMenu.classList.remove('show');
-            mainMenu.style.display = 'none';
-            creationTools.style.display = 'flex';
-            bottomPanel.style.display = 'none';
+            isCreating = true; dropdownMenu.classList.remove('show'); mainMenu.style.display = 'none';
+            creationTools.style.display = 'flex'; bottomPanel.style.display = 'none';
             document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
             badgeNoKb.style.display = 'none'; badgeMarked.style.display = 'none';
-            badgeFootless.style.display = 'none'; badgeFootlessKb.style.display = 'none';
-            badgeBenchmark.style.display = 'none';
+            badgeFootless.style.display = 'none'; badgeFootlessKb.style.display = 'none'; badgeBenchmark.style.display = 'none';
             currentCreation = { depart: [], progression: [], arrivee: [] };
         });
 
         btnCancelCreate.addEventListener('click', () => {
-            isCreating = false;
-            mainMenu.style.display = 'block';
-            creationTools.style.display = 'none';
-            bottomPanel.style.display = 'flex';
-            displayBlock(blockSelect.value);
+            isCreating = false; mainMenu.style.display = 'block'; creationTools.style.display = 'none';
+            bottomPanel.style.display = 'flex'; displayBlock(blockSelect.value);
         });
 
         btnSaveCreate.addEventListener('click', () => {
-            if (currentCreation.depart.length === 0 && currentCreation.progression.length === 0 && currentCreation.arrivee.length === 0) {
-                return alert("Ajoute au moins une prise sur le mur !");
-            }
+            if (currentCreation.depart.length === 0 && currentCreation.progression.length === 0 && currentCreation.arrivee.length === 0) return alert("Ajoute au moins une prise sur le mur !");
             let name = prompt("Nom du nouveau bloc :");
             if (name) {
                 blocks[name] = {
@@ -1261,13 +1251,12 @@
                     method: "", grade: "6B+", isBenchmark: false, ascensionCount: 0, setby: "Moi", completed: false
                 };
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
-                isCreating = false;
-                mainMenu.style.display = 'block';
-                creationTools.style.display = 'none';
-                bottomPanel.style.display = 'flex';
-                updateBlockSelect(name); 
+                isCreating = false; mainMenu.style.display = 'block'; creationTools.style.display = 'none';
+                bottomPanel.style.display = 'flex'; updateBlockSelect(name); 
             }
         });
+
+        // --- AFFICHAGE ET LOGIQUE DE SÉLECTION ---
 
         function displayBlock(name) {
             if (isCreating || gridOverlay.classList.contains('grid-adjusting')) return; 
@@ -1276,8 +1265,7 @@
             
             document.querySelectorAll('.hold').forEach(div => div.className = 'hold');
             badgeNoKb.style.display = 'none'; badgeMarked.style.display = 'none';
-            badgeFootless.style.display = 'none'; badgeFootlessKb.style.display = 'none';
-            badgeBenchmark.style.display = 'none';
+            badgeFootless.style.display = 'none'; badgeFootlessKb.style.display = 'none'; badgeBenchmark.style.display = 'none';
             
             if (block) {
                 block.depart.forEach(id => { let h = document.querySelector(`[data-id="${id}"]`); if(h) h.classList.add('depart'); });
@@ -1297,8 +1285,21 @@
                 let gradeVal = block.grade || "?";
                 bottomGrade.textContent = gradeVal;
                 bottomGrade.style.backgroundColor = getGradeColor(gradeVal);
-                if (block.completed) bottomCheck.classList.add('is-checked');
-                else bottomCheck.classList.remove('is-checked');
+                
+                // LOGIQUE D'AFFICHAGE DU BOUTON VALIDÉ ET DES RÉPÉTITIONS
+                if (block.completed) {
+                    bottomCheckWrapper.classList.add('is-checked');
+                    repControls.style.display = 'flex';
+                    
+                    // Sécurité pour anciens blocs sans ascentsLog
+                    if (!block.ascentsLog || block.ascentsLog.length === 0) {
+                        block.ascentsLog = [block.completedDate || getTodayString()];
+                    }
+                    repCount.textContent = "x" + block.ascentsLog.length;
+                } else {
+                    bottomCheckWrapper.classList.remove('is-checked');
+                    repControls.style.display = 'none';
+                }
                 
                 infoSetter.textContent = block.setby || "Inconnu";
                 infoAscensions.textContent = block.ascensionCount || "0";
@@ -1307,9 +1308,9 @@
                 sendToESP32(block);
             } else {
                 bottomBlockName.textContent = "Aucun bloc sélectionné";
-                bottomGrade.textContent = "-";
-                bottomGrade.style.backgroundColor = "#333333";
-                bottomCheck.classList.remove('is-checked');
+                bottomGrade.textContent = "-"; bottomGrade.style.backgroundColor = "#333333";
+                bottomCheckWrapper.classList.remove('is-checked');
+                repControls.style.display = 'none';
                 infoSetter.textContent = "-"; infoAscensions.textContent = "-";
                 updateListButtonState();
                 sendToESP32(null); 
@@ -1354,20 +1355,15 @@
             blockCounter.textContent = `${filteredKeys.length}/${totalBlocksInDB}`;
 
             filteredKeys.forEach(k => {
-                let opt = document.createElement('option');
-                opt.value = k; 
+                let opt = document.createElement('option'); opt.value = k; 
                 let ascText = (sortAscensions && blocks[k].ascensionCount > 0) ? ` - ${blocks[k].ascensionCount} asc.` : '';
                 opt.textContent = `${k} (${blocks[k].grade || '?'})${ascText}`;
                 blockSelect.appendChild(opt);
             });
 
-            if (filteredKeys.includes(selected)) {
-                blockSelect.value = selected; displayBlock(selected);
-            } else if (filteredKeys.length > 0) {
-                blockSelect.value = filteredKeys[0]; displayBlock(filteredKeys[0]);
-            } else {
-                displayBlock(""); 
-            }
+            if (filteredKeys.includes(selected)) { blockSelect.value = selected; displayBlock(selected); } 
+            else if (filteredKeys.length > 0) { blockSelect.value = filteredKeys[0]; displayBlock(filteredKeys[0]); } 
+            else { displayBlock(""); }
         }
 
         sortAscensionsCheckbox.addEventListener('change', () => {
@@ -1382,15 +1378,28 @@
             updateBlockSelect();
         });
 
-        // ENREGISTREMENT DE LA DATE DE VALIDATION
-        bottomCheck.addEventListener('click', () => {
+        // --- LOGIQUE DE VALIDATION ET DE RÉPÉTITION (NOUVEAU) ---
+
+        // Clic sur le bouton principal (Coher/Décocher le bloc entier)
+        bottomCheckWrapper.addEventListener('click', () => {
             if (currentBlockName && blocks[currentBlockName]) {
-                blocks[currentBlockName].completed = !blocks[currentBlockName].completed;
+                let b = blocks[currentBlockName];
                 
-                if (blocks[currentBlockName].completed) {
-                    blocks[currentBlockName].completedDate = getTodayString();
+                // Sécurité : demander confirmation avant d'effacer un bloc avec plusieurs répétitions
+                if (b.completed && b.ascentsLog && b.ascentsLog.length > 1) {
+                    if (!confirm(`Tu as enregistré ${b.ascentsLog.length} ascensions pour ce bloc.\nVoulez-vous vraiment le décocher et effacer ton historique personnel ?`)) {
+                        return; // Annulation, on ne fait rien
+                    }
+                }
+                
+                b.completed = !b.completed;
+                
+                if (b.completed) {
+                    b.completedDate = getTodayString();
+                    b.ascentsLog = [getTodayString()]; // Initialise la première ascension
                 } else {
-                    blocks[currentBlockName].completedDate = null;
+                    b.completedDate = null;
+                    b.ascentsLog = []; // Efface l'historique
                 }
                 
                 localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
@@ -1399,30 +1408,33 @@
             }
         });
 
+        // Clic sur le petit bouton "+" (Ajouter une répétition)
+        btnAddRep.addEventListener('click', (e) => {
+            e.stopPropagation(); // Indispensable pour ne pas déclencher le clic du gros bouton derrière !
+            
+            if (currentBlockName && blocks[currentBlockName] && blocks[currentBlockName].completed) {
+                let b = blocks[currentBlockName];
+                
+                if (!b.ascentsLog) b.ascentsLog = [b.completedDate || getTodayString()];
+                
+                b.ascentsLog.push(getTodayString()); // Ajoute une répétition pour aujourd'hui
+                b.completedDate = getTodayString(); // Met à jour la dernière date d'ascension
+                
+                localStorage.setItem('minimoon_blocks', JSON.stringify(blocks));
+                displayBlock(currentBlockName); // Rafraîchit l'affichage pour montrer "x2", "x3"...
+            }
+        });
+
         blockSelect.addEventListener('change', (e) => displayBlock(e.target.value));
         filterCotation.addEventListener('change', () => updateBlockSelect());
         filterList.addEventListener('change', () => { updateBlockSelect(); updateListButtonState(); });
         filterBenchmark.addEventListener('change', () => updateBlockSelect());
         
-        excludeCompletedCheckbox.addEventListener('change', () => {
-            if(excludeCompletedCheckbox.checked) onlyCompletedCheckbox.checked = false;
-            updateBlockSelect();
-        });
-        onlyCompletedCheckbox.addEventListener('change', () => {
-            if(onlyCompletedCheckbox.checked) excludeCompletedCheckbox.checked = false;
-            updateBlockSelect();
-        });
+        excludeCompletedCheckbox.addEventListener('change', () => { if(excludeCompletedCheckbox.checked) onlyCompletedCheckbox.checked = false; updateBlockSelect(); });
+        onlyCompletedCheckbox.addEventListener('change', () => { if(onlyCompletedCheckbox.checked) excludeCompletedCheckbox.checked = false; updateBlockSelect(); });
 
-        function goToPrevBlock() {
-            if(blockSelect.selectedIndex > 0) { 
-                blockSelect.selectedIndex--; displayBlock(blockSelect.value); 
-            }
-        }
-        function goToNextBlock() {
-            if(blockSelect.selectedIndex < blockSelect.options.length - 1) { 
-                blockSelect.selectedIndex++; displayBlock(blockSelect.value); 
-            }
-        }
+        function goToPrevBlock() { if(blockSelect.selectedIndex > 0) { blockSelect.selectedIndex--; displayBlock(blockSelect.value); } }
+        function goToNextBlock() { if(blockSelect.selectedIndex < blockSelect.options.length - 1) { blockSelect.selectedIndex++; displayBlock(blockSelect.value); } }
 
         btnPrevBottom.addEventListener('click', goToPrevBlock);
         btnNextBottom.addEventListener('click', goToNextBlock);
@@ -1434,11 +1446,10 @@
             if (isCreating || gridOverlay.classList.contains('grid-adjusting')) return;
             const deltaX = e.changedTouches[0].screenX - touchStartX;
             const deltaY = e.changedTouches[0].screenY - touchStartY;
-            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
-                if (deltaX > 0) goToPrevBlock();
-                else goToNextBlock();
-            }
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) { if (deltaX > 0) goToPrevBlock(); else goToNextBlock(); }
         }, { passive: true });
+
+        // --- REGLAGE GRILLE ---
 
         const adjustPanel = document.getElementById('adjustPanel');
         const defaultGridConfig = { top: 9, left: 7.5, width: 85, height: 75.5 };
@@ -1452,59 +1463,40 @@
         }
 
         document.getElementById('btnAdjustGrid').addEventListener('click', () => {
-            dropdownMenu.classList.remove('show');
-            bottomPanel.style.display = 'none';
-            adjustPanel.style.display = 'flex'; 
-            gridOverlay.classList.add('grid-adjusting');
+            dropdownMenu.classList.remove('show'); bottomPanel.style.display = 'none';
+            adjustPanel.style.display = 'flex'; gridOverlay.classList.add('grid-adjusting');
         });
         document.getElementById('btnCloseAdjust').addEventListener('click', () => {
-            adjustPanel.style.display = 'none';
-            bottomPanel.style.display = 'flex'; 
+            adjustPanel.style.display = 'none'; bottomPanel.style.display = 'flex'; 
             gridOverlay.classList.remove('grid-adjusting');
-            localStorage.setItem('minimoon_grid', JSON.stringify(gridConfig));
-            displayBlock(currentBlockName);
+            localStorage.setItem('minimoon_grid', JSON.stringify(gridConfig)); displayBlock(currentBlockName);
         });
-        document.getElementById('btnResetAdjust').addEventListener('click', () => {
-            gridConfig = {...defaultGridConfig}; applyGridConfig();
-        });
+        document.getElementById('btnResetAdjust').addEventListener('click', () => { gridConfig = {...defaultGridConfig}; applyGridConfig(); });
         ['adjTop', 'adjLeft', 'adjWidth', 'adjHeight'].forEach(id => {
-            document.getElementById(id).addEventListener('input', (e) => {
-                gridConfig[id.replace('adj', '').toLowerCase()] = parseFloat(e.target.value); applyGridConfig();
-            });
+            document.getElementById(id).addEventListener('input', (e) => { gridConfig[id.replace('adj', '').toLowerCase()] = parseFloat(e.target.value); applyGridConfig(); });
         });
 
-        // -----------------------------------------------------------
-        // LOGIQUE DES STATISTIQUES
-        // -----------------------------------------------------------
+        // --- LOGIQUE DES STATISTIQUES (MISE A JOUR) ---
+        
         btnStats.addEventListener('click', () => {
             dropdownMenu.classList.remove('show');
             renderStats(); 
             statsModal.style.display = 'block';
         });
 
-        btnCloseStats.addEventListener('click', () => {
-            statsModal.style.display = 'none';
-        });
-
+        btnCloseStats.addEventListener('click', () => { statsModal.style.display = 'none'; });
         tabStatsAll.addEventListener('click', () => {
-            tabStatsAll.className = 'btn-blue';
-            tabStatsToday.className = 'btn-gray';
-            statsViewAll.style.display = 'flex';
-            statsViewToday.style.display = 'none';
+            tabStatsAll.className = 'btn-blue'; tabStatsToday.className = 'btn-gray';
+            statsViewAll.style.display = 'flex'; statsViewToday.style.display = 'none';
         });
-
         tabStatsToday.addEventListener('click', () => {
-            tabStatsToday.className = 'btn-blue';
-            tabStatsAll.className = 'btn-gray';
-            statsViewToday.style.display = 'flex';
-            statsViewAll.style.display = 'none';
+            tabStatsToday.className = 'btn-blue'; tabStatsAll.className = 'btn-gray';
+            statsViewToday.style.display = 'flex'; statsViewAll.style.display = 'none';
         });
 
         function renderStats() {
-            let statsAll = {};
-            let statsToday = {};
-            let totalAll = 0;
-            let totalToday = 0;
+            let statsAll = {}; let statsToday = {};
+            let totalAll = 0; let totalToday = 0;
             let todayStr = getTodayString();
 
             gradeOrder.forEach(g => { statsAll[g] = 0; statsToday[g] = 0; });
@@ -1515,29 +1507,29 @@
                     let g = b.grade || "?";
                     if (!gradeOrder.includes(g)) g = "?";
                     
+                    // Rétrocompatibilité : S'il est validé mais sans historique, on simule une ascension
+                    if (!b.ascentsLog || b.ascentsLog.length === 0) b.ascentsLog = [b.completedDate || "1970-01-01"];
+                    
+                    // DE TOUT TEMPS : On compte 1 par bloc UNIQUE réussi
                     statsAll[g]++;
                     totalAll++;
                     
-                    if (b.completedDate === todayStr) {
-                        statsToday[g]++;
-                        totalToday++;
+                    // AUJOURD'HUI : On compte le nombre exact d'ascensions faites ce jour précis (première fois + les répétitions via le '+')
+                    let todayReps = b.ascentsLog.filter(d => d === todayStr).length;
+                    if (todayReps > 0) {
+                        statsToday[g] += todayReps;
+                        totalToday += todayReps;
                     }
                 }
             }
 
             function buildHtml(statsObj, total) {
                 if (total === 0) return `<div style="text-align:center; color:#888; padding:10px;">Aucun bloc réalisé</div>`;
-                
                 let html = `<div style="text-align:center; margin-bottom:8px; color:#ffb700; font-weight:bold;">Total : ${total} blocs</div>`;
-                
                 gradeOrder.forEach(g => {
                     if (statsObj[g] > 0) {
                         let bgColor = getGradeColor(g);
-                        html += `
-                        <div class="stat-row">
-                            <span class="stat-grade" style="background-color: ${bgColor};">${g}</span>
-                            <span class="stat-count">${statsObj[g]}</span>
-                        </div>`;
+                        html += `<div class="stat-row"><span class="stat-grade" style="background-color: ${bgColor};">${g}</span><span class="stat-count">${statsObj[g]}</span></div>`;
                     }
                 });
                 return html;
